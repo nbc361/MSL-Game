@@ -733,8 +733,72 @@ const GameData = {
         }
     },
 
-    // Career progression titles
+    // XP rewards for various activities
+    xpRewards: {
+        kolMeeting: 25,
+        kolMeetingWithInsight: 40,
+        kolMeetingExcellent: 60,      // All objectives achieved
+        crmEntry: 10,
+        crmEntryHighQuality: 25,      // 80%+ quality score
+        trainingModule: 30,
+        conferenceAttendance: 50,
+        advisoryBoard: 75,
+        iisSupport: 60,
+        quarterlyReviewBonus: 100,    // Excellent quarterly review
+        promotionBonus: 200           // On promotion
+    },
+
+    // Career progression with level-based system
+    // MSL I: Levels 1-4 (starting position)
+    // MSL II: Levels 5-9 (first major milestone)
+    // Senior MSL: Level 10 (WIN CONDITION)
     careerLevels: [
+        { level: 1, title: "MSL I", xpRequired: 0, rank: "MSL I", description: "Entry-level Medical Science Liaison" },
+        { level: 2, title: "MSL I", xpRequired: 100, rank: "MSL I", description: "Developing your foundation" },
+        { level: 3, title: "MSL I", xpRequired: 250, rank: "MSL I", description: "Building your network" },
+        { level: 4, title: "MSL I", xpRequired: 450, rank: "MSL I", description: "Ready for advancement" },
+        { level: 5, title: "MSL II", xpRequired: 700, rank: "MSL II", description: "Promoted! Expanded responsibilities", isPromotion: true },
+        { level: 6, title: "MSL II", xpRequired: 1000, rank: "MSL II", description: "Establishing expertise" },
+        { level: 7, title: "MSL II", xpRequired: 1350, rank: "MSL II", description: "Regional recognition" },
+        { level: 8, title: "MSL II", xpRequired: 1750, rank: "MSL II", description: "Mentoring juniors" },
+        { level: 9, title: "MSL II", xpRequired: 2200, rank: "MSL II", description: "Leadership potential identified" },
+        { level: 10, title: "Senior MSL", xpRequired: 2700, rank: "Senior MSL", description: "Congratulations! You've reached Senior MSL!", isPromotion: true, isVictory: true }
+    ],
+
+    // Promotion ceremony messages
+    promotionCeremonies: {
+        msl2: {
+            title: "🎉 Promotion to MSL II!",
+            message: "Congratulations! Your exceptional performance in scientific engagement, KOL relationship building, and compliance adherence has earned you a promotion to MSL II.",
+            achievements: [
+                "Demonstrated strong scientific expertise",
+                "Built meaningful KOL relationships",
+                "Maintained excellent compliance standards"
+            ],
+            newResponsibilities: [
+                "Expanded territory coverage",
+                "Mentoring new MSL team members",
+                "Leading regional medical initiatives"
+            ],
+            bonusSkillPoints: 3
+        },
+        seniorMsl: {
+            title: "🏆 Senior MSL - Victory!",
+            message: "Outstanding achievement! You have demonstrated exceptional scientific expertise, built a world-class network of KOL relationships, and maintained impeccable compliance standards. You are now a Senior MSL!",
+            achievements: [
+                "Mastered scientific exchange and data communication",
+                "Developed strong relationships with key opinion leaders",
+                "Maintained perfect compliance record",
+                "Generated valuable field insights",
+                "Demonstrated leadership potential"
+            ],
+            victoryMessage: "You have completed your journey from entry-level MSL to Senior MSL. Your expertise and relationships will shape the future of medical education in your therapeutic area.",
+            bonusSkillPoints: 5
+        }
+    },
+
+    // Legacy career levels (kept for backwards compatibility)
+    legacyCareerLevels: [
         { title: "Associate MSL", minQuarters: 0, requirements: {} },
         { title: "MSL", minQuarters: 4, requirements: { kolEngagement: 70, compliance: 95 } },
         { title: "Senior MSL", minQuarters: 8, requirements: { kolEngagement: 80, insights: 75, compliance: 98 } },

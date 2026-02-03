@@ -10,6 +10,11 @@ class MSLGame {
             currentWeek: 1,
             currentQuarter: 1,
             currentYear: 2024,
+            // XP and Level System
+            xp: 0,
+            level: 1,
+            xpToNextLevel: 100,
+            totalXpEarned: 0,
             metrics: {
                 kolEngagement: 0,
                 scientificExchange: 0,
@@ -32,7 +37,8 @@ class MSLGame {
             dialogueHistory: [],
             quarterlyReviews: [],
             warnings: 0,
-            gameOver: false
+            gameOver: false,
+            gameWon: false
         };
 
         // Double-click prevention tracker
@@ -502,7 +508,7 @@ class MSLGame {
                 name: '',
                 education: null,
                 therapeuticArea: null,
-                title: 'Associate MSL',
+                title: 'MSL I',
                 stats: {
                     scientificKnowledge: 50,
                     communication: 50,
@@ -515,6 +521,11 @@ class MSLGame {
             currentWeek: 1,
             currentQuarter: 1,
             currentYear: 2024,
+            // XP and Level System
+            xp: 0,
+            level: 1,
+            xpToNextLevel: 100,
+            totalXpEarned: 0,
             // Time management
             weeklyTimeTotal: 40,
             weeklyTimeRemaining: 40,
@@ -541,7 +552,8 @@ class MSLGame {
             dialogueHistory: [],
             quarterlyReviews: [],
             warnings: 0,
-            gameOver: false
+            gameOver: false,
+            gameWon: false
         };
         this.initSkills();
     }
@@ -862,6 +874,10 @@ class MSLGame {
         // Update time budget
         this.updateTimeBudgetDisplay();
 
+        // Update XP and Level display
+        this.updateXPDisplay();
+        this.updateLevelDisplay();
+
         this.updateMap();
         this.updateCalendar();
         this.updateKOLList();
@@ -869,6 +885,38 @@ class MSLGame {
         this.updateSkillTree();
         this.updateInsightsPanel();
         this.updatePerformancePanel();
+    }
+
+    updateLevelDisplay() {
+        const levelContainer = document.getElementById('level-display');
+        if (!levelContainer) return;
+
+        const currentLevel = this.state.level;
+        const currentLevelData = GameData.careerLevels.find(l => l.level === currentLevel);
+        const nextLevelData = GameData.careerLevels.find(l => l.level === currentLevel + 1);
+
+        let xpProgress = 100;
+        let xpText = 'MAX LEVEL';
+
+        if (nextLevelData) {
+            const xpIntoLevel = this.state.xp - (currentLevelData?.xpRequired || 0);
+            const xpNeeded = nextLevelData.xpRequired - (currentLevelData?.xpRequired || 0);
+            xpProgress = Math.min(100, Math.max(0, (xpIntoLevel / xpNeeded) * 100));
+            xpText = `${this.state.xp} / ${nextLevelData.xpRequired} XP`;
+        }
+
+        levelContainer.innerHTML = `
+            <div class="level-info">
+                <span class="level-badge">Lv.${currentLevel}</span>
+                <span class="level-title">${currentLevelData?.rank || 'MSL I'}</span>
+            </div>
+            <div class="xp-bar-container">
+                <div class="xp-bar">
+                    <div class="xp-bar-fill" style="width: ${xpProgress}%"></div>
+                </div>
+                <span class="xp-text">${xpText}</span>
+            </div>
+        `;
     }
 
     updateMap() {
@@ -2455,6 +2503,28 @@ class MSLGame {
         const engagedKOLs = this.state.kols.filter(k => k.interactionCount > 0).length;
         this.state.metrics.kolEngagement = Math.round((engagedKOLs / this.state.kols.length) * 100);
 
+        // Award XP based on meeting performance
+        let xpEarned = GameData.xpRewards.kolMeeting;
+        let xpReason = 'KOL meeting completed';
+
+        if (meetingScore) {
+            if (meetingScore.percentage >= 80) {
+                xpEarned = GameData.xpRewards.kolMeetingExcellent;
+                xpReason = 'Excellent KOL meeting - all objectives achieved!';
+            } else if (meetingScore.percentage >= 50) {
+                xpEarned = GameData.xpRewards.kolMeetingWithInsight;
+                xpReason = 'Good KOL meeting with insights';
+            }
+        }
+
+        // Bonus XP for first interaction with a KOL
+        if (kol.interactionCount === 1) {
+            xpEarned += 10;
+            xpReason += ' (New KOL bonus!)';
+        }
+
+        this.awardXP(xpEarned, xpReason);
+
         // Show meeting summary if objectives were set, then CRM
         if (meetingScore) {
             this.showMeetingSummary(kol, meetingScore);
@@ -2651,10 +2721,12 @@ class MSLGame {
         const qualityBonus = Math.floor((qualityResult.percentage - 50) / 10);
         this.state.metrics.crmCompliance = Math.min(100, this.state.metrics.crmCompliance + qualityBonus);
 
-        // Reward for excellent documentation
+        // Award XP for CRM documentation
         if (qualityResult.percentage >= 80) {
+            this.awardXP(GameData.xpRewards.crmEntryHighQuality, 'High-quality CRM documentation');
             this.state.skillPoints += 0.5; // Fractional skill points
-            this.showNotification('Quality Documentation!', 'Excellent CRM entry. +0.5 skill points.', 'success');
+        } else {
+            this.awardXP(GameData.xpRewards.crmEntry, 'CRM documentation completed');
         }
 
         // Move from pending to completed
@@ -2818,6 +2890,9 @@ class MSLGame {
             this.state.metrics.insightGeneration = Math.min(100, this.state.metrics.insightGeneration + 5);
         }
 
+        // Award XP for congress activity
+        this.awardXP(GameData.xpRewards.conferenceAttendance, 'Congress activity completed');
+
         this.showNotification('Congress Activity', message, 'success');
     }
 
@@ -2969,6 +3044,9 @@ class MSLGame {
                 this.state.metrics.insightGeneration + result.reward.insightValue);
         }
 
+        // Award XP for training
+        this.awardXP(GameData.xpRewards.trainingModule, 'Training completed');
+
         this.showNotification('Training Complete', result.message, 'success');
         this.showScreen('dashboard-screen');
         this.updateDashboard();
@@ -3066,9 +3144,18 @@ class MSLGame {
             this.state.currentYear++;
         }
 
-        // Award skill points for surviving the quarter
+        // Award skill points and XP for surviving the quarter
         if (outcome !== 'termination') {
             this.state.skillPoints += 2;
+
+            // Award XP based on quarterly performance
+            if (overallScore >= 80) {
+                this.awardXP(GameData.xpRewards.quarterlyReviewBonus, 'Excellent quarterly review!');
+            } else if (overallScore >= 60) {
+                this.awardXP(Math.floor(GameData.xpRewards.quarterlyReviewBonus * 0.5), 'Good quarterly review');
+            } else {
+                this.awardXP(Math.floor(GameData.xpRewards.quarterlyReviewBonus * 0.25), 'Quarter survived');
+            }
         }
 
         this.state.quarterlyReviews.push({
@@ -3280,6 +3367,252 @@ class MSLGame {
 
     capitalizeFirst(str) {
         return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // ==========================================
+    // XP AND LEVEL SYSTEM
+    // ==========================================
+
+    awardXP(amount, reason = '') {
+        if (this.state.gameWon || this.state.gameOver) return;
+
+        this.state.xp += amount;
+        this.state.totalXpEarned += amount;
+
+        // Show XP notification
+        if (reason) {
+            this.showNotification('XP Earned!', `+${amount} XP - ${reason}`, 'success');
+        }
+
+        // Check for level up
+        this.checkLevelUp();
+
+        // Update XP display
+        this.updateXPDisplay();
+        this.saveGame();
+    }
+
+    checkLevelUp() {
+        const levels = GameData.careerLevels;
+        let leveledUp = false;
+        let newLevel = this.state.level;
+
+        // Find the highest level we qualify for
+        for (let i = levels.length - 1; i >= 0; i--) {
+            if (this.state.xp >= levels[i].xpRequired) {
+                newLevel = levels[i].level;
+                break;
+            }
+        }
+
+        if (newLevel > this.state.level) {
+            const oldLevel = this.state.level;
+            this.state.level = newLevel;
+
+            // Find the new level data
+            const newLevelData = levels.find(l => l.level === newLevel);
+            const oldLevelData = levels.find(l => l.level === oldLevel);
+
+            // Update XP to next level
+            const nextLevel = levels.find(l => l.level === newLevel + 1);
+            this.state.xpToNextLevel = nextLevel ? nextLevel.xpRequired - this.state.xp : 0;
+
+            // Update player title
+            this.state.player.title = newLevelData.title;
+
+            // Check if this is a promotion milestone
+            if (newLevelData.isPromotion) {
+                this.triggerPromotionCeremony(newLevelData);
+            } else {
+                // Regular level up
+                this.showLevelUpNotification(newLevelData);
+            }
+
+            // Check for victory condition
+            if (newLevelData.isVictory) {
+                this.triggerVictory();
+            }
+
+            leveledUp = true;
+        }
+
+        return leveledUp;
+    }
+
+    showLevelUpNotification(levelData) {
+        this.state.skillPoints += 1; // Bonus skill point for leveling up
+
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.id = 'level-up-modal';
+        modal.innerHTML = `
+            <div class="modal-content level-up-content">
+                <h2>⬆️ Level Up!</h2>
+                <div class="level-up-badge">
+                    <span class="level-number">${levelData.level}</span>
+                </div>
+                <h3>${levelData.title}</h3>
+                <p>${levelData.description}</p>
+                <p class="level-reward">+1 Skill Point</p>
+                <button class="action-btn" onclick="document.getElementById('level-up-modal').remove()">Continue</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Auto-close after 5 seconds
+        setTimeout(() => {
+            modal.remove();
+        }, 5000);
+    }
+
+    triggerPromotionCeremony(levelData) {
+        let ceremonyData;
+
+        if (levelData.level === 5) {
+            ceremonyData = GameData.promotionCeremonies.msl2;
+        } else if (levelData.level === 10) {
+            ceremonyData = GameData.promotionCeremonies.seniorMsl;
+        }
+
+        if (!ceremonyData) return;
+
+        // Award bonus skill points
+        this.state.skillPoints += ceremonyData.bonusSkillPoints;
+
+        const modal = document.createElement('div');
+        modal.className = 'modal active';
+        modal.id = 'promotion-modal';
+
+        const achievementsList = ceremonyData.achievements.map(a => `<li>${a}</li>`).join('');
+        const responsibilitiesList = ceremonyData.newResponsibilities ?
+            ceremonyData.newResponsibilities.map(r => `<li>${r}</li>`).join('') : '';
+
+        modal.innerHTML = `
+            <div class="modal-content promotion-content">
+                <div class="promotion-header">
+                    <h2>${ceremonyData.title}</h2>
+                </div>
+                <p class="promotion-message">${ceremonyData.message}</p>
+
+                <div class="promotion-section">
+                    <h4>Your Achievements</h4>
+                    <ul class="achievement-list">${achievementsList}</ul>
+                </div>
+
+                ${responsibilitiesList ? `
+                <div class="promotion-section">
+                    <h4>New Responsibilities</h4>
+                    <ul class="responsibility-list">${responsibilitiesList}</ul>
+                </div>
+                ` : ''}
+
+                <p class="promotion-reward">+${ceremonyData.bonusSkillPoints} Skill Points!</p>
+
+                <button class="action-btn primary" onclick="document.getElementById('promotion-modal').remove()">
+                    ${levelData.isVictory ? 'Celebrate!' : 'Accept Promotion'}
+                </button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    triggerVictory() {
+        this.state.gameWon = true;
+
+        // Calculate final stats
+        const totalWeeks = ((this.state.currentQuarter - 1) * 13) + this.state.currentWeek;
+        const totalKOLsMet = this.state.kols.filter(k => k.interactionCount > 0).length;
+        const totalInteractions = this.state.interactions.length;
+
+        // Create victory screen
+        const victoryScreen = document.getElementById('game-over');
+        if (victoryScreen) {
+            document.getElementById('game-over-icon').textContent = '🏆';
+            document.getElementById('game-over-title').textContent = 'Congratulations!';
+            document.getElementById('game-over-title').className = 'game-over-title victory';
+            document.getElementById('game-over-reason').innerHTML = `
+                <p>You have been promoted to <strong>Senior MSL</strong>!</p>
+                <p>You've demonstrated exceptional scientific expertise, built strong KOL relationships,
+                and maintained impeccable compliance standards.</p>
+
+                <div class="victory-stats">
+                    <h4>Your Journey</h4>
+                    <div class="stat-row">
+                        <span>Total Weeks:</span>
+                        <span>${totalWeeks}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>KOLs Engaged:</span>
+                        <span>${totalKOLsMet} of ${this.state.kols.length}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Total Interactions:</span>
+                        <span>${totalInteractions}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Total XP Earned:</span>
+                        <span>${this.state.totalXpEarned}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>Final Compliance:</span>
+                        <span>${this.state.metrics.regulatoryCompliance}%</span>
+                    </div>
+                </div>
+            `;
+
+            // Update try again button
+            const tryAgainBtn = document.getElementById('try-again');
+            if (tryAgainBtn) {
+                tryAgainBtn.textContent = 'Play Again';
+            }
+
+            this.showScreen('game-over');
+        }
+
+        this.saveGame();
+    }
+
+    updateXPDisplay() {
+        // Update XP bar in header/dashboard if it exists
+        const xpBar = document.getElementById('xp-bar-fill');
+        const xpText = document.getElementById('xp-text');
+        const levelText = document.getElementById('level-text');
+
+        if (xpBar) {
+            const currentLevelData = GameData.careerLevels.find(l => l.level === this.state.level);
+            const nextLevelData = GameData.careerLevels.find(l => l.level === this.state.level + 1);
+
+            if (currentLevelData && nextLevelData) {
+                const xpIntoLevel = this.state.xp - currentLevelData.xpRequired;
+                const xpNeededForLevel = nextLevelData.xpRequired - currentLevelData.xpRequired;
+                const percentage = Math.min(100, (xpIntoLevel / xpNeededForLevel) * 100);
+                xpBar.style.width = `${percentage}%`;
+            } else if (this.state.level >= 10) {
+                xpBar.style.width = '100%';
+            }
+        }
+
+        if (xpText) {
+            const nextLevelData = GameData.careerLevels.find(l => l.level === this.state.level + 1);
+            if (nextLevelData) {
+                xpText.textContent = `${this.state.xp} / ${nextLevelData.xpRequired} XP`;
+            } else {
+                xpText.textContent = `${this.state.xp} XP (MAX)`;
+            }
+        }
+
+        if (levelText) {
+            levelText.textContent = `Level ${this.state.level}`;
+        }
+    }
+
+    getCurrentLevelData() {
+        return GameData.careerLevels.find(l => l.level === this.state.level) || GameData.careerLevels[0];
+    }
+
+    getXPForNextLevel() {
+        const nextLevel = GameData.careerLevels.find(l => l.level === this.state.level + 1);
+        return nextLevel ? nextLevel.xpRequired : this.state.xp;
     }
 
     saveGame() {
