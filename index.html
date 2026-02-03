@@ -359,6 +359,15 @@
                                 <div class="metric-value" id="metric-crm">100%</div>
                                 <div class="metric-target">Target: 95%</div>
                             </div>
+                            <div class="metric-card crm-quality-card">
+                                <h4>CRM Doc Quality</h4>
+                                <div class="metric-value" id="metric-crm-avg">-</div>
+                                <div class="crm-grade-breakdown" id="crm-grade-breakdown">
+                                    <span class="grade-stat a">A: <span id="crm-grade-a">0</span></span>
+                                    <span class="grade-stat b">B: <span id="crm-grade-b">0</span></span>
+                                    <span class="grade-stat c">C: <span id="crm-grade-c">0</span></span>
+                                </div>
+                            </div>
                             <div class="metric-card">
                                 <h4>Regulatory Compliance</h4>
                                 <div class="metric-value" id="metric-compliance">100%</div>
@@ -502,11 +511,15 @@
                 <p class="crm-reminder">Complete, accurate documentation is required within 24-48 hours</p>
 
                 <div class="crm-quality-indicator" id="crm-quality-indicator">
-                    <div class="quality-label">Documentation Quality</div>
+                    <div class="quality-header">
+                        <div class="quality-label">Documentation Quality</div>
+                        <div class="quality-grade" id="crm-quality-grade">-</div>
+                    </div>
                     <div class="quality-bar">
                         <div class="quality-fill" id="crm-quality-fill"></div>
                     </div>
                     <div class="quality-score" id="crm-quality-score">0%</div>
+                    <ul class="quality-feedback" id="crm-quality-feedback" style="display: none;"></ul>
                 </div>
 
                 <div class="form-group">
@@ -631,6 +644,7 @@
                         <li id="check-duration" class="incomplete">Duration specified</li>
                         <li id="check-topics" class="incomplete">Discussion topics selected</li>
                         <li id="check-summary" class="incomplete">Detailed summary (50+ characters)</li>
+                        <li id="check-objectivity" class="complete">Objective language (no promotions)</li>
                         <li id="check-sentiment" class="incomplete">KOL sentiment recorded</li>
                         <li id="check-followup" class="incomplete">Follow-up actions documented</li>
                         <li id="check-insights" class="bonus">Insights gathered (bonus)</li>

@@ -1495,6 +1495,40 @@ body {
     margin-top: 5px;
 }
 
+/* CRM Quality Grade Breakdown */
+.crm-grade-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 8px;
+    font-size: 0.75rem;
+}
+
+.grade-stat {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.grade-stat.a {
+    background: rgba(34, 197, 94, 0.2);
+    color: var(--success-color);
+}
+
+.grade-stat.b {
+    background: rgba(132, 204, 22, 0.2);
+    color: #84cc16;
+}
+
+.grade-stat.c {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.crm-quality-card .metric-value {
+    font-size: 1.5rem;
+}
+
 .review-status {
     background: var(--bg-card);
     border-radius: 12px;
@@ -4114,12 +4148,19 @@ body {
 
 .crm-quality-indicator {
     display: flex;
-    align-items: center;
-    gap: 15px;
+    flex-direction: column;
+    gap: 10px;
     padding: 15px;
     background: var(--bg-dark);
     border-radius: 10px;
     margin-bottom: 20px;
+}
+
+.quality-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
 }
 
 .quality-label {
@@ -4128,8 +4169,39 @@ body {
     white-space: nowrap;
 }
 
+.quality-grade {
+    font-size: 1.5rem;
+    font-weight: bold;
+    min-width: 40px;
+    text-align: center;
+    transition: color 0.3s ease;
+}
+
+.quality-feedback {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(239, 68, 68, 0.1);
+    border-left: 3px solid var(--danger-color);
+    border-radius: 5px;
+    list-style: none;
+    font-size: 0.85rem;
+}
+
+.quality-feedback li {
+    padding: 5px 0;
+    color: var(--text-primary);
+}
+
+.quality-feedback li:first-child {
+    padding-top: 0;
+}
+
+.quality-feedback li:last-child {
+    padding-bottom: 0;
+}
+
 .quality-bar {
-    flex: 1;
+    width: 100%;
     height: 10px;
     background: var(--bg-card);
     border-radius: 5px;
@@ -4147,8 +4219,7 @@ body {
 .quality-score {
     font-size: 1.1rem;
     font-weight: bold;
-    min-width: 50px;
-    text-align: right;
+    text-align: center;
     color: var(--text-primary);
 }
 
@@ -4245,6 +4316,18 @@ body {
 .scoring-checklist li.bonus.complete::before {
     content: "★";
     color: var(--success-color);
+}
+
+/* Compliance warning state for objectivity check */
+.scoring-checklist li.compliance-warning {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger-color);
+    font-weight: bold;
+}
+
+.scoring-checklist li.compliance-warning::before {
+    content: "⚠";
+    color: var(--danger-color);
 }
 
 .off-label-details,

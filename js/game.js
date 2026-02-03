@@ -44,7 +44,13 @@ class MSLGame {
             quarterlyReviews: [],
             warnings: 0,
             gameOver: false,
-            gameWon: false
+            gameWon: false,
+            // CRM Quality Tracking
+            crmQuality: {
+                totalEntries: 0,
+                averageScore: 0,
+                grades: { A: 0, 'B+': 0, B: 0, 'C+': 0, C: 0, D: 0 }
+            }
         };
 
         // Double-click prevention tracker
@@ -359,6 +365,7 @@ class MSLGame {
     updateCRMQualityScore() {
         let score = 0;
         let maxScore = 60; // Base max score (required fields)
+        const feedback = [];
 
         // Check interaction type (10 points)
         const typeField = document.getElementById('crm-interaction-type');
@@ -375,13 +382,60 @@ class MSLGame {
         // Check topics selected (10 points)
         const topicsChecked = document.querySelectorAll('input[name="topics"]:checked').length;
         const topicsComplete = topicsChecked > 0;
-        if (topicsComplete) score += 10;
+        if (topicsComplete) {
+            score += 10;
+            if (topicsChecked >= 2) {
+                score += 5; // Bonus for multiple topics
+            }
+        } else {
+            feedback.push("Select all relevant discussion topics");
+        }
         this.updateChecklistItem('check-topics', topicsComplete);
 
-        // Check summary (15 points)
+        // Check summary (15 points) with promotional language check
         const summaryField = document.getElementById('crm-discussion-summary');
-        const summaryComplete = summaryField && summaryField.value.length >= 50;
-        if (summaryComplete) score += 15;
+        const summaryText = summaryField?.value || '';
+        const summaryComplete = summaryText.length >= 50;
+
+        // Check for promotional language (COMPLIANCE WARNING)
+        const promotionalPhrases = [
+            'best', 'superior', 'better than', 'recommend', 'should use',
+            'amazing', 'excellent drug', 'first-line', 'preferred',
+            'works great', 'outperforms', 'beats', 'destroys', 'miracle'
+        ];
+        const hasPromotional = promotionalPhrases.some(phrase =>
+            summaryText.toLowerCase().includes(phrase)
+        );
+
+        if (hasPromotional) {
+            score -= 15; // Penalty for promotional language
+            feedback.push("⚠️ COMPLIANCE WARNING: Remove promotional language from documentation");
+            this.updateChecklistItem('check-objectivity', false, false, true); // isWarning = true
+        } else {
+            this.updateChecklistItem('check-objectivity', true); // Objective language - good
+            if (summaryComplete) {
+                score += 15;
+            }
+        }
+
+        // Check for specific data points (bonus)
+        const hasSpecificData = /\d+%|\d+\s*(mg|patients|weeks|months|years|days)/.test(summaryText);
+        if (hasSpecificData && summaryComplete) {
+            score += 5; // Bonus for specific data
+        } else if (summaryComplete && !hasSpecificData) {
+            feedback.push("Consider including specific data points discussed");
+        }
+
+        // Check summary length (ideal is 2-4 sentences)
+        const sentences = summaryText.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        if (sentences.length >= 2 && sentences.length <= 4) {
+            score += 5; // Ideal length bonus
+        } else if (sentences.length === 1) {
+            feedback.push("Summary too brief - add more detail about the discussion");
+        } else if (sentences.length > 6) {
+            feedback.push("Consider being more concise");
+        }
+
         this.updateChecklistItem('check-summary', summaryComplete);
 
         // Check sentiment (10 points)
@@ -414,12 +468,17 @@ class MSLGame {
         }
         this.updateChecklistItem('check-nextsteps', nextStepsComplete, true);
 
-        // Calculate percentage
-        const percentage = Math.round((score / maxScore) * 100);
+        // Calculate percentage (ensure minimum 0)
+        const percentage = Math.max(0, Math.round((score / maxScore) * 100));
+
+        // Determine grade
+        const grade = this.getCRMGrade(percentage);
 
         // Update UI
         const fillEl = document.getElementById('crm-quality-fill');
         const scoreEl = document.getElementById('crm-quality-score');
+        const gradeEl = document.getElementById('crm-quality-grade');
+        const feedbackEl = document.getElementById('crm-quality-feedback');
 
         if (fillEl) fillEl.style.width = `${percentage}%`;
         if (scoreEl) {
@@ -431,6 +490,18 @@ class MSLGame {
             else scoreEl.classList.add('poor');
         }
 
+        if (gradeEl) {
+            gradeEl.textContent = grade.letter;
+            gradeEl.style.color = grade.color;
+        }
+
+        if (feedbackEl && feedback.length > 0) {
+            feedbackEl.innerHTML = feedback.map(f => `<li>${f}</li>`).join('');
+            feedbackEl.style.display = 'block';
+        } else if (feedbackEl) {
+            feedbackEl.style.display = 'none';
+        }
+
         // Enable/disable submit button
         const submitBtn = document.getElementById('submit-crm');
         const requiredComplete = typeComplete && topicsComplete && summaryComplete;
@@ -438,14 +509,27 @@ class MSLGame {
             submitBtn.disabled = !requiredComplete;
         }
 
-        return { score, percentage, requiredComplete };
+        return { score, percentage, requiredComplete, grade, feedback, hasPromotional };
     }
 
-    updateChecklistItem(itemId, complete, isBonus = false) {
+    getCRMGrade(percentage) {
+        if (percentage >= 90) return { letter: 'A', color: 'var(--success-color)' };
+        if (percentage >= 80) return { letter: 'B+', color: '#22c55e' };
+        if (percentage >= 70) return { letter: 'B', color: '#84cc16' };
+        if (percentage >= 60) return { letter: 'C+', color: 'var(--warning-color)' };
+        if (percentage >= 50) return { letter: 'C', color: '#f59e0b' };
+        return { letter: 'D', color: 'var(--danger-color)' };
+    }
+
+    updateChecklistItem(itemId, complete, isBonus = false, isWarning = false) {
         const item = document.getElementById(itemId);
         if (item) {
-            item.classList.remove('complete', 'incomplete');
-            item.classList.add(complete ? 'complete' : 'incomplete');
+            item.classList.remove('complete', 'incomplete', 'compliance-warning');
+            if (isWarning) {
+                item.classList.add('compliance-warning');
+            } else {
+                item.classList.add(complete ? 'complete' : 'incomplete');
+            }
             if (isBonus) item.classList.add('bonus');
         }
     }
@@ -1408,10 +1492,43 @@ class MSLGame {
         document.getElementById('metric-compliance').textContent = `${Math.round(metrics.regulatoryCompliance)}%`;
         document.getElementById('metric-collab').textContent = `${Math.round(metrics.internalCollaboration)}%`;
 
+        // Update CRM Quality stats
+        this.updateCRMQualityDisplay();
+
         document.getElementById('next-review').textContent = `End of Q${this.state.currentQuarter}`;
 
         // Update next action prompt
         this.updateNextActionPrompt();
+    }
+
+    updateCRMQualityDisplay() {
+        const quality = this.state.crmQuality;
+        const avgEl = document.getElementById('metric-crm-avg');
+        const gradeAEl = document.getElementById('crm-grade-a');
+        const gradeBEl = document.getElementById('crm-grade-b');
+        const gradeCEl = document.getElementById('crm-grade-c');
+
+        if (avgEl) {
+            if (quality.totalEntries > 0) {
+                const grade = this.getCRMGrade(quality.averageScore);
+                avgEl.textContent = grade.letter;
+                avgEl.style.color = grade.color;
+            } else {
+                avgEl.textContent = '-';
+                avgEl.style.color = 'var(--text-muted)';
+            }
+        }
+
+        // Count A grades (A only)
+        const gradeA = quality.grades.A || 0;
+        // Count B grades (B+ and B)
+        const gradeB = (quality.grades['B+'] || 0) + (quality.grades.B || 0);
+        // Count C grades (C+, C, and D)
+        const gradeC = (quality.grades['C+'] || 0) + (quality.grades.C || 0) + (quality.grades.D || 0);
+
+        if (gradeAEl) gradeAEl.textContent = gradeA;
+        if (gradeBEl) gradeBEl.textContent = gradeB;
+        if (gradeCEl) gradeCEl.textContent = gradeC;
     }
 
     updateNextActionPrompt() {
@@ -2963,6 +3080,21 @@ class MSLGame {
         const qualityBonus = Math.floor((qualityResult.percentage - 50) / 10);
         this.state.metrics.crmCompliance = Math.min(100, this.state.metrics.crmCompliance + qualityBonus);
 
+        // Track CRM quality grades
+        this.state.crmQuality.totalEntries++;
+        const gradeLetter = qualityResult.grade.letter;
+        // Map B+ to B and C+ to C for simplified tracking, or track them separately
+        if (gradeLetter === 'A') this.state.crmQuality.grades.A++;
+        else if (gradeLetter === 'B+') this.state.crmQuality.grades['B+']++;
+        else if (gradeLetter === 'B') this.state.crmQuality.grades.B++;
+        else if (gradeLetter === 'C+') this.state.crmQuality.grades['C+']++;
+        else if (gradeLetter === 'C') this.state.crmQuality.grades.C++;
+        else this.state.crmQuality.grades.D++;
+
+        // Update average score
+        const totalScore = (this.state.crmQuality.averageScore * (this.state.crmQuality.totalEntries - 1)) + qualityResult.percentage;
+        this.state.crmQuality.averageScore = Math.round(totalScore / this.state.crmQuality.totalEntries);
+
         // Award XP for CRM documentation
         if (qualityResult.percentage >= 80) {
             this.awardXP(GameData.xpRewards.crmEntryHighQuality, 'High-quality CRM documentation');
@@ -2991,13 +3123,16 @@ class MSLGame {
         this.showScreen('dashboard-screen');
         this.updateDashboard();
 
-        // Different notifications based on quality
-        if (qualityResult.percentage >= 80) {
-            this.showNotification('CRM Updated', `Excellent documentation! Quality score: ${qualityResult.percentage}%`, 'success');
+        // Different notifications based on quality with grade
+        const grade = qualityResult.grade.letter;
+        if (qualityResult.hasPromotional) {
+            this.showNotification('CRM Warning', `Documentation submitted with compliance concerns. Grade: ${grade}. Review promotional language guidelines.`, 'warning');
+        } else if (qualityResult.percentage >= 80) {
+            this.showNotification('CRM Updated', `Excellent documentation! Grade: ${grade} (${qualityResult.percentage}%)`, 'success');
         } else if (qualityResult.percentage >= 60) {
-            this.showNotification('CRM Updated', `Good documentation. Quality score: ${qualityResult.percentage}%`, 'success');
+            this.showNotification('CRM Updated', `Good documentation. Grade: ${grade} (${qualityResult.percentage}%)`, 'success');
         } else {
-            this.showNotification('CRM Updated', `Documentation submitted. Consider adding more detail next time.`, 'info');
+            this.showNotification('CRM Updated', `Grade: ${grade}. Consider adding more detail to improve documentation quality.`, 'info');
         }
 
         this.saveGame();
