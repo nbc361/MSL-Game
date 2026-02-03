@@ -190,22 +190,22 @@
                     <!-- Level and XP bar populated by JS -->
                 </div>
                 <div class="quick-stats">
-                    <div class="quick-stat">
+                    <div class="quick-stat" title="Total KOL interactions completed this career">
                         <span class="stat-icon">🎯</span>
                         <span id="kol-interactions">0</span>
                         <span class="stat-label">KOL Interactions</span>
                     </div>
-                    <div class="quick-stat">
+                    <div class="quick-stat" title="Valuable medical insights gathered from KOLs">
                         <span class="stat-icon">💡</span>
                         <span id="insights-count">0</span>
                         <span class="stat-label">Insights</span>
                     </div>
-                    <div class="quick-stat compliance-stat">
+                    <div class="quick-stat compliance-stat" title="Regulatory compliance score. Stay above 70% to avoid termination.">
                         <span class="stat-icon">⚖️</span>
                         <span id="compliance-score">100%</span>
                         <span class="stat-label">Compliance</span>
                     </div>
-                    <div class="quick-stat action-points-stat" id="action-points-display">
+                    <div class="quick-stat action-points-stat" id="action-points-display" title="Action Points reset each week. Traveling to KOLs costs AP based on distance.">
                         <span class="ap-icon">⚡</span>
                         <span class="ap-value">5/5</span>
                         <span class="ap-label">AP</span>
@@ -413,27 +413,27 @@
             </div>
 
             <div class="dashboard-actions">
-                <button id="action-visit-kol" class="action-btn">
+                <button id="action-visit-kol" class="action-btn" title="Visit a Key Opinion Leader for scientific exchange. Costs 1-3 Action Points depending on travel distance.">
                     <span class="action-icon">👤</span>
                     <span>Visit KOL</span>
                     <span class="action-time-cost" id="visit-time-cost">~3-4 hrs</span>
                 </button>
-                <button id="action-congress" class="action-btn">
+                <button id="action-congress" class="action-btn" title="Attend a medical congress to network with multiple KOLs and learn about the latest research.">
                     <span class="action-icon">🏛️</span>
                     <span>Congress</span>
                     <span class="action-time-cost">8 hrs</span>
                 </button>
-                <button id="action-advisory" class="action-btn">
+                <button id="action-advisory" class="action-btn" title="Organize or participate in advisory board meetings with expert KOLs. Builds strong relationships.">
                     <span class="action-icon">📋</span>
                     <span>Advisory Board</span>
                     <span class="action-time-cost">6 hrs</span>
                 </button>
-                <button id="action-training" class="action-btn">
+                <button id="action-training" class="action-btn" title="Conduct internal training sessions to share field insights with your colleagues.">
                     <span class="action-icon">📚</span>
                     <span>Internal Training</span>
                     <span class="action-time-cost">3 hrs</span>
                 </button>
-                <button id="action-iis" class="action-btn">
+                <button id="action-iis" class="action-btn" title="Support Investigator-Initiated Studies by helping KOLs with research proposals.">
                     <span class="action-icon">🔬</span>
                     <span>IIS Support</span>
                     <span class="action-time-cost">2 hrs</span>

@@ -81,10 +81,31 @@ class MSLGame {
     }
 
     init() {
-        this.bindEvents();
-        this.initSkills();
-        this.initTutorial();
-        this.showLoadingScreen();
+        try {
+            this.bindEvents();
+            this.initSkills();
+            this.initTutorial();
+            this.showLoadingScreen();
+        } catch (error) {
+            console.error('Error initializing game:', error);
+            this.showErrorMessage('Failed to initialize game. Please refresh the page.');
+        }
+    }
+
+    showErrorMessage(message) {
+        const container = document.getElementById('game-container');
+        if (container) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'game-error-message';
+            errorDiv.innerHTML = `
+                <div class="error-content">
+                    <h3>⚠️ Error</h3>
+                    <p>${message}</p>
+                    <button onclick="location.reload()">Refresh Page</button>
+                </div>
+            `;
+            container.appendChild(errorDiv);
+        }
     }
 
     initSkills() {
@@ -4571,7 +4592,32 @@ class MSLGame {
     }
 
     saveGame() {
-        localStorage.setItem('mslSimulatorSave', JSON.stringify(this.state));
+        try {
+            localStorage.setItem('mslSimulatorSave', JSON.stringify(this.state));
+        } catch (error) {
+            console.error('Error saving game:', error);
+            // Storage might be full or disabled
+            if (error.name === 'QuotaExceededError') {
+                this.showNotification('Save Warning', 'Storage full. Some progress may not be saved.', 'warning');
+            }
+        }
+    }
+
+    loadGame() {
+        try {
+            const saved = localStorage.getItem('mslSimulatorSave');
+            if (saved) {
+                const parsedState = JSON.parse(saved);
+                // Merge with default state to handle new properties added in updates
+                this.state = { ...this.state, ...parsedState };
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error loading game:', error);
+            this.showNotification('Load Error', 'Failed to load saved game. Starting fresh.', 'warning');
+            return false;
+        }
     }
 }
 
@@ -4601,3 +4647,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// Warn before leaving if game is in progress
+window.addEventListener('beforeunload', (e) => {
+    if (window.game && window.game.state.player && !window.game.state.gameOver) {
+        // Save game before leaving
+        window.game.saveGame();
+        // Don't show warning, just auto-save
+    }
+});
+
+// Global error handler
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+    console.error('Game error:', { msg, url, lineNo, columnNo, error });
+    // Don't show to user unless it's critical
+    return false;
+};
