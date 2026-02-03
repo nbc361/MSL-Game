@@ -853,6 +853,1542 @@ const GameData = {
         }
     },
 
+    // Branching dialogue scenarios - multi-turn conversations with consequences
+    branchingScenarios: {
+        offLabelRequest: {
+            id: "branch_offlabel_001",
+            name: "Off-Label Question",
+            description: "KOL asks about unapproved use",
+            difficulty: "medium",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "I've been seeing some patients with [related but unapproved condition] who haven't responded to standard therapy. Has anyone looked at using your drug in this population? I'm wondering if there's any data out there.",
+                    options: [
+                        {
+                            text: "That's an interesting clinical question. Before I respond, I want to clarify - is this an unsolicited request for information about off-label use?",
+                            nextStage: "stage_2a",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Good practice to clarify the nature of the request."
+                        },
+                        {
+                            text: "Yes, actually we have some exciting data from an investigator-initiated study that shows really promising results in that population.",
+                            nextStage: "stage_2b_violation",
+                            relationshipChange: 5,
+                            complianceStatus: "violation",
+                            complianceHit: 30,
+                            feedback: "Proactively sharing off-label data without confirming unsolicited request is promotional."
+                        },
+                        {
+                            text: "I can't discuss off-label uses at all. Let's change the topic.",
+                            nextStage: "end_negative",
+                            relationshipChange: -15,
+                            complianceStatus: "safe",
+                            feedback: "While compliant, this is overly restrictive and damages the relationship."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a",
+                    kolDialogue: "Yes, this is coming from my own clinical curiosity. I have a specific patient in mind who has failed everything else. I'd really appreciate any published literature you could share.",
+                    options: [
+                        {
+                            text: "Thank you for confirming. Since this is an unsolicited request, I can provide published peer-reviewed literature. There is one small study published in [Journal]. I'll send you the reference, though I should note the drug isn't approved for this indication.",
+                            nextStage: "stage_3a_success",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "unmet-need",
+                            feedback: "Excellent handling of unsolicited off-label request with appropriate disclosures."
+                        },
+                        {
+                            text: "I have a great slide deck from our internal medical team showing all the off-label data. Let me email that to you.",
+                            nextStage: "stage_3a_violation",
+                            relationshipChange: 5,
+                            complianceStatus: "violation",
+                            complianceHit: 35,
+                            feedback: "Sharing internal promotional materials for off-label use is a serious violation."
+                        },
+                        {
+                            text: "There's limited published data. Would you be interested in our IIS program? If you're seeing a pattern of patients with this condition, perhaps a formal study would be valuable.",
+                            nextStage: "stage_3a_iis",
+                            relationshipChange: 20,
+                            complianceStatus: "safe",
+                            feedback: "Good pivot to appropriate scientific collaboration opportunity."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b_violation",
+                    kolDialogue: "That's interesting. Can you send me that study? Also, what doses were they using?",
+                    options: [
+                        {
+                            text: "Actually, I should step back. I apologize - I should have first confirmed this was an unsolicited request. Let me start over and handle this properly.",
+                            nextStage: "stage_2a",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery, but the initial violation still occurred."
+                        },
+                        {
+                            text: "Sure, they were using higher doses than approved, around 2x the standard dose. I'll email you the details.",
+                            nextStage: "end_major_violation",
+                            relationshipChange: 5,
+                            complianceStatus: "violation",
+                            complianceHit: 40,
+                            feedback: "Compounding the violation by providing specific off-label dosing recommendations."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3a_success",
+                    kolDialogue: "I appreciate that. While we're on the topic, would the company be interested in supporting a small pilot study? I think there's real potential here.",
+                    options: [
+                        {
+                            text: "We do have an IIS program. I'd be happy to explain the process and connect you with our grants team - though I should be clear I can't promise approval or influence the research direction.",
+                            nextStage: "end_positive",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            feedback: "Perfect response - facilitating without promising or influencing."
+                        },
+                        {
+                            text: "Absolutely! I can almost guarantee approval if you design the study to show certain outcomes.",
+                            nextStage: "end_major_violation",
+                            relationshipChange: 10,
+                            complianceStatus: "violation",
+                            complianceHit: 50,
+                            feedback: "Promising IIS approval and directing outcomes is potentially illegal (kickback)."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3a_iis",
+                    kolDialogue: "That's an interesting thought. I do have a registry of these patients. What would the process look like?",
+                    options: [
+                        {
+                            text: "Our IIS program accepts investigator-initiated proposals. I can connect you with the grants office who can explain requirements. The key is that the research question and design come from you - we provide support but don't direct the research.",
+                            nextStage: "end_positive",
+                            relationshipChange: 20,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "clinical",
+                            feedback: "Excellent - proper facilitation of IIS with appropriate boundaries."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3a_violation",
+                    kolDialogue: "I appreciate the materials, but I'm a bit concerned - should you be sharing this with me?",
+                    options: [
+                        {
+                            text: "You're right to be concerned. I apologize - I should not have offered internal materials. Let me instead point you to the published literature.",
+                            nextStage: "end_neutral",
+                            relationshipChange: -10,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery, but trust may be damaged."
+                        },
+                        {
+                            text: "Don't worry about it, we share this all the time. It's fine.",
+                            nextStage: "end_major_violation",
+                            relationshipChange: -20,
+                            complianceStatus: "violation",
+                            complianceHit: 20,
+                            feedback: "Dismissing compliance concerns compounds the violation."
+                        }
+                    ]
+                },
+                {
+                    id: "end_positive",
+                    kolDialogue: "This has been very helpful. I appreciate you handling this professionally. Let's schedule a follow-up once I've reviewed the literature.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 10
+                },
+                {
+                    id: "end_neutral",
+                    kolDialogue: "Alright, let's move on. I have some other questions about the approved indication.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: 0
+                },
+                {
+                    id: "end_negative",
+                    kolDialogue: "I see. Well, I have limited time today. Perhaps we can reschedule when you have more flexibility to discuss clinical questions.",
+                    isEnding: true,
+                    outcome: "negative",
+                    relationshipChange: -10
+                },
+                {
+                    id: "end_major_violation",
+                    kolDialogue: "I appreciate the information, but I'm going to document this conversation. I think your compliance team should know about this.",
+                    isEnding: true,
+                    outcome: "compliance_crisis",
+                    relationshipChange: -30,
+                    triggerComplianceReview: true
+                }
+            ]
+        },
+        competitorChallenge: {
+            id: "branch_competitive_001",
+            name: "Data Challenge",
+            description: "KOL challenges your data with competitor evidence",
+            difficulty: "hard",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "I read the [Competitor] study that just came out. Their response rates are higher than yours, and frankly, I'm thinking of switching my next patients to their drug. Can you explain why I shouldn't?",
+                    options: [
+                        {
+                            text: "I understand the interest in that data. Those are different trials with different patient populations and endpoints, so direct comparison is challenging. Would it help if we reviewed the trial designs side by side?",
+                            nextStage: "stage_2a",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Good approach - acknowledging the data while noting comparison limitations."
+                        },
+                        {
+                            text: "That study is flawed. Our drug is clearly superior - the competitor cherry-picked their patient population to inflate their numbers.",
+                            nextStage: "stage_2b_risky",
+                            relationshipChange: -10,
+                            complianceStatus: "risk",
+                            feedback: "Disparaging competitor data without evidence is unprofessional and potentially misleading."
+                        },
+                        {
+                            text: "Our drug is definitely better. Look at the overall survival data - we beat them by 2 months.",
+                            nextStage: "stage_2c_violation",
+                            relationshipChange: 0,
+                            complianceStatus: "violation",
+                            complianceHit: 25,
+                            feedback: "Making superiority claims without head-to-head data is promotional and misleading."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a",
+                    kolDialogue: "Sure, walk me through it. But I've been in this field for 20 years - I know how to read a trial. Convince me your drug has a place in my practice.",
+                    options: [
+                        {
+                            text: "Of course. Looking at patient selection: our trial enrolled more refractory patients with a higher median prior therapies. The competitor included more treatment-naive patients. So the populations aren't directly comparable.",
+                            nextStage: "stage_3a_scientific",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            feedback: "Excellent scientific discussion staying within appropriate bounds."
+                        },
+                        {
+                            text: "I wouldn't presume to tell you how to practice medicine. I can share the data and you can draw your own conclusions. What specific aspects would be most helpful to review?",
+                            nextStage: "stage_3a_humble",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "competitive",
+                            feedback: "Respectful approach that acknowledges the KOL's expertise."
+                        },
+                        {
+                            text: "Trust me, once you see our real-world data, you'll change your mind. Patients do much better on our drug.",
+                            nextStage: "stage_3a_risky",
+                            relationshipChange: -5,
+                            complianceStatus: "risk",
+                            feedback: "Vague superiority claims without specific data are unprofessional."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b_risky",
+                    kolDialogue: "That's quite an accusation. Do you have evidence that they manipulated their trial, or is that just your company's talking point?",
+                    options: [
+                        {
+                            text: "I apologize - that was poorly phrased. I don't have evidence of manipulation. What I meant to highlight are the differences in trial design that make direct comparison difficult. Let me be more specific about those differences.",
+                            nextStage: "stage_3a_scientific",
+                            relationshipChange: 0,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery - admitting the overreach and redirecting appropriately."
+                        },
+                        {
+                            text: "I've heard from other physicians that patients don't do as well on the competitor as the trial suggests. Real-world experience is different.",
+                            nextStage: "stage_3b_anecdotal",
+                            relationshipChange: -10,
+                            complianceStatus: "risk",
+                            feedback: "Sharing anecdotal hearsay about competitor performance is unprofessional."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2c_violation",
+                    kolDialogue: "Hold on - do you have head-to-head data showing that? Because I haven't seen any published comparison.",
+                    options: [
+                        {
+                            text: "You're right, there's no head-to-head trial. I overstated that - I apologize. What I can say is that our trial showed specific survival outcomes in our patient population.",
+                            nextStage: "stage_3a_recovery",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Good correction, but the initial claim was inappropriate."
+                        },
+                        {
+                            text: "No direct comparison, but the numbers speak for themselves. Any physician can see our drug is better.",
+                            nextStage: "end_major_violation",
+                            relationshipChange: -20,
+                            complianceStatus: "violation",
+                            complianceHit: 30,
+                            feedback: "Doubling down on unsupported superiority claims is a serious violation."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3a_scientific",
+                    kolDialogue: "That's a fair point about the patient populations. What about the safety profile? I've heard some concerns about your drug's tolerability.",
+                    options: [
+                        {
+                            text: "Our safety data shows specific rates for common adverse events. The most frequent were [specific events] at [specific rates]. We also have management guidance in the label. Would you like to review the full safety section?",
+                            nextStage: "end_positive",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "safety",
+                            feedback: "Comprehensive, balanced discussion of safety data."
+                        },
+                        {
+                            text: "Our safety is actually much better than the competitor's. Patients tolerate our drug much better.",
+                            nextStage: "end_risky",
+                            relationshipChange: -5,
+                            complianceStatus: "violation",
+                            complianceHit: 15,
+                            feedback: "Comparative safety claims without data are misleading."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3a_humble",
+                    kolDialogue: "I'm most interested in understanding the durability of response. My patients need long-term disease control.",
+                    options: [
+                        {
+                            text: "That's a critical consideration. Our follow-up data at 24 months shows [specific data]. We also have an ongoing extension study. When that publishes, I'll make sure to share those results with you.",
+                            nextStage: "end_positive",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "clinical",
+                            feedback: "Good response addressing the specific clinical question with available data."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3a_risky",
+                    kolDialogue: "I need to see specific data, not general claims. This conversation isn't very helpful.",
+                    options: [
+                        {
+                            text: "You're absolutely right. Let me be more specific. Our trial showed [specific data point] in the intent-to-treat population. The subgroup with [specific characteristic] showed [specific outcome].",
+                            nextStage: "end_neutral",
+                            relationshipChange: 0,
+                            complianceStatus: "safe",
+                            feedback: "Recovery by providing specific, approved data."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3a_recovery",
+                    kolDialogue: "I appreciate you correcting that. Let's focus on what the data actually shows.",
+                    options: [
+                        {
+                            text: "Thank you for understanding. Let me walk through our pivotal trial results specifically, without comparison. Our primary endpoint showed [specific result] with [confidence interval].",
+                            nextStage: "end_neutral",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery focusing on own data without inappropriate comparison."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3b_anecdotal",
+                    kolDialogue: "That's hearsay, not data. I expected a more scientific discussion from an MSL. I think we're done here.",
+                    options: [
+                        {
+                            text: "You're right, I apologize. That was unprofessional of me. If you're willing, I'd like to restart this conversation with actual data.",
+                            nextStage: "end_negative",
+                            relationshipChange: -10,
+                            complianceStatus: "safe",
+                            feedback: "Appropriate apology, but significant relationship damage."
+                        }
+                    ]
+                },
+                {
+                    id: "end_positive",
+                    kolDialogue: "This has been a good scientific discussion. I appreciate you staying focused on the data. I'll keep your drug in consideration for appropriate patients.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 15
+                },
+                {
+                    id: "end_neutral",
+                    kolDialogue: "Alright, I have a better sense of where your drug fits now. I'll review the data further on my own.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: 0
+                },
+                {
+                    id: "end_negative",
+                    kolDialogue: "I think we should end here. Please have your manager contact me if there are other matters to discuss.",
+                    isEnding: true,
+                    outcome: "negative",
+                    relationshipChange: -15
+                },
+                {
+                    id: "end_risky",
+                    kolDialogue: "I don't find comparative claims without data convincing. Let's wrap up for today.",
+                    isEnding: true,
+                    outcome: "negative",
+                    relationshipChange: -10
+                },
+                {
+                    id: "end_major_violation",
+                    kolDialogue: "This conversation has been inappropriate. I'm going to report this to your company.",
+                    isEnding: true,
+                    outcome: "compliance_crisis",
+                    relationshipChange: -30,
+                    triggerComplianceReview: true
+                }
+            ]
+        },
+        dismissiveKOL: {
+            id: "branch_dismissive_001",
+            name: "Skeptical KOL",
+            description: "KOL is dismissive and you need to provide value",
+            difficulty: "hard",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "Look, I have about 5 minutes. I see MSLs from every company and honestly, you all say the same things. What do you have that's actually going to help my patients?",
+                    options: [
+                        {
+                            text: "I understand your time is valuable. Rather than talking at you, I'd like to understand - what's your biggest challenge with your current treatment approach? I may be able to help, or I may not, but I won't waste your time.",
+                            nextStage: "stage_2a_engaged",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            feedback: "Excellent - focusing on the physician's needs rather than pushing a message."
+                        },
+                        {
+                            text: "Our drug has great efficacy data. Let me show you our latest poster presentation.",
+                            nextStage: "stage_2b_generic",
+                            relationshipChange: -10,
+                            complianceStatus: "safe",
+                            feedback: "This generic approach confirms the KOL's skepticism about MSLs."
+                        },
+                        {
+                            text: "I have some speaker program opportunities that might interest you...",
+                            nextStage: "stage_2c_inappropriate",
+                            relationshipChange: -15,
+                            complianceStatus: "violation",
+                            complianceHit: 20,
+                            feedback: "Leading with speaker programs is promotional and inappropriate."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a_engaged",
+                    kolDialogue: "Alright, I'll bite. My challenge is patient selection. Half my patients don't respond to first-line therapy, and I can't predict who will fail. I'm wasting months on ineffective treatment.",
+                    options: [
+                        {
+                            text: "That's a common challenge. There's emerging data on predictive biomarkers - some recent publications suggest [specific markers] may identify likely non-responders. I can share those papers. Also, may I ask - are you seeing patterns in which patients tend to fail?",
+                            nextStage: "stage_3a_value",
+                            relationshipChange: 20,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "unmet-need",
+                            feedback: "Providing real value while gathering insights - excellent MSL work."
+                        },
+                        {
+                            text: "Our drug works in those patients who fail first-line. You should use our drug instead.",
+                            nextStage: "stage_3b_pushy",
+                            relationshipChange: -15,
+                            complianceStatus: "risk",
+                            feedback: "Reverting to promotional messaging after building rapport."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b_generic",
+                    kolDialogue: "I've seen the poster. Response rates in selected trial patients. How does that help me with my real-world patients who have multiple comorbidities?",
+                    options: [
+                        {
+                            text: "You raise a valid point about generalizability. What specific patient characteristics are you seeing that differ from trial populations? Understanding your practice could help me find more relevant data, if it exists.",
+                            nextStage: "stage_3a_recovery",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery - pivoting to understand their actual needs."
+                        },
+                        {
+                            text: "The trial inclusion criteria were designed to show the drug works. Your patients should respond similarly.",
+                            nextStage: "stage_3b_pushy",
+                            relationshipChange: -15,
+                            complianceStatus: "risk",
+                            feedback: "Dismissing valid clinical concerns is unprofessional."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2c_inappropriate",
+                    kolDialogue: "I'm not interested in speaker programs. I don't need your company's money. Is there actual scientific value in this conversation or not?",
+                    options: [
+                        {
+                            text: "I apologize - that wasn't the right approach. Let me reset. What clinical questions do you have that I might be able to help answer with published data or medical resources?",
+                            nextStage: "stage_3a_recovery",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery acknowledging the misstep."
+                        },
+                        {
+                            text: "I understand. Let me know if you change your mind about opportunities.",
+                            nextStage: "end_negative",
+                            relationshipChange: -20,
+                            complianceStatus: "risk",
+                            feedback: "Failing to recover from the misstep."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3a_value",
+                    kolDialogue: "Actually, I've noticed patients with [specific characteristic] tend to do worse. Has anyone looked at that? And yes, send me those biomarker papers.",
+                    options: [
+                        {
+                            text: "That's a really interesting observation. I haven't seen published data on that specific characteristic, but this is exactly the kind of insight that helps inform research directions. Would you mind if I documented this observation? And I'll get you those papers within 24 hours.",
+                            nextStage: "end_positive",
+                            relationshipChange: 25,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "clinical",
+                            feedback: "Perfect - providing value, gathering insights, and maintaining compliance."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3a_recovery",
+                    kolDialogue: "Fine. I want to know about managing toxicity. The label says to hold for Grade 3 events, but I need practical guidance on when to rechallenge.",
+                    options: [
+                        {
+                            text: "That's a great clinical question. The label provides general guidance, but I understand you're looking for practical experience. I can share what's in the prescribing information about rechallenge, and I can also connect you with our medical information team for more detailed questions.",
+                            nextStage: "end_neutral",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Appropriate response staying within bounds while being helpful."
+                        },
+                        {
+                            text: "Most physicians just rechallenge at a lower dose once symptoms resolve. That usually works fine.",
+                            nextStage: "end_risky",
+                            relationshipChange: 0,
+                            complianceStatus: "risk",
+                            feedback: "Providing practice recommendations outside the label is risky."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3b_pushy",
+                    kolDialogue: "I don't think you're listening. We're done here. I have patients waiting.",
+                    options: [
+                        {
+                            text: "I understand. I appreciate your time, and I apologize if I wasn't as helpful as you needed. If there's ever a specific question I can help with, please reach out.",
+                            nextStage: "end_negative",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Graceful exit, but opportunity was missed."
+                        }
+                    ]
+                },
+                {
+                    id: "end_positive",
+                    kolDialogue: "You know what, this has actually been useful. Most MSLs just pitch at me. You actually listened. Let's schedule a longer meeting next month - I have more questions.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 20,
+                    scheduleFollowUp: true
+                },
+                {
+                    id: "end_neutral",
+                    kolDialogue: "Alright, that's helpful. I'll reach out if I have other questions. Thanks for your time.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: 5
+                },
+                {
+                    id: "end_negative",
+                    kolDialogue: "Goodbye.",
+                    isEnding: true,
+                    outcome: "negative",
+                    relationshipChange: -10
+                },
+                {
+                    id: "end_risky",
+                    kolDialogue: "I appreciate the perspective, but I'll check the label myself. Thanks.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: -5
+                }
+            ]
+        },
+        adverseEventReport: {
+            id: "branch_ae_001",
+            name: "Adverse Event",
+            description: "KOL reports an adverse event mid-conversation",
+            difficulty: "high",
+            urgency: "critical",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "Before we continue - I need to tell you about a patient. She started on your drug two weeks ago and was just hospitalized with severe hepatotoxicity. Her LFTs are 10 times the upper limit of normal. She's in the ICU.",
+                    options: [
+                        {
+                            text: "I'm sorry to hear about your patient. This is important - as an MSL, I'm required to collect and report adverse events. Can I ask you some questions about this case to ensure proper documentation?",
+                            nextStage: "stage_2a_proper",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Correct response - prioritizing AE collection as required."
+                        },
+                        {
+                            text: "That's concerning. Let me check the label - hepatotoxicity is a known risk. Was she being monitored according to the recommendations?",
+                            nextStage: "stage_2b_deflecting",
+                            relationshipChange: -10,
+                            complianceStatus: "risk",
+                            feedback: "Deflecting to monitoring compliance before collecting the AE is inappropriate."
+                        },
+                        {
+                            text: "I understand. Let's table that for now and I'll have someone follow up. So, about the new data I wanted to share...",
+                            nextStage: "stage_2c_violation",
+                            relationshipChange: -20,
+                            complianceStatus: "violation",
+                            complianceHit: 40,
+                            feedback: "Failing to immediately collect an AE report is a serious violation."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a_proper",
+                    kolDialogue: "Yes, of course. What do you need to know?",
+                    options: [
+                        {
+                            text: "Thank you. I'll need the patient's initials, age, and sex. The date the event started, the current status, and any other medications she's taking. I also need to understand if you believe the event is related to our drug.",
+                            nextStage: "stage_3a_collecting",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Proper AE collection process."
+                        },
+                        {
+                            text: "I need her full name and medical record number so we can follow up directly with the hospital.",
+                            nextStage: "stage_3b_privacy",
+                            relationshipChange: -5,
+                            complianceStatus: "risk",
+                            feedback: "Requesting unnecessary PHI is inappropriate. Initials and basic info are sufficient."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b_deflecting",
+                    kolDialogue: "Are you blaming me for this? She was monitored appropriately. I'm reporting a serious adverse event and you're questioning my clinical care?",
+                    options: [
+                        {
+                            text: "I apologize - that's not what I intended. You're absolutely right to report this, and I need to collect the information properly. Let me start over with the adverse event report.",
+                            nextStage: "stage_3a_collecting",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery, but initial response was inappropriate."
+                        },
+                        {
+                            text: "I wasn't questioning your care. I was just noting that monitoring is important. But yes, let's report this.",
+                            nextStage: "stage_3a_collecting",
+                            relationshipChange: -10,
+                            complianceStatus: "safe",
+                            feedback: "Still somewhat defensive. Focus should be entirely on the patient."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2c_violation",
+                    kolDialogue: "Excuse me? My patient is in the ICU and you want to talk about data? I'm ending this conversation and reporting this to your company.",
+                    isEnding: true,
+                    outcome: "compliance_crisis",
+                    relationshipChange: -40,
+                    triggerComplianceReview: true,
+                    complianceHit: 50,
+                    feedback: "Failing to collect an AE is a serious regulatory violation."
+                },
+                {
+                    id: "stage_3a_collecting",
+                    kolDialogue: "She's 62, female. Started the drug on the 5th, was admitted on the 18th. She was also on [other medication] but had been stable on that for years. I believe this is drug-related.",
+                    options: [
+                        {
+                            text: "Thank you for this information. I'll submit this to our pharmacovigilance team today with a follow-up request. Can I call you tomorrow for any updates on her condition? The safety of patients is our priority.",
+                            nextStage: "stage_4a_followup",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            feedback: "Excellent - complete collection with appropriate follow-up plan."
+                        },
+                        {
+                            text: "Got it, I'll report this. These events are rare - most patients do fine on the drug.",
+                            nextStage: "stage_4b_minimizing",
+                            relationshipChange: -15,
+                            complianceStatus: "risk",
+                            feedback: "Minimizing the event after collection is insensitive and inappropriate."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3b_privacy",
+                    kolDialogue: "I'm not giving you her full name. What do you actually need for the report?",
+                    options: [
+                        {
+                            text: "You're right, I apologize. We only need initials, age, and the clinical details - not identifying information. Let me collect those appropriately.",
+                            nextStage: "stage_3a_collecting",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Good correction on privacy requirements."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_4a_followup",
+                    kolDialogue: "Yes, please follow up. I want to make sure this is properly documented. She has family members asking questions and they need to know this is being taken seriously.",
+                    options: [
+                        {
+                            text: "Absolutely. I'll ensure our medical team is aware and available if you or the family have questions about the reported adverse events and safety profile. Is there anything else I can help with regarding this patient?",
+                            nextStage: "end_positive",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            feedback: "Professional handling with appropriate support offered."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_4b_minimizing",
+                    kolDialogue: "My patient is in the ICU and you're giving me statistics? I expected more from a medical professional.",
+                    options: [
+                        {
+                            text: "I apologize, that was insensitive. I'll ensure this is reported promptly and we follow up appropriately. Your patient's situation is the priority.",
+                            nextStage: "end_neutral",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Late recovery but damage to relationship is done."
+                        }
+                    ]
+                },
+                {
+                    id: "end_positive",
+                    kolDialogue: "Thank you for handling this appropriately. I know these reports are important. Let's continue our conversation another time - I need to get back to the hospital.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 10,
+                    aeReported: true
+                },
+                {
+                    id: "end_neutral",
+                    kolDialogue: "Fine. Just make sure this gets reported. Goodbye.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: -5,
+                    aeReported: true
+                }
+            ]
+        },
+        guidelineDiscussion: {
+            id: "branch_guideline_001",
+            name: "Guidelines Discussion",
+            description: "KOL questions drug's place in treatment guidelines",
+            difficulty: "medium",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "The new NCCN guidelines just came out and your drug is only listed as a Category 2B recommendation. The competitor got Category 1. Why should I use a drug with lower-level evidence?",
+                    options: [
+                        {
+                            text: "That's a great observation. The category difference reflects the type and level of evidence available at the time of the guideline update. Our pivotal trial published after the last review deadline. Are you familiar with the specific data that was considered?",
+                            nextStage: "stage_2a",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Good approach - acknowledging the guideline while providing context."
+                        },
+                        {
+                            text: "The guidelines committee got it wrong. Our data is just as strong as the competitor's.",
+                            nextStage: "stage_2b",
+                            relationshipChange: -10,
+                            complianceStatus: "risk",
+                            feedback: "Criticizing guideline committees is unprofessional and inappropriate."
+                        },
+                        {
+                            text: "Guidelines are just recommendations. Many physicians use our drug first-line regardless of what the guidelines say.",
+                            nextStage: "stage_2c",
+                            relationshipChange: -5,
+                            complianceStatus: "risk",
+                            feedback: "Encouraging deviation from guidelines is inappropriate."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a",
+                    kolDialogue: "I know the recent trial data. But the fact remains that right now, the guidelines don't support using your drug first. How do you respond to that?",
+                    options: [
+                        {
+                            text: "You're right - we need to work within the current guideline framework. For now, our drug is recommended in specific situations outlined in the guidelines. I expect the next update will incorporate the new data. In the meantime, I can share what the current labeling supports.",
+                            nextStage: "stage_3a",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "clinical",
+                            feedback: "Excellent - honest acknowledgment while setting expectations."
+                        },
+                        {
+                            text: "There are ongoing discussions with the guidelines committee to upgrade our recommendation.",
+                            nextStage: "stage_3b",
+                            relationshipChange: 0,
+                            complianceStatus: "risk",
+                            feedback: "Implying insider information about guideline updates is inappropriate."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b",
+                    kolDialogue: "I serve on the regional guidelines committee. I can assure you the review process is rigorous. Do you have specific concerns about the methodology?",
+                    options: [
+                        {
+                            text: "I apologize - I shouldn't have characterized it that way. I have full respect for the guidelines process. What I should have said is that there's additional data that wasn't available for the last review cycle. May I walk through that data?",
+                            nextStage: "stage_3a",
+                            relationshipChange: 0,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery with appropriate apology."
+                        },
+                        {
+                            text: "I'm just saying that different committees might weigh the evidence differently.",
+                            nextStage: "end_negative",
+                            relationshipChange: -15,
+                            complianceStatus: "risk",
+                            feedback: "Doubling down damages the relationship further."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2c",
+                    kolDialogue: "I practice evidence-based medicine. I'm not interested in what 'many physicians' do - I want to know what the evidence supports.",
+                    options: [
+                        {
+                            text: "You're absolutely right, and I apologize for that framing. Let me focus on the evidence. Our Phase 3 trial showed [specific outcomes]. The label supports use in [specific population]. That's what the data shows.",
+                            nextStage: "stage_3a",
+                            relationshipChange: 0,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery returning to evidence-based discussion."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3a",
+                    kolDialogue: "Fair enough. I'm on the guidelines panel for the next review. What data would be most important for me to consider when we meet?",
+                    options: [
+                        {
+                            text: "I can share the published data that's available since the last update. I should be clear that I'm not trying to influence your panel's decision - just ensuring you have access to all published evidence. The committee should weigh the data independently.",
+                            nextStage: "end_positive",
+                            relationshipChange: 20,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "clinical",
+                            feedback: "Perfect - facilitating access to evidence without influencing the process."
+                        },
+                        {
+                            text: "I'll put together a package of all our data that supports a Category 1 recommendation. Let me know how I can help make the case.",
+                            nextStage: "end_violation",
+                            relationshipChange: -10,
+                            complianceStatus: "violation",
+                            complianceHit: 35,
+                            feedback: "Offering to help 'make the case' to guidelines committees is attempting to improperly influence."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3b",
+                    kolDialogue: "What discussions? I'm on the committee and haven't heard anything.",
+                    options: [
+                        {
+                            text: "I misspoke - I don't have any insider information about committee discussions. I meant that as new data publishes, it will be available for future reviews. I apologize for the confusion.",
+                            nextStage: "end_neutral",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Appropriate correction of misleading statement."
+                        }
+                    ]
+                },
+                {
+                    id: "end_positive",
+                    kolDialogue: "I appreciate that approach. Send me the recent publications and I'll review them before our next committee meeting. And I'll form my own conclusions.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 15
+                },
+                {
+                    id: "end_neutral",
+                    kolDialogue: "Alright. Let's move on.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: 0
+                },
+                {
+                    id: "end_negative",
+                    kolDialogue: "I think this conversation has run its course. Thank you for your time.",
+                    isEnding: true,
+                    outcome: "negative",
+                    relationshipChange: -10
+                },
+                {
+                    id: "end_violation",
+                    kolDialogue: "That's inappropriate. The guidelines process needs to be independent. I'm going to document this conversation.",
+                    isEnding: true,
+                    outcome: "compliance_crisis",
+                    relationshipChange: -25,
+                    triggerComplianceReview: true
+                }
+            ]
+        }
+    },
+
+    // Gray-area compliance scenarios - situations where the right answer isn't obvious
+    grayAreaScenarios: {
+        urgentPatientNeed: {
+            id: "gray_urgent_001",
+            name: "Urgent Patient Need",
+            description: "Physician needs information urgently for patient care",
+            difficulty: "hard",
+            moralComplexity: "high",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "I have a patient in the hospital right now who isn't responding to standard treatment. I've heard your drug might help in this situation, but it's not the approved indication. I need to make a decision today. Can you help me?",
+                    contextNote: "This is an urgent unsolicited medical information request. The physician is desperate to help their patient.",
+                    options: [
+                        {
+                            text: "I understand the urgency. Since you're asking about an unapproved use, I can provide published literature if any exists. Let me check what peer-reviewed data is available and I'll call you back within the hour.",
+                            nextStage: "stage_2a_literature",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            feedback: "Good approach - responding to unsolicited request with published literature on an appropriate timeline."
+                        },
+                        {
+                            text: "I really want to help. Off the record, I've heard from other physicians that it works well in this situation. Here's what they typically do...",
+                            nextStage: "stage_2b_informal",
+                            relationshipChange: 10,
+                            complianceStatus: "violation",
+                            complianceHit: 25,
+                            feedback: "There's no 'off the record' in MSL work. Sharing anecdotal practice recommendations is off-label promotion."
+                        },
+                        {
+                            text: "I'm sorry, but I can only discuss approved indications. You should contact medical information for off-label questions.",
+                            nextStage: "stage_2c_redirect",
+                            relationshipChange: -10,
+                            complianceStatus: "safe",
+                            feedback: "Technically compliant, but you can respond to unsolicited requests - this was overly restrictive."
+                        },
+                        {
+                            text: "Given the urgency, let me connect you directly with our medical director who can provide a more complete scientific perspective on this situation.",
+                            nextStage: "stage_2d_escalate",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Appropriate escalation for a complex situation while acknowledging urgency."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a_literature",
+                    kolDialogue: "Thank you. Is there anything at all in the literature? Even case reports?",
+                    options: [
+                        {
+                            text: "I found two case reports and one small retrospective study. I'll send these to you now with the caveat that this represents limited evidence and the drug isn't approved for this use. The decision is yours as the treating physician.",
+                            nextStage: "end_positive",
+                            relationshipChange: 20,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "unmet-need",
+                            feedback: "Excellent - provided appropriate response to unsolicited request with proper context."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b_informal",
+                    kolDialogue: "I appreciate that. What dose are they using?",
+                    options: [
+                        {
+                            text: "I shouldn't have offered that information informally. Let me step back and provide you with the published literature instead, which is the appropriate way to handle this.",
+                            nextStage: "end_neutral",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery, but the initial informal advice was inappropriate."
+                        },
+                        {
+                            text: "Usually about 1.5 times the standard dose, but monitor closely for toxicity.",
+                            nextStage: "end_major_violation",
+                            relationshipChange: 5,
+                            complianceStatus: "violation",
+                            complianceHit: 35,
+                            feedback: "Providing specific off-label dosing recommendations is a serious violation."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2c_redirect",
+                    kolDialogue: "The medical information line takes 48 hours. My patient doesn't have 48 hours. I thought MSLs were supposed to be scientific resources.",
+                    options: [
+                        {
+                            text: "You're right, and I apologize. Since this is an unsolicited request, I can actually help. Let me search the published literature and get back to you within the hour with what's available.",
+                            nextStage: "stage_2a_literature",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery - recognizing that you can respond to unsolicited requests."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2d_escalate",
+                    kolDialogue: "That would be helpful. Can they call me in the next hour?",
+                    options: [
+                        {
+                            text: "I'll contact them immediately and explain the urgency. In the meantime, let me also search for any published literature I can send you right away.",
+                            nextStage: "end_positive",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            feedback: "Excellent - multi-pronged approach to help within appropriate boundaries."
+                        }
+                    ]
+                },
+                {
+                    id: "end_positive",
+                    kolDialogue: "Thank you for being responsive and helpful while staying professional. I really appreciate it.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 15
+                },
+                {
+                    id: "end_neutral",
+                    kolDialogue: "Understood. I'll review what you can send.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: 0
+                },
+                {
+                    id: "end_major_violation",
+                    kolDialogue: "Thanks. I'll try that approach.",
+                    isEnding: true,
+                    outcome: "compliance_crisis",
+                    relationshipChange: 5,
+                    triggerComplianceReview: true,
+                    noteToPlayer: "Even when trying to help patients, providing off-label dosing guidance exposes both you and your company to significant legal and regulatory risk."
+                }
+            ]
+        },
+        speakerInvitation: {
+            id: "gray_speaker_001",
+            name: "Speaker Opportunity",
+            description: "KOL asks about speaker bureau opportunities",
+            difficulty: "medium",
+            moralComplexity: "high",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "I really enjoy working with your company. I've been wondering - how do I get invited to be a speaker for your programs? I hear they pay quite well.",
+                    contextNote: "The KOL is inquiring about paid speaker opportunities. The motivation (genuine interest vs. financial) is unclear.",
+                    options: [
+                        {
+                            text: "Speaker selection is handled by a separate team based on scientific expertise and regional needs. I can let them know you're interested, but I don't have influence over the selection process.",
+                            nextStage: "stage_2a_appropriate",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Appropriate response - informative without promising or appearing to create quid pro quo."
+                        },
+                        {
+                            text: "You've been a great advocate for our science. I'll definitely put in a good word for you. Keep up the support and I'm sure something will come through.",
+                            nextStage: "stage_2b_quidproquo",
+                            relationshipChange: 15,
+                            complianceStatus: "violation",
+                            complianceHit: 40,
+                            feedback: "This implies a quid pro quo relationship between advocacy and financial reward - a serious anti-kickback concern."
+                        },
+                        {
+                            text: "Speaker programs are managed separately from the MSL function. I focus purely on scientific exchange. But I can provide contact information for that team if you're interested.",
+                            nextStage: "stage_2c_boundary",
+                            relationshipChange: 0,
+                            complianceStatus: "safe",
+                            feedback: "Clear boundary-setting while still being helpful."
+                        },
+                        {
+                            text: "I'm curious - what draws you to the speaker programs? Is it the educational mission or primarily the compensation?",
+                            nextStage: "stage_2d_probe",
+                            relationshipChange: 0,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "clinical",
+                            feedback: "Insightful question that helps understand motivation without committing."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a_appropriate",
+                    kolDialogue: "I understand. Is there anything I should do to increase my chances?",
+                    options: [
+                        {
+                            text: "The program values physicians who have genuine clinical experience and can speak authentically about the disease state. Publication record and teaching experience are typically considered. But ultimately it's their decision based on regional program needs.",
+                            nextStage: "end_positive",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Factual information about typical criteria without promising anything."
+                        },
+                        {
+                            text: "Just keep prescribing our drug and giving positive feedback. The more you use it, the more likely you'll be noticed.",
+                            nextStage: "end_major_violation",
+                            relationshipChange: 10,
+                            complianceStatus: "violation",
+                            complianceHit: 50,
+                            feedback: "This directly links prescribing behavior to speaker opportunities - a clear kickback violation."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b_quidproquo",
+                    kolDialogue: "That's great to hear. So if I keep supporting your drug, you'll get me on the speaker list?",
+                    options: [
+                        {
+                            text: "I apologize - I misspoke. There's no connection between prescribing or advocacy and speaker selection. Let me clarify that the selection process is based on scientific credentials and is completely independent of any commercial relationship.",
+                            nextStage: "end_neutral",
+                            relationshipChange: -10,
+                            complianceStatus: "safe",
+                            feedback: "Important correction, but the initial implication was problematic."
+                        },
+                        {
+                            text: "Exactly. We take care of people who take care of us.",
+                            nextStage: "end_major_violation",
+                            relationshipChange: 15,
+                            complianceStatus: "violation",
+                            complianceHit: 60,
+                            feedback: "This is a clear kickback statement with potentially criminal implications."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2c_boundary",
+                    kolDialogue: "Fair enough. So what value do you actually provide as an MSL if not connecting me to opportunities?",
+                    options: [
+                        {
+                            text: "My role is scientific exchange - answering clinical questions, sharing data, gathering insights about practice patterns, and supporting research collaboration through our IIS program. I can add tremendous scientific value, just not commercial opportunities.",
+                            nextStage: "end_positive",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Clear articulation of the MSL role and value proposition."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2d_probe",
+                    kolDialogue: "Honestly? Both. I enjoy teaching, but the extra income doesn't hurt. Medical education is valuable, and compensation recognizes that value.",
+                    options: [
+                        {
+                            text: "That's a fair perspective. Speakers provide valuable education to their peers. If you're genuinely interested, I can share the contact information for our speaker programs team. They evaluate candidates based on expertise and regional needs.",
+                            nextStage: "end_positive",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            feedback: "Acknowledging their perspective while maintaining appropriate boundaries."
+                        }
+                    ]
+                },
+                {
+                    id: "end_positive",
+                    kolDialogue: "I appreciate the honest conversation. Let's focus on the science for now.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 10
+                },
+                {
+                    id: "end_neutral",
+                    kolDialogue: "I see. Thanks for clarifying.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: -5
+                },
+                {
+                    id: "end_major_violation",
+                    kolDialogue: "Good to know the arrangement.",
+                    isEnding: true,
+                    outcome: "compliance_crisis",
+                    relationshipChange: 15,
+                    triggerComplianceReview: true,
+                    noteToPlayer: "Creating any appearance of pay-for-prescribe or quid pro quo can result in criminal charges under anti-kickback statutes."
+                }
+            ]
+        },
+        competitorBashing: {
+            id: "gray_competitor_001",
+            name: "Competitor Criticism",
+            description: "KOL shares negative competitor experience and invites you to agree",
+            difficulty: "medium",
+            moralComplexity: "medium",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "I've had three patients fail on [Competitor Drug] this month. Terrible drug if you ask me. I bet you see this all the time - surely your drug is better for these patients, right?",
+                    contextNote: "The KOL is inviting you to criticize a competitor and make comparative claims.",
+                    options: [
+                        {
+                            text: "I appreciate you sharing that experience. I'm not in a position to comment on competitor performance, but I'd be interested to understand what outcomes you were hoping to see and what happened with these patients.",
+                            nextStage: "stage_2a_redirect",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "competitive",
+                            feedback: "Good deflection that gathers insight without disparaging competitors."
+                        },
+                        {
+                            text: "Yes, we hear that a lot. [Competitor Drug] has a lot of problems. Our drug is definitely the better choice.",
+                            nextStage: "stage_2b_agree",
+                            relationshipChange: 10,
+                            complianceStatus: "violation",
+                            complianceHit: 20,
+                            feedback: "Disparaging competitors and making unsupported superiority claims is promotional and potentially defamatory."
+                        },
+                        {
+                            text: "I can only speak to our own data. Without head-to-head trials, I can't make direct comparisons. What I can do is walk you through our clinical evidence and let you draw your own conclusions.",
+                            nextStage: "stage_2c_neutral",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Appropriate response that stays within evidence-based discussion."
+                        },
+                        {
+                            text: "Those are interesting cases. Would you be willing to share more details about what happened? Understanding these patterns could be valuable for the medical community.",
+                            nextStage: "stage_2d_insight",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "competitive",
+                            feedback: "Excellent - turning the situation into an insight-gathering opportunity."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a_redirect",
+                    kolDialogue: "They expected durable responses but progressed within three months. Do you see longer responses with your drug?",
+                    options: [
+                        {
+                            text: "Our pivotal trial showed specific duration of response data. The median DOR was X months in patients with [characteristics]. I can share that data with you, though every patient is different.",
+                            nextStage: "end_positive",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Focused on your own data without comparative claims."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b_agree",
+                    kolDialogue: "See, I knew it! What specifically makes your drug better?",
+                    options: [
+                        {
+                            text: "Let me step back - I shouldn't have characterized it that way. Without head-to-head data, I can't make comparative claims. Let me focus on what our data does show.",
+                            nextStage: "end_neutral",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Good correction, but initial comment was inappropriate."
+                        },
+                        {
+                            text: "Better efficacy, better safety, better dosing. Honestly, there's no comparison.",
+                            nextStage: "end_major_violation",
+                            relationshipChange: 15,
+                            complianceStatus: "violation",
+                            complianceHit: 30,
+                            feedback: "Multiple unsupported superiority claims compounding the violation."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2c_neutral",
+                    kolDialogue: "Fair enough. Show me what you've got.",
+                    options: [
+                        {
+                            text: "Here's our Phase 3 data. You'll see the response rates, duration of response, and safety profile. I'm happy to discuss any questions about our specific data.",
+                            nextStage: "end_positive",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Staying focused on your own evidence - appropriate approach."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2d_insight",
+                    kolDialogue: "Sure. All three had prior checkpoint inhibitor exposure and progressed on standard doses. I'm seeing more of these refractory patients lately.",
+                    options: [
+                        {
+                            text: "That's a really valuable observation about the refractory patient population. This is exactly the kind of insight that helps inform research priorities. May I document this for our medical team? It could help shape future clinical development.",
+                            nextStage: "end_positive",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "clinical",
+                            feedback: "Excellent insight capture while building relationship."
+                        }
+                    ]
+                },
+                {
+                    id: "end_positive",
+                    kolDialogue: "This is the kind of scientific discussion I value. Let's stay in touch.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 10
+                },
+                {
+                    id: "end_neutral",
+                    kolDialogue: "Alright, show me the data.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: 0
+                },
+                {
+                    id: "end_major_violation",
+                    kolDialogue: "That's bold! I like the confidence.",
+                    isEnding: true,
+                    outcome: "compliance_crisis",
+                    relationshipChange: 10,
+                    triggerComplianceReview: true,
+                    noteToPlayer: "Making comparative efficacy or safety claims without head-to-head data is false or misleading promotion."
+                }
+            ]
+        },
+        socialBoundary: {
+            id: "gray_social_001",
+            name: "Social Invitation",
+            description: "KOL invites you to an event that blurs professional boundaries",
+            difficulty: "medium",
+            moralComplexity: "medium",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "Hey, I'm having a birthday party at my house next weekend. Nothing work-related, just friends and colleagues. You should come! You've been so helpful, and I'd like to get to know you better outside of work.",
+                    contextNote: "A KOL is inviting you to a personal social event. The relationship benefit is clear, but there are gift/entertainment policy considerations.",
+                    options: [
+                        {
+                            text: "I appreciate the invitation, and I genuinely enjoy working with you. However, our company's policies around social interactions with healthcare providers are pretty strict. I wouldn't want to put either of us in an awkward position.",
+                            nextStage: "stage_2a_decline",
+                            relationshipChange: 0,
+                            complianceStatus: "safe",
+                            feedback: "Appropriate boundary-setting while preserving the relationship."
+                        },
+                        {
+                            text: "That sounds great! I'd love to come. What should I bring?",
+                            nextStage: "stage_2b_accept",
+                            relationshipChange: 15,
+                            complianceStatus: "risk",
+                            feedback: "Accepting personal invitations from KOLs can create perceived conflicts of interest."
+                        },
+                        {
+                            text: "That's very kind. I need to check our company guidelines on attending personal events with healthcare providers. Can I get back to you?",
+                            nextStage: "stage_2c_check",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Appropriate response - checking policy before committing."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a_decline",
+                    kolDialogue: "I understand. I didn't mean to put you in an uncomfortable position. Maybe we can grab coffee sometime instead - more neutral territory?",
+                    options: [
+                        {
+                            text: "Coffee to discuss science would be perfectly appropriate. I'd enjoy that. Let's find a time that works.",
+                            nextStage: "end_positive",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Finding appropriate alternatives to maintain relationship."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b_accept",
+                    kolDialogue: "Great! It'll be casual - bring whatever you like. My wife makes amazing cocktails.",
+                    options: [
+                        {
+                            text: "Actually, let me check our company guidelines first. I want to make sure this is something I can do appropriately. I'll get back to you.",
+                            nextStage: "stage_2c_check",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Good to reconsider before fully committing."
+                        },
+                        {
+                            text: "Perfect! I'll bring a nice bottle of wine.",
+                            nextStage: "end_risky",
+                            relationshipChange: 20,
+                            complianceStatus: "risk",
+                            feedback: "Accepting invitation and bringing a gift further blurs professional boundaries."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2c_check",
+                    kolDialogue: "Of course, no pressure. Let me know what you find out.",
+                    options: [
+                        {
+                            text: "I checked and while it's not strictly prohibited, I think it's best to keep our relationship professional. How about we schedule a meeting at your office instead? I have some new data that might interest you.",
+                            nextStage: "end_positive",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Appropriate redirection to professional context."
+                        }
+                    ]
+                },
+                {
+                    id: "end_positive",
+                    kolDialogue: "I respect that professionalism. Let's definitely find time to meet.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 5
+                },
+                {
+                    id: "end_risky",
+                    kolDialogue: "See you Saturday!",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: 15,
+                    noteToPlayer: "While not always prohibited, personal social relationships with KOLs can create perceived conflicts of interest and should be carefully considered."
+                }
+            ]
+        },
+        dataRequest: {
+            id: "gray_data_001",
+            name: "Unpublished Data Request",
+            description: "KOL requests access to unpublished clinical trial data",
+            difficulty: "hard",
+            moralComplexity: "high",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "I'm writing a review article on treatments in this space. I know you have interim data from your ongoing Phase 3 study. Can you share that with me for the publication? It would really strengthen my paper.",
+                    contextNote: "The KOL wants unpublished data for their publication. This raises data embargo and fair balance concerns.",
+                    options: [
+                        {
+                            text: "I understand the interest, but interim data from ongoing studies isn't something I can share. Once the data is published or presented at congress, I'd be happy to discuss it. I can share all currently published data on our program.",
+                            nextStage: "stage_2a_decline",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Appropriate response - protecting data integrity and embargo."
+                        },
+                        {
+                            text: "I can't give you the official data, but let me tell you off the record - the results are very positive. The response rate is looking like about 65%.",
+                            nextStage: "stage_2b_leak",
+                            relationshipChange: 10,
+                            complianceStatus: "violation",
+                            complianceHit: 40,
+                            feedback: "Disclosing unpublished interim data is a serious violation with potential SEC and regulatory implications."
+                        },
+                        {
+                            text: "Our policy is that all data requests go through our data sharing committee. I can provide you with the contact information and the process for requesting access to clinical trial data.",
+                            nextStage: "stage_2c_process",
+                            relationshipChange: 0,
+                            complianceStatus: "safe",
+                            feedback: "Appropriate referral to formal data request process."
+                        },
+                        {
+                            text: "I can share the study design and what endpoints we're looking at. That's public information from clinicaltrials.gov. The results will need to wait for publication.",
+                            nextStage: "stage_2d_partial",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Good balance - helpful with public information while protecting unpublished data."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a_decline",
+                    kolDialogue: "That's frustrating. When will the data be published? My review has a deadline.",
+                    options: [
+                        {
+                            text: "I understand the time pressure. The data is expected to be presented at [upcoming congress] and published shortly after. Your review could reference the study design as ongoing with results expected. I can alert you as soon as it's public.",
+                            nextStage: "end_positive",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Helpful within appropriate boundaries."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b_leak",
+                    kolDialogue: "That's great news! Can you give me any more details? What about the safety data?",
+                    options: [
+                        {
+                            text: "I've already said too much. Please don't include any of this in your paper - this is embargoed data and I shouldn't have shared it. Let me point you to the published information only.",
+                            nextStage: "end_neutral",
+                            relationshipChange: -10,
+                            complianceStatus: "safe",
+                            feedback: "Attempting to walk back, but the disclosure already occurred."
+                        },
+                        {
+                            text: "Safety looks clean too. Around 15% Grade 3+ events, mostly manageable. You could say 'preliminary data suggests a favorable profile.'",
+                            nextStage: "end_major_violation",
+                            relationshipChange: 15,
+                            complianceStatus: "violation",
+                            complianceHit: 50,
+                            feedback: "Compounding the violation by sharing more unpublished data and suggesting how to use it."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2c_process",
+                    kolDialogue: "That sounds bureaucratic. Can't you just help me out as a colleague?",
+                    options: [
+                        {
+                            text: "I understand it's not ideal, but these processes exist for good reasons - data integrity, patient privacy, and scientific rigor. I'm genuinely trying to be helpful by pointing you to the right channel.",
+                            nextStage: "end_positive",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Standing firm on process while being respectful."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2d_partial",
+                    kolDialogue: "That's helpful for context. Can you at least tell me if the trial is on track? No details, just a sense of whether it's going well?",
+                    options: [
+                        {
+                            text: "I can tell you the trial is enrolling on schedule and we haven't announced any changes to the design or endpoints. Beyond that, I need to wait for the official data release.",
+                            nextStage: "end_positive",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Carefully limited response with only public information."
+                        },
+                        {
+                            text: "Between us, yes, it's going very well. The company wouldn't be planning the launch if it wasn't.",
+                            nextStage: "end_risky",
+                            relationshipChange: 10,
+                            complianceStatus: "risk",
+                            feedback: "Providing positive sentiment about unpublished data is still problematic."
+                        }
+                    ]
+                },
+                {
+                    id: "end_positive",
+                    kolDialogue: "I appreciate your professionalism. Let me know when the data is available.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 10
+                },
+                {
+                    id: "end_neutral",
+                    kolDialogue: "Understood. I'll work with what's published.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: -5
+                },
+                {
+                    id: "end_risky",
+                    kolDialogue: "Good to know. I'll keep that in mind.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: 5,
+                    noteToPlayer: "Even vague positive statements about unpublished data can influence investment decisions and publication integrity."
+                },
+                {
+                    id: "end_major_violation",
+                    kolDialogue: "This is very helpful for my review. Thanks for being so open.",
+                    isEnding: true,
+                    outcome: "compliance_crisis",
+                    relationshipChange: 15,
+                    triggerComplianceReview: true,
+                    noteToPlayer: "Disclosing unpublished clinical trial data can violate SEC regulations, publication ethics, and company data integrity policies."
+                }
+            ]
+        }
+    },
+
     // Insight categories
     insightCategories: {
         "unmet-need": {
