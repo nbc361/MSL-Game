@@ -1,0 +1,2008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSL Career Simulator - Medical Science Liaison Training Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1a5f7a;
+            --primary-dark: #0d3d4d;
+            --secondary: #57c5b6;
+            --accent: #159895;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --bg-dark: #0a1628;
+            --bg-card: #1e293b;
+            --bg-lighter: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--primary-dark) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-logo {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--secondary);
+            margin-bottom: 2rem;
+            text-shadow: 0 0 20px rgba(87, 197, 182, 0.5);
+        }
+
+        .loading-bar {
+            width: 300px;
+            height: 6px;
+            background: var(--bg-lighter);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .loading-progress {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary), var(--accent));
+            width: 0%;
+            animation: load 2s ease-out forwards;
+        }
+
+        @keyframes load {
+            to { width: 100%; }
+        }
+
+        /* Main Menu */
+        #main-menu {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--primary-dark) 100%);
+        }
+
+        .menu-title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .menu-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary), var(--accent));
+            color: var(--bg-dark);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(87, 197, 182, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 2px solid var(--bg-lighter);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--secondary);
+            background: var(--bg-lighter);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--bg-dark);
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Territory Selection */
+        #territory-select {
+            display: none;
+            min-height: 100vh;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--primary-dark) 100%);
+        }
+
+        .territory-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .territory-header h1 {
+            font-size: 2.5rem;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .territory-header p {
+            color: var(--text-secondary);
+        }
+
+        .territory-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .territory-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .territory-card:hover {
+            border-color: var(--secondary);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .territory-card.selected {
+            border-color: var(--secondary);
+            box-shadow: 0 0 30px rgba(87, 197, 182, 0.3);
+        }
+
+        .difficulty-badge {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .difficulty-easy { background: var(--success); color: white; }
+        .difficulty-medium { background: var(--warning); color: var(--bg-dark); }
+        .difficulty-hard { background: var(--danger); color: white; }
+        .difficulty-expert { background: #7c3aed; color: white; }
+
+        .territory-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .territory-region {
+            color: var(--secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .territory-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .territory-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .territory-stat {
+            background: var(--bg-lighter);
+            padding: 0.5rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .territory-stat-label {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .territory-stat-value {
+            color: var(--text-primary);
+            font-weight: bold;
+        }
+
+        .territory-challenges {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--bg-lighter);
+        }
+
+        .territory-challenges h4 {
+            color: var(--warning);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .territory-challenges ul {
+            list-style: none;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .territory-challenges li {
+            padding: 0.2rem 0;
+        }
+
+        .territory-challenges li::before {
+            content: "⚠ ";
+            color: var(--warning);
+        }
+
+        .territory-actions {
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        /* Character Creation */
+        #character-creation {
+            display: none;
+            min-height: 100vh;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--primary-dark) 100%);
+        }
+
+        .creation-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .creation-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .creation-header h1 {
+            font-size: 2rem;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: var(--bg-card);
+            border: 2px solid var(--bg-lighter);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        .background-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .background-option {
+            background: var(--bg-card);
+            border: 2px solid var(--bg-lighter);
+            border-radius: 8px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .background-option:hover {
+            border-color: var(--secondary);
+        }
+
+        .background-option.selected {
+            border-color: var(--secondary);
+            background: rgba(87, 197, 182, 0.1);
+        }
+
+        .background-option h4 {
+            color: var(--text-primary);
+            margin-bottom: 0.3rem;
+        }
+
+        .background-option p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .background-bonus {
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--success);
+        }
+
+        /* Game Screen */
+        #game-screen {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .game-header {
+            background: var(--bg-card);
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--bg-lighter);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .player-name {
+            font-weight: bold;
+            color: var(--secondary);
+        }
+
+        .player-title {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .player-stats-bar {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stat-icon {
+            font-size: 1.2rem;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: var(--text-primary);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .time-info {
+            text-align: right;
+        }
+
+        .current-week {
+            font-weight: bold;
+            color: var(--secondary);
+        }
+
+        .current-quarter {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Performance Meters */
+        .performance-meters {
+            background: var(--bg-card);
+            padding: 0.5rem 1.5rem;
+            display: flex;
+            gap: 2rem;
+            border-bottom: 1px solid var(--bg-lighter);
+        }
+
+        .meter {
+            flex: 1;
+            max-width: 250px;
+        }
+
+        .meter-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.3rem;
+        }
+
+        .meter-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .meter-value {
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .meter-bar {
+            height: 6px;
+            background: var(--bg-lighter);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .meter-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        .meter-fill.compliance { background: var(--success); }
+        .meter-fill.reputation { background: var(--secondary); }
+        .meter-fill.productivity { background: var(--warning); }
+        .meter-fill.job-security { background: var(--danger); }
+
+        /* Main Game Layout */
+        .game-main {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            min-height: calc(100vh - 120px);
+        }
+
+        /* Left Sidebar - Navigation */
+        .game-sidebar-left {
+            background: var(--bg-card);
+            border-right: 1px solid var(--bg-lighter);
+            padding: 1rem;
+        }
+
+        .nav-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-section-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+            padding-left: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 0.3rem;
+        }
+
+        .nav-item:hover {
+            background: var(--bg-lighter);
+        }
+
+        .nav-item.active {
+            background: rgba(87, 197, 182, 0.2);
+            color: var(--secondary);
+        }
+
+        .nav-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .nav-icon {
+            font-size: 1.3rem;
+        }
+
+        .nav-text {
+            font-size: 0.9rem;
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--danger);
+            color: white;
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+        }
+
+        /* Center - Main Content */
+        .game-content {
+            padding: 1.5rem;
+            overflow-y: auto;
+            background: var(--bg-dark);
+        }
+
+        .content-panel {
+            display: none;
+        }
+
+        .content-panel.active {
+            display: block;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        /* Right Sidebar - Activities & Notifications */
+        .game-sidebar-right {
+            background: var(--bg-card);
+            border-left: 1px solid var(--bg-lighter);
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.8rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--bg-lighter);
+        }
+
+        .notification-item {
+            background: var(--bg-lighter);
+            border-radius: 8px;
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid var(--secondary);
+        }
+
+        .notification-item.urgent {
+            border-left-color: var(--danger);
+        }
+
+        .notification-item.warning {
+            border-left-color: var(--warning);
+        }
+
+        .notification-title {
+            font-size: 0.85rem;
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+        }
+
+        .notification-text {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .notification-time {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+        }
+
+        /* Activity Cards */
+        .activity-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border: 1px solid var(--bg-lighter);
+            transition: all 0.3s ease;
+        }
+
+        .activity-card:hover {
+            border-color: var(--secondary);
+        }
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .activity-type {
+            font-size: 0.75rem;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .activity-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 0.3rem;
+        }
+
+        .activity-time {
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .activity-description {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .activity-rewards {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .reward-item {
+            background: var(--bg-lighter);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .reward-item.positive { color: var(--success); }
+        .reward-item.negative { color: var(--danger); }
+
+        .activity-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* KOL Cards */
+        .kol-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+
+        .kol-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.2rem;
+            border: 1px solid var(--bg-lighter);
+            transition: all 0.3s ease;
+        }
+
+        .kol-card:hover {
+            border-color: var(--secondary);
+            transform: translateY(-2px);
+        }
+
+        .kol-header {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .kol-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .kol-info h3 {
+            font-size: 1rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .kol-specialty {
+            font-size: 0.8rem;
+            color: var(--secondary);
+        }
+
+        .kol-institution {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .kol-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .kol-metric {
+            text-align: center;
+            padding: 0.5rem;
+            background: var(--bg-lighter);
+            border-radius: 6px;
+        }
+
+        .kol-metric-value {
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+
+        .kol-metric-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .kol-relationship-bar {
+            margin-bottom: 1rem;
+        }
+
+        .relationship-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .relationship-bar {
+            height: 8px;
+            background: var(--bg-lighter);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .relationship-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--warning), var(--success));
+            transition: width 0.5s ease;
+        }
+
+        /* Dialogue System */
+        #dialogue-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 500;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .dialogue-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .dialogue-header {
+            background: var(--bg-lighter);
+            padding: 1.5rem;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dialogue-context {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .dialogue-kol {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .dialogue-body {
+            padding: 1.5rem;
+        }
+
+        .dialogue-message {
+            background: var(--bg-lighter);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .dialogue-speaker {
+            font-weight: bold;
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .dialogue-text {
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .dialogue-options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .dialogue-option {
+            background: var(--bg-lighter);
+            border: 2px solid var(--bg-lighter);
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .dialogue-option:hover {
+            border-color: var(--secondary);
+            background: rgba(87, 197, 182, 0.1);
+        }
+
+        .dialogue-option-text {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .dialogue-option-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 1rem;
+        }
+
+        .hint-compliance {
+            color: var(--success);
+        }
+
+        .hint-risk {
+            color: var(--danger);
+        }
+
+        .dialogue-result {
+            background: var(--bg-lighter);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .result-header {
+            font-weight: bold;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .result-header.success { color: var(--success); }
+        .result-header.failure { color: var(--danger); }
+        .result-header.neutral { color: var(--warning); }
+
+        .result-effects {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .effect-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .effect-positive { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .effect-negative { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+
+        /* CRM Documentation */
+        .crm-form {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .crm-field {
+            margin-bottom: 1.5rem;
+        }
+
+        .crm-field label {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .crm-field input,
+        .crm-field select,
+        .crm-field textarea {
+            width: 100%;
+            padding: 0.8rem;
+            background: var(--bg-lighter);
+            border: 2px solid var(--bg-lighter);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .crm-field textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .crm-field input:focus,
+        .crm-field select:focus,
+        .crm-field textarea:focus {
+            outline: none;
+            border-color: var(--secondary);
+        }
+
+        .insight-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .insight-tag {
+            background: var(--bg-lighter);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .insight-tag:hover,
+        .insight-tag.selected {
+            background: var(--secondary);
+            color: var(--bg-dark);
+        }
+
+        /* Skill Tree */
+        .skill-tree {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .skill-branch {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .skill-branch-title {
+            font-size: 1.1rem;
+            color: var(--secondary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--bg-lighter);
+        }
+
+        .skill-item {
+            background: var(--bg-lighter);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .skill-item:hover {
+            background: rgba(87, 197, 182, 0.1);
+        }
+
+        .skill-item.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .skill-item.maxed {
+            border: 2px solid var(--success);
+        }
+
+        .skill-name {
+            font-weight: 500;
+        }
+
+        .skill-level {
+            display: flex;
+            gap: 0.2rem;
+        }
+
+        .skill-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--bg-card);
+        }
+
+        .skill-dot.filled {
+            background: var(--secondary);
+        }
+
+        /* Conference/Congress Screen */
+        .conference-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .conference-name {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .conference-details {
+            color: var(--text-secondary);
+        }
+
+        .conference-schedule {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .schedule-item {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 1.2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .schedule-item:hover {
+            background: var(--bg-lighter);
+        }
+
+        .schedule-time {
+            background: var(--primary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .schedule-info h4 {
+            margin-bottom: 0.3rem;
+        }
+
+        .schedule-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Advisory Board */
+        .adboard-planning {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .adboard-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .adboard-section-title {
+            font-size: 1rem;
+            color: var(--secondary);
+            margin-bottom: 1rem;
+        }
+
+        .kol-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.8rem;
+        }
+
+        .kol-select-item {
+            background: var(--bg-lighter);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            padding: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .kol-select-item:hover {
+            border-color: var(--secondary);
+        }
+
+        .kol-select-item.selected {
+            border-color: var(--success);
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        /* IIS Panel */
+        .iis-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .iis-status {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .iis-status.pending { background: var(--warning); color: var(--bg-dark); }
+        .iis-status.approved { background: var(--success); color: white; }
+        .iis-status.rejected { background: var(--danger); color: white; }
+        .iis-status.in-progress { background: var(--secondary); color: var(--bg-dark); }
+
+        /* Quarterly Review Modal */
+        #review-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 600;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .review-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .review-header {
+            background: var(--primary);
+            padding: 2rem;
+            border-radius: 16px 16px 0 0;
+            text-align: center;
+        }
+
+        .review-header h2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .review-body {
+            padding: 2rem;
+        }
+
+        .review-metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--bg-lighter);
+        }
+
+        .review-metric-name {
+            font-weight: 500;
+        }
+
+        .review-metric-score {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .review-metric-score.good { color: var(--success); }
+        .review-metric-score.warning { color: var(--warning); }
+        .review-metric-score.bad { color: var(--danger); }
+
+        .review-outcome {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .review-outcome.promotion {
+            background: rgba(34, 197, 94, 0.2);
+            border: 2px solid var(--success);
+        }
+
+        .review-outcome.warning {
+            background: rgba(245, 158, 11, 0.2);
+            border: 2px solid var(--warning);
+        }
+
+        .review-outcome.termination {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid var(--danger);
+        }
+
+        .review-outcome h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Game Over Screen */
+        #game-over {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 700;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 2rem;
+        }
+
+        .game-over-content {
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .game-over-title {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .game-over-title.fired {
+            color: var(--danger);
+        }
+
+        .game-over-title.promoted {
+            color: var(--success);
+        }
+
+        .game-over-reason {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .game-over-stats {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        /* Tutorial Overlay */
+        #tutorial-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 800;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .tutorial-container {
+            background: var(--bg-card);
+            border-radius: 16px;
+            max-width: 700px;
+            width: 100%;
+            padding: 2rem;
+        }
+
+        .tutorial-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .tutorial-header h2 {
+            color: var(--secondary);
+        }
+
+        .tutorial-content {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .tutorial-content h3 {
+            color: var(--text-primary);
+            margin: 1rem 0 0.5rem;
+        }
+
+        .tutorial-content ul {
+            margin-left: 1.5rem;
+        }
+
+        .tutorial-progress {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tutorial-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--bg-lighter);
+        }
+
+        .tutorial-dot.active {
+            background: var(--secondary);
+        }
+
+        .tutorial-nav {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .game-main {
+                grid-template-columns: 250px 1fr;
+            }
+            .game-sidebar-right {
+                display: none;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .game-main {
+                grid-template-columns: 1fr;
+            }
+            .game-sidebar-left {
+                display: none;
+            }
+            .skill-tree {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .animate-slide {
+            animation: slideUp 0.3s ease;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: relative;
+        }
+
+        .tooltip::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .tooltip:hover::after {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-logo">MSL CAREER SIMULATOR</div>
+        <div class="loading-bar">
+            <div class="loading-progress"></div>
+        </div>
+        <p style="margin-top: 1rem; color: var(--text-secondary);">Preparing your medical affairs journey...</p>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu">
+        <h1 class="menu-title">MSL Career Simulator</h1>
+        <p class="menu-subtitle">Master the Art of Medical Science Liaison</p>
+        <div class="menu-buttons">
+            <button class="btn btn-primary" onclick="showTerritorySelect()">New Career</button>
+            <button class="btn btn-secondary" onclick="showTutorial()">How to Play</button>
+            <button class="btn btn-secondary" onclick="showAbout()">About MSL Role</button>
+        </div>
+    </div>
+
+    <!-- Territory Selection -->
+    <div id="territory-select">
+        <div class="territory-header">
+            <h1>Select Your Territory</h1>
+            <p>Each territory presents unique challenges and opportunities. Choose wisely.</p>
+        </div>
+        <div class="territory-grid" id="territory-grid">
+            <!-- Territories will be populated by JavaScript -->
+        </div>
+        <div class="territory-actions">
+            <button class="btn btn-secondary" onclick="showMainMenu()">Back</button>
+            <button class="btn btn-primary" id="confirm-territory-btn" onclick="confirmTerritory()" disabled>Confirm Territory</button>
+        </div>
+    </div>
+
+    <!-- Character Creation -->
+    <div id="character-creation">
+        <div class="creation-container">
+            <div class="creation-header">
+                <h1>Create Your MSL Profile</h1>
+                <p>Your background will affect your starting skills and opportunities</p>
+            </div>
+            <div class="form-group">
+                <label>Your Name</label>
+                <input type="text" id="player-name" placeholder="Enter your name" maxlength="30">
+            </div>
+            <div class="form-group">
+                <label>Educational Background</label>
+                <div class="background-options" id="education-options">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Previous Experience</label>
+                <div class="background-options" id="experience-options">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Therapeutic Area Focus</label>
+                <select id="therapeutic-area">
+                    <option value="oncology">Oncology</option>
+                    <option value="immunology">Immunology</option>
+                    <option value="neurology">Neurology</option>
+                    <option value="cardiology">Cardiology</option>
+                    <option value="rare-disease">Rare Disease</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button class="btn btn-secondary" onclick="showTerritorySelect()">Back</button>
+                <button class="btn btn-primary" onclick="startGame()" style="flex: 1;">Begin Your MSL Career</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Screen -->
+    <div id="game-screen">
+        <div class="game-header">
+            <div class="player-info">
+                <div>
+                    <div class="player-name" id="display-player-name">Dr. Sarah Chen</div>
+                    <div class="player-title" id="display-player-title">MSL I - Oncology</div>
+                </div>
+                <div class="player-stats-bar">
+                    <div class="stat-item">
+                        <span class="stat-icon">⭐</span>
+                        <div>
+                            <div class="stat-value" id="stat-xp">0</div>
+                            <div class="stat-label">XP</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">🎯</span>
+                        <div>
+                            <div class="stat-value" id="stat-level">1</div>
+                            <div class="stat-label">Level</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">💼</span>
+                        <div>
+                            <div class="stat-value" id="stat-interactions">0</div>
+                            <div class="stat-label">Interactions</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-icon">💡</span>
+                        <div>
+                            <div class="stat-value" id="stat-insights">0</div>
+                            <div class="stat-label">Insights</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="time-info">
+                <div class="current-week" id="current-week">Week 1</div>
+                <div class="current-quarter" id="current-quarter">Q1 2024</div>
+            </div>
+        </div>
+
+        <div class="performance-meters">
+            <div class="meter">
+                <div class="meter-header">
+                    <span class="meter-label">Compliance Score</span>
+                    <span class="meter-value" id="compliance-value">100%</span>
+                </div>
+                <div class="meter-bar">
+                    <div class="meter-fill compliance" id="compliance-bar" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="meter">
+                <div class="meter-header">
+                    <span class="meter-label">Company Reputation</span>
+                    <span class="meter-value" id="reputation-value">50%</span>
+                </div>
+                <div class="meter-bar">
+                    <div class="meter-fill reputation" id="reputation-bar" style="width: 50%"></div>
+                </div>
+            </div>
+            <div class="meter">
+                <div class="meter-header">
+                    <span class="meter-label">Productivity</span>
+                    <span class="meter-value" id="productivity-value">50%</span>
+                </div>
+                <div class="meter-bar">
+                    <div class="meter-fill productivity" id="productivity-bar" style="width: 50%"></div>
+                </div>
+            </div>
+            <div class="meter">
+                <div class="meter-header">
+                    <span class="meter-label">Job Security</span>
+                    <span class="meter-value" id="job-security-value">75%</span>
+                </div>
+                <div class="meter-bar">
+                    <div class="meter-fill job-security" id="job-security-bar" style="width: 75%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="game-main">
+            <!-- Left Sidebar -->
+            <div class="game-sidebar-left">
+                <div class="nav-section">
+                    <div class="nav-section-title">Activities</div>
+                    <div class="nav-item active" onclick="showPanel('dashboard')">
+                        <span class="nav-icon">📊</span>
+                        <span class="nav-text">Dashboard</span>
+                    </div>
+                    <div class="nav-item" onclick="showPanel('schedule')">
+                        <span class="nav-icon">📅</span>
+                        <span class="nav-text">Weekly Schedule</span>
+                        <span class="nav-badge" id="schedule-badge">3</span>
+                    </div>
+                    <div class="nav-item" onclick="showPanel('kol-management')">
+                        <span class="nav-icon">👥</span>
+                        <span class="nav-text">KOL Management</span>
+                    </div>
+                    <div class="nav-item" onclick="showPanel('crm')">
+                        <span class="nav-icon">📝</span>
+                        <span class="nav-text">CRM Documentation</span>
+                    </div>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Programs</div>
+                    <div class="nav-item" onclick="showPanel('advisory-boards')">
+                        <span class="nav-icon">🎯</span>
+                        <span class="nav-text">Advisory Boards</span>
+                    </div>
+                    <div class="nav-item" onclick="showPanel('iis')">
+                        <span class="nav-icon">🔬</span>
+                        <span class="nav-text">IIS Programs</span>
+                    </div>
+                    <div class="nav-item" onclick="showPanel('conferences')">
+                        <span class="nav-icon">🏛️</span>
+                        <span class="nav-text">Conferences</span>
+                    </div>
+                    <div class="nav-item" onclick="showPanel('training')">
+                        <span class="nav-icon">📚</span>
+                        <span class="nav-text">Training & Support</span>
+                    </div>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-section-title">Development</div>
+                    <div class="nav-item" onclick="showPanel('skills')">
+                        <span class="nav-icon">🌟</span>
+                        <span class="nav-text">Skill Tree</span>
+                    </div>
+                    <div class="nav-item" onclick="showPanel('career')">
+                        <span class="nav-icon">📈</span>
+                        <span class="nav-text">Career Path</span>
+                    </div>
+                </div>
+                <div class="nav-section" style="margin-top: auto;">
+                    <div class="nav-item" onclick="advanceWeek()">
+                        <span class="nav-icon">⏭️</span>
+                        <span class="nav-text">End Week</span>
+                    </div>
+                    <div class="nav-item" onclick="showMainMenu()">
+                        <span class="nav-icon">🚪</span>
+                        <span class="nav-text">Exit Game</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="game-content">
+                <!-- Dashboard Panel -->
+                <div class="content-panel active" id="panel-dashboard">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Dashboard</h2>
+                        <span id="territory-display">Northeast Academic Hub</span>
+                    </div>
+                    <div id="dashboard-content">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Schedule Panel -->
+                <div class="content-panel" id="panel-schedule">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Weekly Schedule</h2>
+                        <button class="btn btn-small btn-secondary" onclick="generateWeeklyActivities()">Refresh Activities</button>
+                    </div>
+                    <div id="schedule-content">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- KOL Management Panel -->
+                <div class="content-panel" id="panel-kol-management">
+                    <div class="panel-header">
+                        <h2 class="panel-title">KOL Management</h2>
+                        <select id="kol-filter" onchange="filterKOLs()">
+                            <option value="all">All KOLs</option>
+                            <option value="high">High Priority</option>
+                            <option value="engaged">Engaged</option>
+                            <option value="new">Needs Outreach</option>
+                        </select>
+                    </div>
+                    <div class="kol-grid" id="kol-grid">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- CRM Panel -->
+                <div class="content-panel" id="panel-crm">
+                    <div class="panel-header">
+                        <h2 class="panel-title">CRM Documentation</h2>
+                    </div>
+                    <div id="crm-content">
+                        <div class="crm-form">
+                            <h3 style="margin-bottom: 1rem;">Log Medical Interaction</h3>
+                            <div class="crm-field">
+                                <label>Select KOL</label>
+                                <select id="crm-kol">
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                            <div class="crm-field">
+                                <label>Interaction Type</label>
+                                <select id="crm-type">
+                                    <option value="proactive">Proactive Outreach</option>
+                                    <option value="reactive">Reactive (HCP Initiated)</option>
+                                    <option value="conference">Conference Interaction</option>
+                                    <option value="virtual">Virtual Meeting</option>
+                                    <option value="site-visit">Site Visit</option>
+                                </select>
+                            </div>
+                            <div class="crm-field">
+                                <label>Topics Discussed (Select all that apply)</label>
+                                <div class="insight-tags" id="topic-tags">
+                                    <span class="insight-tag" data-tag="efficacy">Efficacy Data</span>
+                                    <span class="insight-tag" data-tag="safety">Safety Profile</span>
+                                    <span class="insight-tag" data-tag="dosing">Dosing</span>
+                                    <span class="insight-tag" data-tag="mechanism">Mechanism of Action</span>
+                                    <span class="insight-tag" data-tag="trial">Clinical Trial</span>
+                                    <span class="insight-tag" data-tag="competitor">Competitor Data</span>
+                                    <span class="insight-tag" data-tag="pipeline">Pipeline</span>
+                                    <span class="insight-tag" data-tag="access">Patient Access</span>
+                                </div>
+                            </div>
+                            <div class="crm-field">
+                                <label>Interaction Summary</label>
+                                <textarea id="crm-summary" placeholder="Describe the key points of your scientific exchange..."></textarea>
+                            </div>
+                            <div class="crm-field">
+                                <label>Medical Insights Gathered</label>
+                                <textarea id="crm-insights" placeholder="Document any insights that could inform medical strategy..."></textarea>
+                            </div>
+                            <div class="crm-field">
+                                <label>Follow-up Required</label>
+                                <select id="crm-followup">
+                                    <option value="none">No follow-up needed</option>
+                                    <option value="info">Send additional information</option>
+                                    <option value="meeting">Schedule follow-up meeting</option>
+                                    <option value="mir">Submit MIR (Medical Information Request)</option>
+                                    <option value="escalate">Escalate to Medical Director</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-primary" onclick="submitCRMEntry()">Submit Documentation</button>
+                        </div>
+                        <div style="margin-top: 2rem;">
+                            <h3 style="margin-bottom: 1rem;">Recent Documentation</h3>
+                            <div id="crm-history">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advisory Boards Panel -->
+                <div class="content-panel" id="panel-advisory-boards">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Advisory Boards</h2>
+                        <button class="btn btn-small btn-primary" onclick="showAdBoardPlanning()">Plan New Ad Board</button>
+                    </div>
+                    <div id="advisory-boards-content">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- IIS Panel -->
+                <div class="content-panel" id="panel-iis">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Investigator Initiated Studies</h2>
+                    </div>
+                    <div id="iis-content">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Conferences Panel -->
+                <div class="content-panel" id="panel-conferences">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Conferences & Congresses</h2>
+                    </div>
+                    <div id="conferences-content">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Training Panel -->
+                <div class="content-panel" id="panel-training">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Training & Support</h2>
+                    </div>
+                    <div id="training-content">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Skills Panel -->
+                <div class="content-panel" id="panel-skills">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Skill Tree</h2>
+                        <span>Skill Points: <strong id="skill-points">0</strong></span>
+                    </div>
+                    <div class="skill-tree" id="skill-tree">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Career Panel -->
+                <div class="content-panel" id="panel-career">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Career Path</h2>
+                    </div>
+                    <div id="career-content">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="game-sidebar-right">
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Notifications</div>
+                    <div id="notifications-list">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Upcoming Events</div>
+                    <div id="upcoming-events">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-title">Quick Stats</div>
+                    <div id="quick-stats">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dialogue Overlay -->
+    <div id="dialogue-overlay">
+        <div class="dialogue-container">
+            <div class="dialogue-header">
+                <div class="dialogue-context" id="dialogue-context">Scientific Exchange</div>
+                <div class="dialogue-kol" id="dialogue-kol-info">
+                    <div class="kol-avatar" id="dialogue-avatar">JD</div>
+                    <div>
+                        <strong id="dialogue-kol-name">Dr. John Doe</strong>
+                        <div style="font-size: 0.85rem; color: var(--text-secondary);" id="dialogue-kol-title">Professor of Oncology</div>
+                    </div>
+                </div>
+            </div>
+            <div class="dialogue-body">
+                <div class="dialogue-message">
+                    <div class="dialogue-speaker" id="dialogue-speaker">Dr. John Doe</div>
+                    <div class="dialogue-text" id="dialogue-text">
+                        "I've been reviewing the Phase III data for your compound. Can you tell me more about the subgroup analysis for patients with prior treatment failure?"
+                    </div>
+                </div>
+                <div class="dialogue-options" id="dialogue-options">
+                    <!-- Populated by JS -->
+                </div>
+                <div class="dialogue-result" id="dialogue-result" style="display: none;">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quarterly Review Modal -->
+    <div id="review-modal">
+        <div class="review-container">
+            <div class="review-header">
+                <h2>Quarterly Performance Review</h2>
+                <p id="review-quarter">Q1 2024</p>
+            </div>
+            <div class="review-body" id="review-body">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over">
+        <div class="game-over-content">
+            <h1 class="game-over-title" id="game-over-title">Career Ended</h1>
+            <p class="game-over-reason" id="game-over-reason">Your employment has been terminated due to compliance violations.</p>
+            <div class="game-over-stats" id="game-over-stats">
+                <!-- Populated by JS -->
+            </div>
+            <button class="btn btn-primary" onclick="location.reload()">Start New Career</button>
+        </div>
+    </div>
+
+    <!-- Tutorial Overlay -->
+    <div id="tutorial-overlay">
+        <div class="tutorial-container">
+            <div class="tutorial-header">
+                <h2 id="tutorial-title">Welcome to MSL Career Simulator</h2>
+            </div>
+            <div class="tutorial-content" id="tutorial-content">
+                <!-- Populated by JS -->
+            </div>
+            <div class="tutorial-progress" id="tutorial-progress">
+                <!-- Populated by JS -->
+            </div>
+            <div class="tutorial-nav">
+                <button class="btn btn-secondary" id="tutorial-prev" onclick="prevTutorial()">Previous</button>
+                <button class="btn btn-primary" id="tutorial-next" onclick="nextTutorial()">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="msl-game.js"></script>
+</body>
+</html>
