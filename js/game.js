@@ -41,6 +41,7 @@ class MSLGame {
     init() {
         this.bindEvents();
         this.initSkills();
+        this.initTutorial();
         this.showLoadingScreen();
     }
 
@@ -88,6 +89,7 @@ class MSLGame {
 
         // Interaction screen
         document.getElementById('end-interaction')?.addEventListener('click', () => this.endInteraction());
+        document.getElementById('back-from-interaction')?.addEventListener('click', () => this.exitInteractionWithoutSaving());
 
         // CRM Modal
         document.getElementById('submit-crm')?.addEventListener('click', () => this.submitCRM());
@@ -139,6 +141,161 @@ class MSLGame {
                 if (modal) this.closeModal(modal.id);
             });
         });
+
+        // Pre-call planning
+        document.getElementById('start-meeting')?.addEventListener('click', () => this.startMeetingFromPlanning());
+        document.getElementById('cancel-planning')?.addEventListener('click', () => this.cancelPlanning());
+
+        // Objective checkboxes - limit to 3
+        document.querySelectorAll('input[name="objectives"]').forEach(checkbox => {
+            checkbox.addEventListener('change', () => this.enforceObjectiveLimit());
+        });
+
+        // CRM quality scoring
+        this.bindCRMScoringEvents();
+    }
+
+    bindCRMScoringEvents() {
+        // All scored fields
+        document.querySelectorAll('.crm-scored-field').forEach(field => {
+            field.addEventListener('change', () => this.updateCRMQualityScore());
+            field.addEventListener('input', () => this.updateCRMQualityScore());
+        });
+
+        // Character counts
+        const summaryField = document.getElementById('crm-discussion-summary');
+        const insightsField = document.getElementById('crm-insights');
+
+        summaryField?.addEventListener('input', () => {
+            const count = summaryField.value.length;
+            const countEl = document.getElementById('summary-char-count');
+            if (countEl) {
+                countEl.textContent = count;
+                countEl.parentElement.classList.toggle('met', count >= 50);
+            }
+            this.updateCRMQualityScore();
+        });
+
+        insightsField?.addEventListener('input', () => {
+            const count = insightsField.value.length;
+            const countEl = document.getElementById('insights-char-count');
+            if (countEl) countEl.textContent = count;
+            this.updateCRMQualityScore();
+        });
+
+        // Off-label toggle
+        document.querySelectorAll('input[name="off-label"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const details = document.getElementById('off-label-details');
+                if (details) {
+                    details.style.display = radio.value !== 'no' && radio.checked ? 'block' : 'none';
+                }
+            });
+        });
+
+        // AE toggle
+        document.querySelectorAll('input[name="ae"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                const details = document.getElementById('ae-details');
+                if (details) {
+                    details.style.display = radio.value === 'yes' && radio.checked ? 'block' : 'none';
+                }
+            });
+        });
+    }
+
+    updateCRMQualityScore() {
+        let score = 0;
+        let maxScore = 60; // Base max score (required fields)
+
+        // Check interaction type (10 points)
+        const typeField = document.getElementById('crm-interaction-type');
+        const typeComplete = typeField && typeField.value !== '';
+        if (typeComplete) score += 10;
+        this.updateChecklistItem('check-type', typeComplete);
+
+        // Check duration (10 points)
+        const durationField = document.getElementById('crm-duration');
+        const durationComplete = durationField && durationField.value !== '';
+        if (durationComplete) score += 10;
+        this.updateChecklistItem('check-duration', durationComplete);
+
+        // Check topics selected (10 points)
+        const topicsChecked = document.querySelectorAll('input[name="topics"]:checked').length;
+        const topicsComplete = topicsChecked > 0;
+        if (topicsComplete) score += 10;
+        this.updateChecklistItem('check-topics', topicsComplete);
+
+        // Check summary (15 points)
+        const summaryField = document.getElementById('crm-discussion-summary');
+        const summaryComplete = summaryField && summaryField.value.length >= 50;
+        if (summaryComplete) score += 15;
+        this.updateChecklistItem('check-summary', summaryComplete);
+
+        // Check sentiment (10 points)
+        const sentimentField = document.getElementById('crm-sentiment');
+        const sentimentComplete = sentimentField && sentimentField.value !== '';
+        if (sentimentComplete) score += 10;
+        this.updateChecklistItem('check-sentiment', sentimentComplete);
+
+        // Check follow-up (5 points)
+        const followupField = document.getElementById('crm-followup');
+        const followupComplete = followupField && followupField.value.length >= 10;
+        if (followupComplete) score += 5;
+        this.updateChecklistItem('check-followup', followupComplete);
+
+        // Bonus: Insights (20 points)
+        const insightsField = document.getElementById('crm-insights');
+        const insightsComplete = insightsField && insightsField.value.length >= 30;
+        if (insightsComplete) {
+            score += 20;
+            maxScore += 20;
+        }
+        this.updateChecklistItem('check-insights', insightsComplete, true);
+
+        // Bonus: Next steps (20 points)
+        const nextStepsField = document.getElementById('crm-next-steps');
+        const nextStepsComplete = nextStepsField && nextStepsField.value.length >= 20;
+        if (nextStepsComplete) {
+            score += 20;
+            maxScore += 20;
+        }
+        this.updateChecklistItem('check-nextsteps', nextStepsComplete, true);
+
+        // Calculate percentage
+        const percentage = Math.round((score / maxScore) * 100);
+
+        // Update UI
+        const fillEl = document.getElementById('crm-quality-fill');
+        const scoreEl = document.getElementById('crm-quality-score');
+
+        if (fillEl) fillEl.style.width = `${percentage}%`;
+        if (scoreEl) {
+            scoreEl.textContent = `${percentage}%`;
+            scoreEl.className = 'quality-score';
+            if (percentage >= 80) scoreEl.classList.add('excellent');
+            else if (percentage >= 60) scoreEl.classList.add('good');
+            else if (percentage >= 40) scoreEl.classList.add('fair');
+            else scoreEl.classList.add('poor');
+        }
+
+        // Enable/disable submit button
+        const submitBtn = document.getElementById('submit-crm');
+        const requiredComplete = typeComplete && topicsComplete && summaryComplete;
+        if (submitBtn) {
+            submitBtn.disabled = !requiredComplete;
+        }
+
+        return { score, percentage, requiredComplete };
+    }
+
+    updateChecklistItem(itemId, complete, isBonus = false) {
+        const item = document.getElementById(itemId);
+        if (item) {
+            item.classList.remove('complete', 'incomplete');
+            item.classList.add(complete ? 'complete' : 'incomplete');
+            if (isBonus) item.classList.add('bonus');
+        }
     }
 
     // Screen Management
@@ -200,6 +357,10 @@ class MSLGame {
             currentWeek: 1,
             currentQuarter: 1,
             currentYear: 2024,
+            // Time management
+            weeklyTimeTotal: 40,
+            weeklyTimeRemaining: 40,
+            lastVisitedLocation: null,
             metrics: {
                 kolEngagement: 0,
                 scientificExchange: 0,
@@ -225,6 +386,109 @@ class MSLGame {
             gameOver: false
         };
         this.initSkills();
+    }
+
+    // Time Management Methods
+    getActivityTimeCost(activityType, kol = null) {
+        const baseCosts = {
+            'kol-visit': 2,       // Base 2 hours for KOL meeting
+            'congress': 8,        // Full day at congress
+            'advisory': 6,        // Advisory board participation
+            'training': 3,        // Internal training session
+            'iis': 2,            // IIS coordination
+            'crm': 0.5           // CRM documentation
+        };
+
+        let cost = baseCosts[activityType] || 1;
+
+        // Add travel time for KOL visits
+        if (activityType === 'kol-visit' && kol) {
+            cost += this.calculateTravelTime(kol);
+        }
+
+        return cost;
+    }
+
+    calculateTravelTime(kol) {
+        // Base travel time depends on KOL type
+        let baseTravelTime = 0.5; // 30 minutes base
+
+        if (kol.type === 'academic') {
+            baseTravelTime = 1; // Academic centers often in city centers
+        } else if (kol.type === 'community') {
+            baseTravelTime = 1.5; // Community hospitals spread out
+        } else if (kol.type === 'private') {
+            baseTravelTime = 1; // Private practices variable
+        }
+
+        // If we visited this KOL or nearby location recently, reduce travel time
+        if (this.state.lastVisitedLocation === kol.institution) {
+            baseTravelTime = 0;
+        } else if (this.state.lastVisitedLocation &&
+                   kol.institution.includes(this.state.lastVisitedLocation.split(' ')[0])) {
+            baseTravelTime *= 0.5; // Same area, reduced travel
+        }
+
+        // Territory difficulty affects travel
+        const territory = GameData.territories[this.state.territory];
+        if (territory) {
+            if (territory.characteristics.travelRequirement === 'Very High') {
+                baseTravelTime *= 1.5;
+            } else if (territory.characteristics.travelRequirement === 'High') {
+                baseTravelTime *= 1.25;
+            }
+        }
+
+        return Math.round(baseTravelTime * 10) / 10; // Round to 1 decimal
+    }
+
+    canAffordTime(cost) {
+        return this.state.weeklyTimeRemaining >= cost;
+    }
+
+    spendTime(cost, activity, kol = null) {
+        this.state.weeklyTimeRemaining = Math.max(0, this.state.weeklyTimeRemaining - cost);
+
+        // Update last visited location
+        if (kol) {
+            this.state.lastVisitedLocation = kol.institution;
+        }
+
+        this.updateTimeBudgetDisplay();
+    }
+
+    updateTimeBudgetDisplay() {
+        const remaining = this.state.weeklyTimeRemaining;
+        const total = this.state.weeklyTimeTotal;
+        const percentage = (remaining / total) * 100;
+
+        const fillEl = document.getElementById('time-budget-fill');
+        const remainingEl = document.getElementById('time-remaining');
+        const textEl = document.querySelector('.time-budget-text');
+
+        if (fillEl) {
+            fillEl.style.width = `${percentage}%`;
+            fillEl.classList.remove('low', 'medium');
+            if (percentage <= 25) {
+                fillEl.classList.add('low');
+            } else if (percentage <= 50) {
+                fillEl.classList.add('medium');
+            }
+        }
+
+        if (remainingEl) {
+            remainingEl.textContent = remaining.toFixed(1);
+        }
+
+        if (textEl) {
+            textEl.classList.toggle('low', percentage <= 25);
+        }
+    }
+
+    showTimeWarning(requiredTime) {
+        this.showNotification('Not Enough Time',
+            `This activity requires ${requiredTime} hours, but you only have ${this.state.weeklyTimeRemaining.toFixed(1)} hours remaining this week. Advance to next week to reset your time budget.`,
+            'warning');
     }
 
     // Character Creation
@@ -335,8 +599,16 @@ class MSLGame {
         this.generateIISProjects();
         this.showScreen('dashboard-screen');
         this.updateDashboard();
-        this.showNotification('Welcome to ' + GameData.territories[this.state.territory].name + '!',
-            'Your MSL career begins. Start by engaging with KOLs in your territory.', 'info');
+
+        // Show tutorial for new players
+        if (this.shouldShowTutorial()) {
+            setTimeout(() => {
+                this.showTutorial();
+            }, 500);
+        } else {
+            this.showNotification('Welcome to ' + GameData.territories[this.state.territory].name + '!',
+                'Your MSL career begins. Start by engaging with KOLs in your territory.', 'info');
+        }
     }
 
     // KOL Generation
@@ -428,6 +700,9 @@ class MSLGame {
         } else {
             complianceStat.style.borderColor = '#ef4444';
         }
+
+        // Update time budget
+        this.updateTimeBudgetDisplay();
 
         this.updateMap();
         this.updateCalendar();
@@ -704,6 +979,337 @@ class MSLGame {
         document.getElementById('metric-collab').textContent = `${Math.round(metrics.internalCollaboration)}%`;
 
         document.getElementById('next-review').textContent = `End of Q${this.state.currentQuarter}`;
+
+        // Update next action prompt
+        this.updateNextActionPrompt();
+    }
+
+    updateNextActionPrompt() {
+        const prompt = this.calculateNextActionPrompt();
+
+        const promptEl = document.getElementById('next-action-prompt');
+        const iconEl = document.getElementById('prompt-icon');
+        const titleEl = document.getElementById('prompt-title');
+        const messageEl = document.getElementById('prompt-message');
+        const actionTextEl = document.getElementById('prompt-action-text');
+        const actionBtnEl = document.getElementById('prompt-action-btn');
+
+        if (!promptEl) return;
+
+        // Update classes
+        promptEl.className = 'next-action-prompt';
+        if (prompt.type) promptEl.classList.add(prompt.type);
+
+        // Update content
+        if (iconEl) iconEl.textContent = prompt.icon;
+        if (titleEl) titleEl.textContent = prompt.title;
+        if (messageEl) messageEl.textContent = prompt.message;
+        if (actionTextEl) actionTextEl.textContent = prompt.actionText;
+
+        // Set up action button
+        if (actionBtnEl) {
+            actionBtnEl.onclick = () => this.executePromptAction(prompt.action);
+        }
+    }
+
+    calculateNextActionPrompt() {
+        // Priority 1: Critical compliance warning
+        if (this.state.metrics.regulatoryCompliance < 70) {
+            return {
+                icon: '⚠️',
+                title: 'Compliance Alert',
+                message: 'Your compliance score is critical. Focus on compliant interactions to avoid termination.',
+                actionText: 'View Performance',
+                action: 'view-performance',
+                type: 'warning'
+            };
+        }
+
+        // Priority 2: Overdue CRM documentation
+        const overdueCRM = this.state.pendingCRM.filter(c => c.status === 'overdue').length;
+        if (overdueCRM > 0) {
+            return {
+                icon: '📝',
+                title: 'Overdue Documentation',
+                message: `You have ${overdueCRM} overdue CRM ${overdueCRM === 1 ? 'entry' : 'entries'}. Document interactions within 48 hours to maintain compliance.`,
+                actionText: 'Open CRM',
+                action: 'open-crm',
+                type: 'warning'
+            };
+        }
+
+        // Priority 3: Low time remaining
+        if (this.state.weeklyTimeRemaining < 4) {
+            return {
+                icon: '⏰',
+                title: 'Low Time Budget',
+                message: `Only ${this.state.weeklyTimeRemaining.toFixed(1)} hours remaining this week. Consider advancing to next week.`,
+                actionText: 'Advance Week',
+                action: 'advance-week',
+                type: 'warning'
+            };
+        }
+
+        // Priority 4: Pending CRM
+        if (this.state.pendingCRM.length > 0) {
+            return {
+                icon: '📋',
+                title: 'Pending Documentation',
+                message: `You have ${this.state.pendingCRM.length} pending CRM ${this.state.pendingCRM.length === 1 ? 'entry' : 'entries'}. Complete documentation for full credit.`,
+                actionText: 'Open CRM',
+                action: 'open-crm'
+            };
+        }
+
+        // Priority 5: Low KOL engagement (new game)
+        const engagedKOLs = this.state.kols.filter(k => k.interactionCount > 0).length;
+        if (engagedKOLs < 3) {
+            return {
+                icon: '👤',
+                title: 'Build Your Network',
+                message: `You've met ${engagedKOLs} of ${this.state.kols.length} KOLs. Start building relationships with key opinion leaders.`,
+                actionText: 'Visit a KOL',
+                action: 'visit-kol'
+            };
+        }
+
+        // Priority 6: Low insight count
+        if (this.state.insights.length < 5) {
+            return {
+                icon: '💡',
+                title: 'Gather Insights',
+                message: 'Focus on gathering medical insights from your KOL interactions. Insights are valuable for your metrics.',
+                actionText: 'Visit a KOL',
+                action: 'visit-kol'
+            };
+        }
+
+        // Priority 7: Follow up with existing KOLs
+        const needsFollowUp = this.state.kols.filter(k =>
+            k.interactionCount > 0 &&
+            k.relationship !== 'advocate' &&
+            (!k.lastContact || (this.state.currentWeek - k.lastContact.week) > 2)
+        );
+        if (needsFollowUp.length > 0) {
+            return {
+                icon: '🔄',
+                title: 'Follow Up',
+                message: `${needsFollowUp[0].name} hasn't been contacted recently. Follow up to maintain the relationship.`,
+                actionText: 'Visit KOL',
+                action: 'visit-kol'
+            };
+        }
+
+        // Priority 8: Quarter review approaching
+        if (this.state.currentWeek >= 10) {
+            return {
+                icon: '📊',
+                title: 'Review Approaching',
+                message: 'Quarterly review is approaching. Focus on improving any lagging metrics.',
+                actionText: 'View Performance',
+                action: 'view-performance'
+            };
+        }
+
+        // Default: Continue KOL engagement
+        return {
+            icon: '🎯',
+            title: 'Keep Engaging',
+            message: 'Continue building relationships with KOLs and gathering insights. Quality interactions lead to career advancement.',
+            actionText: 'Visit a KOL',
+            action: 'visit-kol',
+            type: 'success'
+        };
+    }
+
+    executePromptAction(action) {
+        switch (action) {
+            case 'visit-kol':
+                this.showKOLSelection();
+                break;
+            case 'open-crm':
+                this.switchPanel('crm');
+                break;
+            case 'view-performance':
+                this.switchPanel('performance');
+                break;
+            case 'advance-week':
+                this.advanceWeek();
+                break;
+            default:
+                this.showKOLSelection();
+        }
+    }
+
+    // Interactive Tutorial System
+    initTutorial() {
+        this.tutorialSteps = [
+            {
+                icon: '🎓',
+                title: 'Welcome to MSL Simulator!',
+                content: 'You\'re about to start your career as a Medical Science Liaison. This tutorial will guide you through the key aspects of the game.',
+                tips: [
+                    'MSLs are scientific experts who engage with healthcare professionals',
+                    'Your goal is to build relationships, gather insights, and maintain compliance',
+                    'Performance reviews determine career advancement'
+                ]
+            },
+            {
+                icon: '👥',
+                title: 'Engaging with KOLs',
+                content: 'Key Opinion Leaders (KOLs) are the physicians you\'ll interact with. Each has unique interests, personalities, and value to your company.',
+                tips: [
+                    'Tier 1 KOLs are national experts - high value but demanding',
+                    'Plan your meetings with specific objectives in mind',
+                    'Build relationships gradually - trust takes time',
+                    'Listen carefully to identify insights and unmet needs'
+                ]
+            },
+            {
+                icon: '💬',
+                title: 'Scientific Exchange',
+                content: 'During conversations, you\'ll face realistic scenarios that test your scientific knowledge and compliance awareness. Choose your responses carefully.',
+                tips: [
+                    'Always stay within approved labeling when proactive',
+                    'You CAN respond to unsolicited off-label questions',
+                    'Never make comparative claims without head-to-head data',
+                    'Report adverse events immediately - this is non-negotiable'
+                ]
+            },
+            {
+                icon: '⚖️',
+                title: 'Compliance is Critical',
+                content: 'The pharmaceutical industry is heavily regulated. Compliance violations can end your career. Your compliance score must stay above 60% to avoid termination.',
+                tips: [
+                    'Promotional activity is prohibited for MSLs',
+                    'Document all interactions in CRM within 48 hours',
+                    'Fair balance: always present risks alongside benefits',
+                    'When in doubt, escalate to medical information'
+                ]
+            },
+            {
+                icon: '💡',
+                title: 'Gathering Insights',
+                content: 'A major part of your value is gathering medical insights from the field - information about clinical practice, unmet needs, and competitive intelligence.',
+                tips: [
+                    'Ask open-ended questions during conversations',
+                    'Document insights thoroughly in your CRM notes',
+                    'Quality insights boost your metrics significantly',
+                    'Different insight categories have different strategic value'
+                ]
+            },
+            {
+                icon: '⏱️',
+                title: 'Time Management',
+                content: 'You have a limited time budget each week. Plan your activities wisely - travel time, meeting duration, and other activities all consume your hours.',
+                tips: [
+                    'KOL visits typically take 2-4 hours including travel',
+                    'Cluster visits in the same area to reduce travel time',
+                    'Balance KOL engagement with administrative tasks',
+                    'Advance to the next week to reset your time budget'
+                ]
+            },
+            {
+                icon: '📈',
+                title: 'Career Advancement',
+                content: 'Your performance is reviewed each quarter. Strong metrics lead to promotion; poor performance leads to warnings or termination. Good luck!',
+                tips: [
+                    'KOL Engagement: interact with a breadth of KOLs',
+                    'Scientific Exchange: positive outcomes in conversations',
+                    'CRM Compliance: timely, quality documentation',
+                    'Regulatory Compliance: avoid violations at all costs'
+                ]
+            }
+        ];
+
+        this.currentTutorialStep = 0;
+        this.bindTutorialEvents();
+    }
+
+    bindTutorialEvents() {
+        document.getElementById('tutorial-next')?.addEventListener('click', () => this.nextTutorialStep());
+        document.getElementById('tutorial-prev')?.addEventListener('click', () => this.prevTutorialStep());
+        document.getElementById('tutorial-skip')?.addEventListener('click', () => this.endTutorial());
+    }
+
+    showTutorial() {
+        this.currentTutorialStep = 0;
+        this.renderTutorialStep();
+        document.getElementById('tutorial-overlay').classList.add('active');
+    }
+
+    renderTutorialStep() {
+        const step = this.tutorialSteps[this.currentTutorialStep];
+        const totalSteps = this.tutorialSteps.length;
+
+        // Update content
+        document.getElementById('tutorial-step-icon').textContent = step.icon;
+        document.getElementById('tutorial-step-title').textContent = step.title;
+        document.getElementById('tutorial-step-content').textContent = step.content;
+
+        // Update tips
+        const tipsList = document.getElementById('tutorial-tips-list');
+        tipsList.innerHTML = '';
+        step.tips.forEach(tip => {
+            const li = document.createElement('li');
+            li.textContent = tip;
+            tipsList.appendChild(li);
+        });
+
+        // Update progress dots
+        const dotsContainer = document.getElementById('tutorial-progress-dots');
+        dotsContainer.innerHTML = '';
+        for (let i = 0; i < totalSteps; i++) {
+            const dot = document.createElement('div');
+            dot.className = 'progress-dot';
+            if (i < this.currentTutorialStep) dot.classList.add('completed');
+            if (i === this.currentTutorialStep) dot.classList.add('active');
+            dotsContainer.appendChild(dot);
+        }
+
+        // Update progress text
+        document.getElementById('tutorial-progress-text').textContent =
+            `Step ${this.currentTutorialStep + 1} of ${totalSteps}`;
+
+        // Show/hide navigation buttons
+        document.getElementById('tutorial-prev').style.display =
+            this.currentTutorialStep > 0 ? 'block' : 'none';
+
+        const nextBtn = document.getElementById('tutorial-next');
+        if (this.currentTutorialStep === totalSteps - 1) {
+            nextBtn.textContent = 'Start Playing';
+        } else {
+            nextBtn.textContent = 'Next';
+        }
+    }
+
+    nextTutorialStep() {
+        if (this.currentTutorialStep < this.tutorialSteps.length - 1) {
+            this.currentTutorialStep++;
+            this.renderTutorialStep();
+        } else {
+            this.endTutorial();
+        }
+    }
+
+    prevTutorialStep() {
+        if (this.currentTutorialStep > 0) {
+            this.currentTutorialStep--;
+            this.renderTutorialStep();
+        }
+    }
+
+    endTutorial() {
+        document.getElementById('tutorial-overlay').classList.remove('active');
+
+        // Mark tutorial as completed
+        localStorage.setItem('mslSimulatorTutorialCompleted', 'true');
+
+        this.showNotification('Tutorial Complete', 'You\'re ready to start your MSL career! Good luck!', 'success');
+    }
+
+    shouldShowTutorial() {
+        return !localStorage.getItem('mslSimulatorTutorialCompleted');
     }
 
     switchPanel(panelId) {
@@ -723,22 +1329,290 @@ class MSLGame {
         const kol = this.state.kols.find(k => k.id === kolId);
         if (!kol) return;
 
-        this.state.currentKOL = kol;
-        this.state.dialogueHistory = [];
+        // Calculate time cost for this visit
+        const timeCost = this.getActivityTimeCost('kol-visit', kol);
 
+        // Check if we have enough time
+        if (!this.canAffordTime(timeCost)) {
+            this.showTimeWarning(timeCost);
+            return;
+        }
+
+        this.state.currentKOL = kol;
+        this.state.currentMeetingTimeCost = timeCost;
+        this.state.dialogueHistory = [];
+        this.state.meetingObjectives = [];
+        this.state.meetingMaterials = [];
+        this.state.objectiveProgress = {};
+
+        // Show pre-call planning modal
+        this.showPreCallPlanning(kol);
+    }
+
+    showPreCallPlanning(kol) {
+        // Populate KOL info
+        document.getElementById('precall-avatar').textContent = kol.avatar;
+        document.getElementById('precall-kol-name').textContent = kol.name;
+        document.getElementById('precall-kol-title').textContent = kol.title;
+        document.getElementById('precall-kol-institution').textContent = kol.institution;
+        document.getElementById('precall-tier').textContent = kol.tier;
+        document.getElementById('precall-relationship').textContent = this.capitalizeFirst(kol.relationship);
+
+        // Last contact
+        if (kol.lastContact) {
+            document.getElementById('precall-last-contact').textContent =
+                `Week ${kol.lastContact.week}, Q${kol.lastContact.quarter}`;
+        } else {
+            document.getElementById('precall-last-contact').textContent = 'Never';
+        }
+
+        // Add time cost information to planning modal
+        const timeCost = this.state.currentMeetingTimeCost;
+        const travelTime = this.calculateTravelTime(kol);
+        const meetingTime = 2; // Base meeting time
+
+        // Create or update time info section
+        let timeInfo = document.getElementById('precall-time-info');
+        if (!timeInfo) {
+            timeInfo = document.createElement('div');
+            timeInfo.id = 'precall-time-info';
+            timeInfo.className = 'precall-time-info';
+            const kolInfo = document.querySelector('.precall-kol-info');
+            if (kolInfo) {
+                kolInfo.after(timeInfo);
+            }
+        }
+
+        timeInfo.innerHTML = `
+            <div class="time-breakdown">
+                <span class="time-label">Travel time:</span>
+                <span class="time-value">${travelTime} hrs</span>
+            </div>
+            <div class="time-breakdown">
+                <span class="time-label">Meeting time:</span>
+                <span class="time-value">${meetingTime} hrs</span>
+            </div>
+            <div class="time-breakdown total">
+                <span class="time-label">Total:</span>
+                <span class="time-value">${timeCost} hrs</span>
+            </div>
+            <div class="time-remaining-note">
+                You have ${this.state.weeklyTimeRemaining.toFixed(1)} hours remaining this week
+            </div>
+        `;
+
+        // Populate interests
+        const interestsContainer = document.getElementById('precall-interests');
+        interestsContainer.innerHTML = '';
+        (kol.interests || ['Research', 'Clinical Practice']).forEach(interest => {
+            const tag = document.createElement('span');
+            tag.className = 'interest-tag';
+            tag.textContent = interest;
+            interestsContainer.appendChild(tag);
+        });
+
+        // Generate tips based on KOL
+        this.generatePreCallTips(kol);
+
+        // Reset checkboxes
+        document.querySelectorAll('input[name="objectives"]').forEach(cb => cb.checked = false);
+        document.querySelectorAll('input[name="materials"]').forEach(cb => cb.checked = false);
+        document.getElementById('precall-questions').value = '';
+
+        // Show modal
+        document.getElementById('precall-modal').classList.add('active');
+    }
+
+    generatePreCallTips(kol) {
+        const tipsList = document.getElementById('precall-tips-list');
+        tipsList.innerHTML = '';
+
+        const tips = [];
+
+        // Tips based on relationship
+        if (kol.relationship === 'new') {
+            tips.push('First meeting: Focus on understanding their practice and interests before diving into data');
+            tips.push('Ask open-ended questions to learn about their clinical challenges');
+        } else if (kol.relationship === 'developing') {
+            tips.push('Building relationship: Reference previous conversations to show you listened');
+        } else if (kol.relationship === 'established' || kol.relationship === 'advocate') {
+            tips.push('Strong relationship: Consider discussing research collaboration opportunities');
+        }
+
+        // Tips based on tier
+        if (kol.tier === 1) {
+            tips.push('Tier 1 KOL: Come prepared with deep scientific data - they expect expertise');
+            tips.push('Time is limited: Be concise and focus on high-impact topics');
+        } else if (kol.tier === 3) {
+            tips.push('Community physician: Focus on practical, real-world application of data');
+        }
+
+        // Tips based on type
+        if (kol.type === 'academic') {
+            tips.push('Academic setting: Discuss clinical trial data and research methodology');
+        } else if (kol.type === 'community') {
+            tips.push('Community practice: Address real-world effectiveness and patient access');
+        }
+
+        // Tips based on personality
+        if (kol.personality && kol.personality.includes('Skeptical')) {
+            tips.push('This KOL may be skeptical: Lead with strong evidence and acknowledge limitations');
+        }
+        if (kol.personality && kol.personality.includes('Time-constrained')) {
+            tips.push('Limited time: Get to the point quickly and prioritize your key messages');
+        }
+
+        // Add generic tip
+        tips.push('Remember: Listen more than you speak to uncover insights');
+
+        // Populate tips list (max 5)
+        tips.slice(0, 5).forEach(tip => {
+            const li = document.createElement('li');
+            li.textContent = tip;
+            tipsList.appendChild(li);
+        });
+    }
+
+    enforceObjectiveLimit() {
+        const checked = document.querySelectorAll('input[name="objectives"]:checked');
+        const unchecked = document.querySelectorAll('input[name="objectives"]:not(:checked)');
+
+        if (checked.length >= 3) {
+            unchecked.forEach(cb => cb.disabled = true);
+        } else {
+            unchecked.forEach(cb => cb.disabled = false);
+        }
+    }
+
+    startMeetingFromPlanning() {
+        const kol = this.state.currentKOL;
+        const timeCost = this.state.currentMeetingTimeCost;
+
+        // Spend time for this meeting
+        this.spendTime(timeCost, 'kol-visit', kol);
+
+        // Collect objectives
+        this.state.meetingObjectives = Array.from(
+            document.querySelectorAll('input[name="objectives"]:checked')
+        ).map(cb => cb.value);
+
+        // Collect materials
+        this.state.meetingMaterials = Array.from(
+            document.querySelectorAll('input[name="materials"]:checked')
+        ).map(cb => cb.value);
+
+        // Initialize objective tracking
+        this.state.objectiveProgress = {};
+        this.state.meetingObjectives.forEach(obj => {
+            this.state.objectiveProgress[obj] = { achieved: false, attempts: 0 };
+        });
+
+        // Store questions for later reference
+        this.state.plannedQuestions = document.getElementById('precall-questions').value;
+
+        // Close modal
+        this.closeModal('precall-modal');
+
+        // Now start the actual interaction
+        this.beginInteraction(kol);
+    }
+
+    beginInteraction(kol) {
         // Update interaction screen
         document.getElementById('interaction-kol-name').textContent = kol.name;
         document.getElementById('interaction-kol-title').textContent = kol.title;
         document.getElementById('interaction-kol-institution').textContent = kol.institution;
         document.getElementById('interaction-avatar').textContent = kol.avatar;
 
+        // Update KOL details in sidebar
+        const specialty = document.getElementById('kol-specialty');
+        const interests = document.getElementById('kol-interests');
+        const prevInteractions = document.getElementById('kol-prev-interactions');
+
+        if (specialty) specialty.textContent = kol.title;
+        if (interests) interests.textContent = kol.interests ? kol.interests.join(', ') : 'Research, Clinical Practice';
+        if (prevInteractions) prevInteractions.textContent = kol.interactionCount || 0;
+
         // Update relationship bar
         const fillPercent = Math.min(100, (kol.relationshipScore / 100) * 100);
         document.getElementById('relationship-fill').style.width = `${fillPercent}%`;
         document.getElementById('relationship-label').textContent = this.capitalizeFirst(kol.relationship);
 
+        // Clear notes field
+        const notesField = document.getElementById('interaction-notes');
+        if (notesField) notesField.value = '';
+
+        // Show objectives in UI if they were set
+        if (this.state.meetingObjectives.length > 0) {
+            this.showMeetingObjectives();
+        }
+
         this.showScreen('interaction-screen');
         this.startDialogue();
+    }
+
+    showMeetingObjectives() {
+        // Find or create objectives display
+        let objectivesDisplay = document.getElementById('meeting-objectives-display');
+        if (!objectivesDisplay) {
+            objectivesDisplay = document.createElement('div');
+            objectivesDisplay.id = 'meeting-objectives-display';
+            objectivesDisplay.className = 'meeting-objectives';
+
+            // Insert at top of dialogue container
+            const dialogueContainer = document.querySelector('.dialogue-container');
+            if (dialogueContainer) {
+                dialogueContainer.insertBefore(objectivesDisplay, dialogueContainer.firstChild);
+            }
+        }
+
+        const objectiveNames = {
+            'scientific-exchange': 'Scientific Exchange',
+            'gather-insights': 'Gather Insights',
+            'build-relationship': 'Build Relationship',
+            'discuss-research': 'Discuss Research',
+            'address-concerns': 'Address Concerns',
+            'competitive-intel': 'Competitive Landscape'
+        };
+
+        let html = '<div class="objectives-header">Meeting Objectives</div>';
+        html += '<div class="objectives-list">';
+        this.state.meetingObjectives.forEach(obj => {
+            const achieved = this.state.objectiveProgress[obj]?.achieved;
+            html += `<span class="objective-badge ${achieved ? 'achieved' : ''}" data-objective="${obj}">
+                ${achieved ? '✓' : '○'} ${objectiveNames[obj] || obj}
+            </span>`;
+        });
+        html += '</div>';
+
+        objectivesDisplay.innerHTML = html;
+    }
+
+    updateObjectiveProgress(objective) {
+        if (this.state.objectiveProgress[objective]) {
+            this.state.objectiveProgress[objective].achieved = true;
+            this.showMeetingObjectives(); // Update display
+            this.showNotification('Objective Achieved!', `You've achieved your objective: ${objective.replace('-', ' ')}`, 'success');
+        }
+    }
+
+    cancelPlanning() {
+        this.closeModal('precall-modal');
+        this.state.currentKOL = null;
+    }
+
+    exitInteractionWithoutSaving() {
+        // Confirm if there was any dialogue
+        if (this.state.dialogueHistory.length > 2) {
+            if (!confirm('You have an ongoing conversation. Are you sure you want to leave without completing the interaction?')) {
+                return;
+            }
+        }
+        this.state.currentKOL = null;
+        this.state.dialogueHistory = [];
+        this.state.currentScenario = null;
+        this.showScreen('dashboard-screen');
+        this.updateDashboard();
     }
 
     startDialogue() {
@@ -770,6 +1644,19 @@ class MSLGame {
     }
 
     presentScenario() {
+        // Decide whether to use branching scenario or simple scenario
+        // Branching scenarios happen more often for established relationships
+        const kol = this.state.currentKOL;
+        const useBranching = Math.random() < 0.6; // 60% chance for branching scenarios
+
+        if (useBranching && GameData.branchingScenarios) {
+            this.startBranchingScenario();
+        } else {
+            this.startSimpleScenario();
+        }
+    }
+
+    startSimpleScenario() {
         // Select a random scenario based on interaction history
         const scenarioTypes = Object.keys(GameData.scenarios);
         const randomType = scenarioTypes[Math.floor(Math.random() * scenarioTypes.length)];
@@ -777,12 +1664,274 @@ class MSLGame {
         const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
 
         this.state.currentScenario = scenario;
+        this.state.isBranchingScenario = false;
 
         // Add KOL's question
         setTimeout(() => {
             this.addDialogueMessage(this.state.currentKOL.name, scenario.kolQuestion, 'kol');
             this.showDialogueOptions(scenario.options);
         }, 1500);
+    }
+
+    startBranchingScenario() {
+        // Combine regular branching scenarios with gray area scenarios
+        let allScenarios = [];
+
+        if (GameData.branchingScenarios) {
+            Object.entries(GameData.branchingScenarios).forEach(([key, scenario]) => {
+                allScenarios.push({ ...scenario, key, type: 'branching' });
+            });
+        }
+
+        if (GameData.grayAreaScenarios) {
+            Object.entries(GameData.grayAreaScenarios).forEach(([key, scenario]) => {
+                allScenarios.push({ ...scenario, key, type: 'grayArea' });
+            });
+        }
+
+        // Select a random scenario
+        const randomIndex = Math.floor(Math.random() * allScenarios.length);
+        const scenario = allScenarios[randomIndex];
+
+        this.state.currentBranchingScenario = scenario;
+        this.state.currentBranchingStage = 'stage_1';
+        this.state.isBranchingScenario = true;
+        this.state.branchingConsequences = {
+            totalRelationshipChange: 0,
+            totalComplianceHit: 0,
+            insightsGathered: [],
+            violations: []
+        };
+
+        // Get the first stage
+        const firstStage = scenario.stages.find(s => s.id === 'stage_1');
+        if (firstStage) {
+            setTimeout(() => {
+                this.addDialogueMessage(this.state.currentKOL.name, firstStage.kolDialogue, 'kol');
+                this.showBranchingOptions(firstStage.options);
+            }, 1500);
+        }
+    }
+
+    showBranchingOptions(options) {
+        const optionsContainer = document.getElementById('dialogue-options');
+        optionsContainer.innerHTML = '';
+
+        // Shuffle options to randomize order
+        const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
+
+        shuffledOptions.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.className = 'dialogue-option';
+            button.innerHTML = option.text;
+            button.addEventListener('click', () => this.selectBranchingOption(option));
+            optionsContainer.appendChild(button);
+        });
+
+        this.updateComplianceIndicator('green', 'Active conversation');
+    }
+
+    selectBranchingOption(option) {
+        const kol = this.state.currentKOL;
+        const scenario = this.state.currentBranchingScenario;
+
+        // Add player's response
+        this.addDialogueMessage('You', option.text, 'player');
+
+        // Clear options
+        document.getElementById('dialogue-options').innerHTML = '';
+
+        // Track cumulative consequences
+        this.state.branchingConsequences.totalRelationshipChange += option.relationshipChange || 0;
+
+        // Handle compliance
+        if (option.complianceStatus === 'violation') {
+            this.state.branchingConsequences.totalComplianceHit += option.complianceHit || 20;
+            this.state.branchingConsequences.violations.push(option.feedback);
+            this.updateComplianceIndicator('red', 'Compliance concern detected');
+            this.showNotification('Compliance Issue', option.feedback, 'warning');
+        } else if (option.complianceStatus === 'risk') {
+            this.showNotification('Compliance Note', option.feedback, 'warning');
+        }
+
+        // Handle insight opportunity
+        if (option.insightOpportunity) {
+            this.state.branchingConsequences.insightsGathered.push(option.insightType || 'clinical');
+            this.checkObjectiveProgress('gather-insights');
+        }
+
+        // Track objectives from branching responses
+        this.trackObjectivesFromResponse(option);
+
+        // Track discuss-research for IIS-related scenarios
+        if (scenario.id && scenario.id.includes('iis')) {
+            this.checkObjectiveProgress('discuss-research');
+        }
+
+        // Determine next stage
+        if (option.nextStage) {
+            const nextStage = scenario.stages.find(s => s.id === option.nextStage);
+
+            if (nextStage) {
+                this.state.currentBranchingStage = nextStage.id;
+
+                setTimeout(() => {
+                    // Add KOL's response
+                    this.addDialogueMessage(kol.name, nextStage.kolDialogue, 'kol');
+
+                    // Apply any stage-level changes
+                    if (nextStage.relationshipChange) {
+                        this.state.branchingConsequences.totalRelationshipChange += nextStage.relationshipChange;
+                    }
+                    if (nextStage.complianceHit) {
+                        this.state.branchingConsequences.totalComplianceHit += nextStage.complianceHit;
+                    }
+
+                    // Check if this is an ending stage
+                    if (nextStage.isEnding) {
+                        this.completeBranchingScenario(nextStage);
+                    } else if (nextStage.options) {
+                        // Show next options after a delay
+                        setTimeout(() => {
+                            this.showBranchingOptions(nextStage.options);
+                        }, 1500);
+                    }
+                }, 1500);
+            }
+        } else {
+            // No next stage specified, show feedback and continue options
+            setTimeout(() => {
+                if (option.feedback) {
+                    this.addDialogueMessage('System', `[${option.feedback}]`, 'system');
+                }
+                setTimeout(() => {
+                    this.showContinueOptions();
+                }, 1500);
+            }, 1000);
+        }
+
+        // Update relationship bar in real-time
+        const currentChange = this.state.branchingConsequences.totalRelationshipChange;
+        const tempScore = Math.max(0, Math.min(100, kol.relationshipScore + currentChange));
+        const fillPercent = Math.min(100, (tempScore / 100) * 100);
+        document.getElementById('relationship-fill').style.width = `${fillPercent}%`;
+    }
+
+    completeBranchingScenario(endStage) {
+        const kol = this.state.currentKOL;
+        const consequences = this.state.branchingConsequences;
+
+        // Apply all accumulated consequences
+        kol.relationshipScore += consequences.totalRelationshipChange;
+        kol.relationshipScore = Math.max(0, Math.min(100, kol.relationshipScore));
+        this.updateRelationshipLevel(kol);
+
+        // Apply compliance hits
+        if (consequences.totalComplianceHit > 0) {
+            this.state.metrics.regulatoryCompliance = Math.max(0,
+                this.state.metrics.regulatoryCompliance - consequences.totalComplianceHit);
+        }
+
+        // Gather insights
+        consequences.insightsGathered.forEach(insightType => {
+            this.gatherInsight(insightType);
+        });
+
+        // Handle special outcomes
+        if (endStage.outcome === 'compliance_crisis' || endStage.triggerComplianceReview) {
+            this.triggerComplianceCrisis();
+        }
+
+        if (endStage.aeReported) {
+            this.showNotification('AE Documented', 'Adverse event has been recorded for pharmacovigilance review.', 'info');
+            this.state.metrics.regulatoryCompliance = Math.min(100, this.state.metrics.regulatoryCompliance + 5);
+        }
+
+        if (endStage.scheduleFollowUp) {
+            this.showNotification('Follow-up Scheduled', `${kol.name} wants to meet again. This is a strong relationship signal.`, 'success');
+        }
+
+        // Show note to player for gray area scenarios
+        if (endStage.noteToPlayer) {
+            setTimeout(() => {
+                this.showNotification('Reflection', endStage.noteToPlayer, 'info');
+            }, 500);
+        }
+
+        // Update metrics based on outcome
+        if (endStage.outcome === 'positive') {
+            this.state.metrics.scientificExchange = Math.min(100, this.state.metrics.scientificExchange + 10);
+            this.state.metrics.kolEngagement = Math.min(100, this.state.metrics.kolEngagement + 5);
+        } else if (endStage.outcome === 'negative') {
+            this.state.metrics.scientificExchange = Math.max(0, this.state.metrics.scientificExchange - 5);
+        }
+
+        // Show summary
+        setTimeout(() => {
+            this.showBranchingScenarioSummary(endStage);
+        }, 2000);
+    }
+
+    showBranchingScenarioSummary(endStage) {
+        const consequences = this.state.branchingConsequences;
+        const kol = this.state.currentKOL;
+
+        let summaryHtml = '<div class="scenario-summary">';
+        summaryHtml += '<h4>Conversation Summary</h4>';
+
+        // Relationship change
+        const relChange = consequences.totalRelationshipChange;
+        if (relChange > 0) {
+            summaryHtml += `<p class="positive">Relationship: +${relChange} (${kol.relationship})</p>`;
+        } else if (relChange < 0) {
+            summaryHtml += `<p class="negative">Relationship: ${relChange} (${kol.relationship})</p>`;
+        } else {
+            summaryHtml += `<p>Relationship: No change</p>`;
+        }
+
+        // Compliance
+        if (consequences.totalComplianceHit > 0) {
+            summaryHtml += `<p class="negative">Compliance Score: -${consequences.totalComplianceHit}</p>`;
+            if (consequences.violations.length > 0) {
+                summaryHtml += '<p class="violation-note">Issues: ' + consequences.violations.join('; ') + '</p>';
+            }
+        } else {
+            summaryHtml += '<p class="positive">Compliance: No issues</p>';
+        }
+
+        // Insights
+        if (consequences.insightsGathered.length > 0) {
+            summaryHtml += `<p class="positive">Insights gathered: ${consequences.insightsGathered.length}</p>`;
+        }
+
+        summaryHtml += '</div>';
+
+        this.addDialogueMessage('System', summaryHtml, 'system');
+
+        // Update UI
+        const fillPercent = Math.min(100, (kol.relationshipScore / 100) * 100);
+        document.getElementById('relationship-fill').style.width = `${fillPercent}%`;
+        document.getElementById('relationship-label').textContent = this.capitalizeFirst(kol.relationship);
+
+        // Show continue/end options
+        setTimeout(() => {
+            this.showContinueOptions();
+        }, 1000);
+    }
+
+    triggerComplianceCrisis() {
+        this.state.warnings++;
+
+        this.showNotification('Compliance Alert',
+            'A serious compliance concern has been flagged. This will be reviewed by compliance leadership.',
+            'error');
+
+        // Check for termination
+        if (this.state.warnings >= 3 || this.state.metrics.regulatoryCompliance <= 30) {
+            setTimeout(() => {
+                this.triggerTermination('compliance');
+            }, 3000);
+        }
     }
 
     addDialogueMessage(speaker, text, type) {
@@ -805,24 +1954,20 @@ class MSLGame {
         const optionsContainer = document.getElementById('dialogue-options');
         optionsContainer.innerHTML = '';
 
-        options.forEach((option, index) => {
+        // Shuffle options to randomize order (so "best" answer isn't always first)
+        const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
+
+        shuffledOptions.forEach((option, index) => {
             const button = document.createElement('button');
-            button.className = `dialogue-option ${option.complianceStatus === 'violation' ? 'compliance-violation' : ''} ${option.complianceStatus === 'risk' ? 'compliance-risk' : ''}`;
-
-            let tagHTML = '';
-            if (option.complianceStatus === 'violation') {
-                tagHTML = '<span class="option-tag violation">Compliance Risk</span>';
-            } else if (option.complianceStatus === 'risk') {
-                tagHTML = '<span class="option-tag risk">Caution</span>';
-            }
-
-            button.innerHTML = `${option.text}${tagHTML}`;
+            button.className = 'dialogue-option';
+            // No compliance indicators - player must use their judgment
+            button.innerHTML = option.text;
             button.addEventListener('click', () => this.selectDialogueOption(option));
             optionsContainer.appendChild(button);
         });
 
-        // Update compliance indicator
-        this.updateComplianceIndicator('green', 'Reviewing options...');
+        // Update compliance indicator to neutral state
+        this.updateComplianceIndicator('green', 'Active conversation');
     }
 
     selectDialogueOption(option) {
@@ -858,11 +2003,16 @@ class MSLGame {
         // Handle insight opportunity
         if (option.insightOpportunity) {
             this.gatherInsight(option.insightType || 'clinical');
+            // Track gather-insights objective
+            this.checkObjectiveProgress('gather-insights');
         }
+
+        // Track objectives based on response type
+        this.trackObjectivesFromResponse(option);
 
         // Show feedback
         setTimeout(() => {
-            this.addDialogueMessage('System', `[Feedback: ${option.feedback}]`, 'kol');
+            this.addDialogueMessage('System', `[Feedback: ${option.feedback}]`, 'system');
 
             // Ask if player wants to continue or end
             setTimeout(() => {
@@ -874,6 +2024,36 @@ class MSLGame {
         const fillPercent = Math.min(100, (kol.relationshipScore / 100) * 100);
         document.getElementById('relationship-fill').style.width = `${fillPercent}%`;
         document.getElementById('relationship-label').textContent = this.capitalizeFirst(kol.relationship);
+    }
+
+    trackObjectivesFromResponse(option) {
+        // Track scientific-exchange objective
+        if (option.outcome === 'positive' && option.complianceStatus === 'safe') {
+            this.checkObjectiveProgress('scientific-exchange');
+        }
+
+        // Track build-relationship objective
+        if (option.relationshipChange >= 10) {
+            this.checkObjectiveProgress('build-relationship');
+        }
+
+        // Track address-concerns objective
+        if (option.insightType === 'safety' || option.insightType === 'access') {
+            this.checkObjectiveProgress('address-concerns');
+        }
+
+        // Track competitive-intel objective
+        if (option.insightType === 'competitive') {
+            this.checkObjectiveProgress('competitive-intel');
+        }
+    }
+
+    checkObjectiveProgress(objectiveKey) {
+        if (this.state.objectiveProgress && this.state.objectiveProgress[objectiveKey]) {
+            if (!this.state.objectiveProgress[objectiveKey].achieved) {
+                this.updateObjectiveProgress(objectiveKey);
+            }
+        }
     }
 
     handleComplianceViolation(option) {
@@ -981,35 +2161,166 @@ class MSLGame {
         kol.interactionCount++;
         kol.lastContact = { week: this.state.currentWeek, quarter: this.state.currentQuarter };
 
+        // Calculate meeting score if objectives were set
+        let meetingScore = null;
+        if (this.state.meetingObjectives && this.state.meetingObjectives.length > 0) {
+            meetingScore = this.calculateMeetingScore();
+        }
+
         // Record interaction
         this.state.interactions.push({
             kolId: kol.id,
             kolName: kol.name,
             week: this.state.currentWeek,
             quarter: this.state.currentQuarter,
-            dialogueHistory: [...this.state.dialogueHistory]
+            dialogueHistory: [...this.state.dialogueHistory],
+            objectives: this.state.meetingObjectives || [],
+            objectiveProgress: this.state.objectiveProgress || {},
+            meetingScore: meetingScore
         });
 
-        // Add to pending CRM
+        // Add to pending CRM with objective data
         this.state.pendingCRM.push({
             id: `crm_${Date.now()}`,
             kolId: kol.id,
             kolName: kol.name,
             week: this.state.currentWeek,
-            status: 'pending'
+            status: 'pending',
+            meetingScore: meetingScore,
+            objectivesAchieved: meetingScore ? meetingScore.achieved : 0,
+            totalObjectives: meetingScore ? meetingScore.total : 0
         });
 
         // Update KOL engagement metric
         const engagedKOLs = this.state.kols.filter(k => k.interactionCount > 0).length;
         this.state.metrics.kolEngagement = Math.round((engagedKOLs / this.state.kols.length) * 100);
 
-        // Show CRM modal
-        this.openCRMModal(kol);
+        // Show meeting summary if objectives were set, then CRM
+        if (meetingScore) {
+            this.showMeetingSummary(kol, meetingScore);
+        } else {
+            this.openCRMModal(kol);
+        }
+    }
+
+    calculateMeetingScore() {
+        const objectives = this.state.meetingObjectives || [];
+        const progress = this.state.objectiveProgress || {};
+
+        let achieved = 0;
+        objectives.forEach(obj => {
+            if (progress[obj] && progress[obj].achieved) {
+                achieved++;
+            }
+        });
+
+        const percentage = objectives.length > 0 ? Math.round((achieved / objectives.length) * 100) : 0;
+
+        let rating;
+        if (percentage >= 80) rating = 'excellent';
+        else if (percentage >= 60) rating = 'good';
+        else if (percentage >= 40) rating = 'fair';
+        else rating = 'poor';
+
+        return {
+            achieved,
+            total: objectives.length,
+            percentage,
+            rating
+        };
+    }
+
+    showMeetingSummary(kol, score) {
+        // Create summary modal content
+        const dialogueHistory = document.getElementById('dialogue-history');
+
+        const objectiveNames = {
+            'scientific-exchange': 'Scientific Exchange',
+            'gather-insights': 'Gather Insights',
+            'build-relationship': 'Build Relationship',
+            'discuss-research': 'Discuss Research',
+            'address-concerns': 'Address Concerns',
+            'competitive-intel': 'Competitive Landscape'
+        };
+
+        let summaryHtml = '<div class="meeting-summary">';
+        summaryHtml += '<h4>Meeting Summary</h4>';
+
+        // Score display
+        summaryHtml += '<div class="score-display">';
+        summaryHtml += `<div class="score-circle ${score.rating}">${score.percentage}%</div>`;
+        summaryHtml += '<div class="score-label">';
+        summaryHtml += `<span class="title">${this.capitalizeFirst(score.rating)} Meeting</span>`;
+        summaryHtml += `<span class="subtitle">${score.achieved} of ${score.total} objectives achieved</span>`;
+        summaryHtml += '</div></div>';
+
+        // Objectives breakdown
+        summaryHtml += '<div class="summary-section">';
+        summaryHtml += '<h5>Objective Results</h5>';
+
+        this.state.meetingObjectives.forEach(obj => {
+            const achieved = this.state.objectiveProgress[obj]?.achieved;
+            const icon = achieved ? '✓' : '✗';
+            const status = achieved ? 'achieved' : 'missed';
+            summaryHtml += `<div class="objective-result">
+                <span class="icon">${icon}</span>
+                <span class="label">${objectiveNames[obj] || obj}</span>
+                <span class="status ${status}">${achieved ? 'Achieved' : 'Not Achieved'}</span>
+            </div>`;
+        });
+
+        summaryHtml += '</div>';
+
+        // Bonus metrics
+        if (score.percentage >= 60) {
+            this.state.skillPoints += 1;
+            summaryHtml += '<div class="summary-section bonus">';
+            summaryHtml += '<p>+1 Skill Point for achieving most objectives!</p>';
+            summaryHtml += '</div>';
+        }
+
+        summaryHtml += '</div>';
+
+        this.addDialogueMessage('System', summaryHtml, 'system');
+
+        // After a delay, show CRM modal
+        setTimeout(() => {
+            this.showNotification('Document Interaction', 'Please complete the CRM documentation for this meeting.', 'info');
+            this.openCRMModal(kol);
+        }, 3000);
     }
 
     // CRM Documentation
     openCRMModal(kol) {
+        // Reset all form fields
         document.getElementById('crm-kol-name').value = kol.name;
+        document.getElementById('crm-interaction-type').value = '';
+        document.getElementById('crm-duration').value = '';
+        document.getElementById('crm-discussion-summary').value = '';
+        document.getElementById('crm-sentiment').value = '';
+        document.getElementById('crm-insights').value = '';
+        document.getElementById('crm-insight-category').value = '';
+        document.getElementById('crm-followup').value = '';
+        document.getElementById('crm-next-steps').value = '';
+
+        // Reset checkboxes
+        document.querySelectorAll('input[name="topics"]').forEach(cb => cb.checked = false);
+        document.querySelectorAll('input[name="off-label"]').forEach(r => r.checked = r.value === 'no');
+        document.querySelectorAll('input[name="ae"]').forEach(r => r.checked = r.value === 'no');
+
+        // Hide conditional sections
+        document.getElementById('off-label-details').style.display = 'none';
+        document.getElementById('ae-details').style.display = 'none';
+        document.getElementById('crm-offlabel-details').value = '';
+        document.getElementById('crm-ae-details').value = '';
+
+        // Reset character counts
+        document.getElementById('summary-char-count').textContent = '0';
+        document.getElementById('insights-char-count').textContent = '0';
+
+        // Reset quality score
+        this.updateCRMQualityScore();
+
         document.getElementById('crm-modal').classList.add('active');
     }
 
@@ -1021,10 +2332,15 @@ class MSLGame {
     }
 
     submitCRM() {
+        const qualityResult = this.updateCRMQualityScore();
         const offLabelValue = document.querySelector('input[name="off-label"]:checked')?.value;
         const aeValue = document.querySelector('input[name="ae"]:checked')?.value;
         const insights = document.getElementById('crm-insights').value;
         const insightCategory = document.getElementById('crm-insight-category').value;
+        const discussionSummary = document.getElementById('crm-discussion-summary').value;
+        const followup = document.getElementById('crm-followup').value;
+        const nextSteps = document.getElementById('crm-next-steps').value;
+        const sentiment = document.getElementById('crm-sentiment').value;
 
         // Check for compliance issues in documentation
         if (offLabelValue === 'yes-proactive') {
@@ -1032,12 +2348,28 @@ class MSLGame {
             this.showNotification('Compliance Alert', 'Documenting proactive off-label discussion. This may be reviewed.', 'warning');
         }
 
+        // Handle off-label documentation requirement
+        if (offLabelValue !== 'no') {
+            const offLabelDetails = document.getElementById('crm-offlabel-details').value;
+            if (offLabelDetails.length < 20) {
+                this.showNotification('Missing Details', 'Please provide details about the off-label discussion.', 'warning');
+                return;
+            }
+        }
+
         if (aeValue === 'yes') {
-            this.showNotification('AE Reporting', 'Remember to submit the adverse event report through the proper channel within 24 hours.', 'info');
+            const aeDetails = document.getElementById('crm-ae-details').value;
+            if (aeDetails.length < 20) {
+                this.showNotification('AE Details Required', 'Please provide adverse event details.', 'warning');
+                return;
+            }
+            this.showNotification('AE Reporting', 'Adverse event documented. Submit formal AE report within 24 hours.', 'info');
+            // Bonus for proper AE documentation
+            this.state.metrics.regulatoryCompliance = Math.min(100, this.state.metrics.regulatoryCompliance + 5);
         }
 
         // Add insight if provided
-        if (insights && insightCategory) {
+        if (insights && insightCategory && insights.length >= 30) {
             const kol = this.state.currentKOL;
             this.state.insights.push({
                 id: `insight_${Date.now()}`,
@@ -1045,8 +2377,24 @@ class MSLGame {
                 text: insights,
                 source: kol?.name || 'Unknown',
                 week: this.state.currentWeek,
-                quarter: this.state.currentQuarter
+                quarter: this.state.currentQuarter,
+                quality: insights.length >= 100 ? 'high' : 'standard'
             });
+
+            // Bonus for quality insights
+            if (insights.length >= 100) {
+                this.state.metrics.insightGeneration = Math.min(100, this.state.metrics.insightGeneration + 5);
+            }
+        }
+
+        // Calculate CRM quality impact on metrics
+        const qualityBonus = Math.floor((qualityResult.percentage - 50) / 10);
+        this.state.metrics.crmCompliance = Math.min(100, this.state.metrics.crmCompliance + qualityBonus);
+
+        // Reward for excellent documentation
+        if (qualityResult.percentage >= 80) {
+            this.state.skillPoints += 0.5; // Fractional skill points
+            this.showNotification('Quality Documentation!', 'Excellent CRM entry. +0.5 skill points.', 'success');
         }
 
         // Move from pending to completed
@@ -1054,6 +2402,11 @@ class MSLGame {
         if (pendingIndex >= 0) {
             const entry = this.state.pendingCRM.splice(pendingIndex, 1)[0];
             entry.status = 'completed';
+            entry.qualityScore = qualityResult.percentage;
+            entry.summary = discussionSummary.substring(0, 100);
+            entry.sentiment = sentiment;
+            entry.hasInsight = insights.length >= 30;
+            entry.hasFollowup = followup.length >= 10;
             this.state.completedCRM.push(entry);
         }
 
@@ -1063,7 +2416,16 @@ class MSLGame {
         this.closeModal('crm-modal');
         this.showScreen('dashboard-screen');
         this.updateDashboard();
-        this.showNotification('CRM Updated', 'Interaction documented successfully.', 'success');
+
+        // Different notifications based on quality
+        if (qualityResult.percentage >= 80) {
+            this.showNotification('CRM Updated', `Excellent documentation! Quality score: ${qualityResult.percentage}%`, 'success');
+        } else if (qualityResult.percentage >= 60) {
+            this.showNotification('CRM Updated', `Good documentation. Quality score: ${qualityResult.percentage}%`, 'success');
+        } else {
+            this.showNotification('CRM Updated', `Documentation submitted. Consider adding more detail next time.`, 'info');
+        }
+
         this.saveGame();
     }
 
@@ -1346,6 +2708,10 @@ class MSLGame {
     advanceWeek() {
         this.state.currentWeek++;
 
+        // Reset weekly time budget
+        this.state.weeklyTimeRemaining = this.state.weeklyTimeTotal;
+        this.state.lastVisitedLocation = null;
+
         // Check for overdue CRM entries
         this.state.pendingCRM.forEach(entry => {
             if (this.state.currentWeek - entry.week > 0) {
@@ -1366,10 +2732,11 @@ class MSLGame {
         }
 
         this.updateDashboard();
+        this.updateTimeBudgetDisplay();
         this.saveGame();
 
         this.showNotification('Week Advanced',
-            `Now in Week ${this.state.currentWeek}, Q${this.state.currentQuarter} ${this.state.currentYear}`, 'info');
+            `Now in Week ${this.state.currentWeek}, Q${this.state.currentQuarter} ${this.state.currentYear}. Time budget reset to ${this.state.weeklyTimeTotal} hours.`, 'info');
     }
 
     checkRandomEvents() {
