@@ -393,6 +393,7 @@ const GameData = {
                 institutionTypes: ["University Medical Center", "Academic Hospital", "Medical School"],
                 interests: ["Clinical Research", "Medical Education", "Guideline Development"],
                 personality: ["Data-driven", "Time-constrained", "Intellectually curious"],
+                dominantPersonality: "analytical",
                 preferredInteraction: "Scheduled meetings with prepared data presentations"
             },
             {
@@ -400,6 +401,7 @@ const GameData = {
                 institutionTypes: ["University Hospital", "Academic Medical Center"],
                 interests: ["Department Leadership", "Residency Training", "Quality Improvement"],
                 personality: ["Strategic thinker", "Politically aware", "Results-oriented"],
+                dominantPersonality: "pragmatic",
                 preferredInteraction: "Brief, efficient meetings with clear objectives"
             },
             {
@@ -407,6 +409,7 @@ const GameData = {
                 institutionTypes: ["Research Institute", "Academic Center"],
                 interests: ["Trial Design", "Biomarkers", "Translational Research"],
                 personality: ["Methodical", "Detail-oriented", "Skeptical"],
+                dominantPersonality: "skeptic",
                 preferredInteraction: "Deep scientific discussions with primary data"
             }
         ],
@@ -416,6 +419,7 @@ const GameData = {
                 institutionTypes: ["Community Hospital", "Regional Medical Center"],
                 interests: ["Patient Outcomes", "Practical Application", "Cost-effectiveness"],
                 personality: ["Practical", "Patient-focused", "Accessible"],
+                dominantPersonality: "practical",
                 preferredInteraction: "Informal discussions between patients"
             },
             {
@@ -423,6 +427,7 @@ const GameData = {
                 institutionTypes: ["Community Health System", "Regional Hospital Network"],
                 interests: ["Protocol Development", "Staff Education", "Quality Metrics"],
                 personality: ["Administrative", "Team-oriented", "Efficiency-focused"],
+                dominantPersonality: "pragmatic",
                 preferredInteraction: "Lunch meetings with team involvement"
             }
         ],
@@ -432,9 +437,74 @@ const GameData = {
                 institutionTypes: ["Private Practice", "Specialty Clinic", "Medical Group"],
                 interests: ["Patient Care", "Practice Efficiency", "Reimbursement"],
                 personality: ["Entrepreneurial", "Relationship-driven", "Time-conscious"],
+                dominantPersonality: "practical",
                 preferredInteraction: "Brief office visits with samples/resources"
             }
         ]
+    },
+
+    // Personality types with characteristics and tips
+    personalityTypes: {
+        analytical: {
+            name: "Analytical",
+            description: "Data-driven and intellectually rigorous",
+            traits: ["Asks detailed questions about study methodology", "Values primary data over summaries", "May challenge statistical significance"],
+            tips: [
+                "Come prepared with detailed trial data and statistics",
+                "Be ready to discuss study limitations openly",
+                "Provide peer-reviewed publications for reference"
+            ],
+            responseStyle: "formal",
+            followUpStyle: "detailed"
+        },
+        skeptic: {
+            name: "Skeptic",
+            description: "Cautious and questioning",
+            traits: ["Questions company-sponsored research", "Wants to see head-to-head data", "May compare unfavorably to competitors"],
+            tips: [
+                "Acknowledge limitations proactively",
+                "Don't oversell - let the data speak for itself",
+                "Be prepared for challenging questions"
+            ],
+            responseStyle: "guarded",
+            followUpStyle: "challenging"
+        },
+        pragmatic: {
+            name: "Pragmatic",
+            description: "Results-oriented and efficient",
+            traits: ["Values concise presentations", "Focuses on practical outcomes", "Time-conscious"],
+            tips: [
+                "Get to the point quickly",
+                "Focus on actionable information",
+                "Respect their time - be concise"
+            ],
+            responseStyle: "efficient",
+            followUpStyle: "direct"
+        },
+        practical: {
+            name: "Practical",
+            description: "Patient-focused and accessibility-minded",
+            traits: ["Cares about real-world applicability", "Considers cost and access issues", "Values patient-friendly approaches"],
+            tips: [
+                "Emphasize real-world evidence when available",
+                "Be ready to discuss patient support programs",
+                "Connect data to actual patient impact"
+            ],
+            responseStyle: "warm",
+            followUpStyle: "patient-focused"
+        },
+        enthusiastic: {
+            name: "Enthusiastic",
+            description: "Open and engaged",
+            traits: ["Early adopter mentality", "Interested in novel approaches", "May be too eager to try new treatments"],
+            tips: [
+                "Build on their enthusiasm appropriately",
+                "Gently remind of proper patient selection",
+                "Good candidate for research collaboration"
+            ],
+            responseStyle: "engaged",
+            followUpStyle: "curious"
+        }
     },
 
     // First and last names for generating KOLs

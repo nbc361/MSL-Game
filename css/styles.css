@@ -1216,6 +1216,40 @@ body {
     color: var(--secondary-color);
 }
 
+/* KOL Personality badges */
+.kol-personality {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: var(--bg-dark);
+    color: var(--text-secondary);
+}
+
+.kol-personality.analytical {
+    background: rgba(99, 102, 241, 0.2);
+    color: var(--primary-color);
+}
+
+.kol-personality.skeptic {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+}
+
+.kol-personality.pragmatic {
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+}
+
+.kol-personality.practical {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success-color);
+}
+
+.kol-personality.enthusiastic {
+    background: rgba(168, 85, 247, 0.2);
+    color: var(--secondary-color);
+}
+
 /* CRM Panel */
 .crm-status {
     display: flex;

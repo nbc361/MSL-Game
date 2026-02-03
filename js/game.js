@@ -1226,6 +1226,7 @@ class MSLGame {
             relationshipScore: 0,
             interests: template.interests,
             personality: template.personality,
+            dominantPersonality: template.dominantPersonality || 'analytical',
             preferredInteraction: template.preferredInteraction,
             lastContact: null,
             interactionCount: 0,
@@ -1595,6 +1596,17 @@ class MSLGame {
                 `${kol.location.city}, ${kol.location.stateAbbrev}` :
                 'Unknown';
 
+            // Get personality info
+            const personality = kol.dominantPersonality || 'analytical';
+            const personalityData = GameData.personalityTypes[personality];
+            const personalityIcon = {
+                analytical: '🔬',
+                skeptic: '🤔',
+                pragmatic: '⚡',
+                practical: '👥',
+                enthusiastic: '✨'
+            }[personality] || '👤';
+
             card.innerHTML = `
                 <div class="kol-card-header">
                     <div class="kol-avatar">${kol.avatar}</div>
@@ -1608,6 +1620,7 @@ class MSLGame {
                 <div class="kol-card-stats">
                     <span class="kol-tier tier-${kol.tier}">Tier ${kol.tier}</span>
                     <span class="kol-relationship ${kol.relationship}">${this.capitalizeFirst(kol.relationship)}</span>
+                    <span class="kol-personality ${personality}">${personalityIcon} ${personalityData?.name || 'Unknown'}</span>
                     <span class="kol-travel-cost ${travelInfo.class}">⚡${travelInfo.cost} AP</span>
                 </div>
             `;
@@ -2307,51 +2320,45 @@ class MSLGame {
 
         const tips = [];
 
-        // Personality-based tips (from Phase 7 PERSONALITY_TIPS concept)
-        const personalityTips = {
-            'Data-driven': "This KOL values specific numbers and statistics. Come prepared with exact figures.",
-            'Skeptical': "Expect challenging questions. Acknowledge limitations proactively.",
-            'Patient-focused': "Emphasize quality of life and patient outcomes over mechanism.",
-            'Collaborative': "Ask for their perspective and input throughout the discussion.",
-            'Practical': "Focus on real-world applicability and clinical practice implications.",
-            'Research-focused': "Discuss methodology and study design details.",
-            'Time-constrained': "Be concise and prioritize your key messages."
-        };
+        // Get personality-specific tips from gameData
+        const personality = kol.dominantPersonality || 'analytical';
+        const personalityData = GameData.personalityTypes[personality];
 
-        // Add personality-specific tip
-        if (kol.personality && kol.personality.type && personalityTips[kol.personality.type]) {
-            tips.push(`💡 ${personalityTips[kol.personality.type]}`);
+        if (personalityData) {
+            // Add personality header
+            tips.push(`🎯 ${personalityData.name} Personality: ${personalityData.description}`);
+
+            // Add specific personality tips
+            personalityData.tips.forEach(tip => {
+                tips.push(`💡 ${tip}`);
+            });
         }
 
         // Tips based on relationship
         if (kol.relationship === 'new') {
-            tips.push('First meeting: Focus on understanding their practice and interests');
-            tips.push('Ask open-ended questions to learn about their clinical challenges');
+            tips.push('📌 First meeting: Focus on understanding their practice and interests');
         } else if (kol.relationship === 'developing') {
-            tips.push('Reference previous conversations to show you listened');
+            tips.push('📌 Reference previous conversations to show you listened');
         } else if (kol.relationship === 'established' || kol.relationship === 'advocate') {
-            tips.push('Consider discussing research collaboration opportunities');
+            tips.push('📌 Consider discussing research collaboration opportunities');
         }
 
         // Tips based on tier
         if (kol.tier === 1) {
-            tips.push('Tier 1 KOL: Come prepared with deep scientific data');
+            tips.push('⭐ Tier 1 KOL: Come prepared with deep scientific data');
         } else if (kol.tier === 3) {
-            tips.push('Focus on practical, real-world application of data');
+            tips.push('👥 Focus on practical, real-world application of data');
         }
 
         // Tips based on type
         if (kol.type === 'academic') {
-            tips.push('Academic setting: Discuss clinical trial data and methodology');
+            tips.push('🏛️ Academic setting: Discuss clinical trial data and methodology');
         } else if (kol.type === 'community') {
-            tips.push('Community practice: Address real-world effectiveness');
+            tips.push('🏥 Community practice: Address real-world effectiveness');
         }
 
-        // Add generic tip
-        tips.push('Remember: Listen more than you speak to uncover insights');
-
-        // Populate tips list (max 5)
-        tips.slice(0, 5).forEach(tip => {
+        // Populate tips list (max 6)
+        tips.slice(0, 6).forEach(tip => {
             const li = document.createElement('li');
             li.textContent = tip;
             tipsList.appendChild(li);
@@ -2955,64 +2962,210 @@ class MSLGame {
         return Math.min(Math.max(baseDelay + readingTime * randomFactor, 1500), 4000);
     }
 
-    // Generate KOL follow-up based on player's response
+    // Generate KOL follow-up based on player's response and KOL personality
     generateKOLFollowUp(option, kol) {
-        const personality = kol.personality || 'analytical';
+        const personality = kol.dominantPersonality || 'analytical';
 
-        // Positive outcomes - engaged follow-ups
+        // Get personality-specific response pools
+        const personalityResponses = this.getPersonalityResponses(personality);
+
+        // Positive outcomes - personality-adjusted engaged follow-ups
         if (option.outcome === 'positive') {
-            const positiveResponses = [
-                "That's a helpful perspective. I appreciate you walking me through that data.",
-                "Thank you - that addresses my question well. I can see you've done your homework.",
-                "That's exactly the kind of information I was looking for. This is useful for my practice.",
-                "Interesting. I hadn't considered it from that angle before.",
-                "Good. That clarifies things. I'll review this more closely."
-            ];
-            return positiveResponses[Math.floor(Math.random() * positiveResponses.length)];
+            const pool = personalityResponses.positive;
+            return pool[Math.floor(Math.random() * pool.length)];
         }
 
-        // Compliance violations - concerned responses
+        // Compliance violations - personality-adjusted concerned responses
         if (option.complianceStatus === 'violation') {
-            const violationResponses = [
-                "Hmm, I'm not sure that's something you should be saying. Let's move on.",
-                "That... doesn't sound quite right. Are you sure you can share that?",
-                "I appreciate the information, but I'm a bit concerned about that statement.",
-                "Wait - shouldn't we stick to what's in the approved labeling?",
-                "I think you may have gone beyond what's appropriate there."
-            ];
-            return violationResponses[Math.floor(Math.random() * violationResponses.length)];
+            const pool = personalityResponses.violation;
+            return pool[Math.floor(Math.random() * pool.length)];
         }
 
-        // Risky responses - skeptical follow-ups
+        // Risky responses - personality-adjusted skeptical follow-ups
         if (option.complianceStatus === 'risk') {
-            const riskyResponses = [
-                "Alright... I'm not sure I agree with how you framed that.",
-                "That's one way to look at it, I suppose.",
-                "Okay. Do you have data to back that up?",
-                "Hmm. I'd need to see the actual numbers before I'm convinced."
-            ];
-            return riskyResponses[Math.floor(Math.random() * riskyResponses.length)];
+            const pool = personalityResponses.risk;
+            return pool[Math.floor(Math.random() * pool.length)];
         }
 
-        // Neutral outcomes - polite but unimpressed
+        // Neutral outcomes - personality-adjusted polite responses
         if (option.outcome === 'neutral') {
-            const neutralResponses = [
-                "Okay. That's fair.",
-                "Alright, I understand your position.",
-                "Fine. Let's continue.",
-                "I see. Is there anything else?"
-            ];
-            return neutralResponses[Math.floor(Math.random() * neutralResponses.length)];
+            const pool = personalityResponses.neutral;
+            return pool[Math.floor(Math.random() * pool.length)];
         }
 
         // Default follow-up
-        const defaultResponses = [
-            "I see. Thank you for that information.",
-            "Okay. Anything else I should know?",
-            "Alright, that's helpful.",
-            "Got it. Let's continue our discussion."
-        ];
-        return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+        const pool = personalityResponses.default;
+        return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    getPersonalityResponses(personality) {
+        const responsesByPersonality = {
+            analytical: {
+                positive: [
+                    "The methodology appears sound. I'd like to see the full publication when you have a chance.",
+                    "Interesting data. What were the confidence intervals on that primary endpoint?",
+                    "That's a rigorous analysis. I appreciate you sharing the specifics.",
+                    "Good. The statistical approach is appropriate for this population.",
+                    "I'll need to review this more carefully, but the primary endpoint data is encouraging."
+                ],
+                violation: [
+                    "That doesn't appear to be in the approved labeling. Let's stay focused on the published data.",
+                    "I'm familiar with the regulations here. That seems to cross a line.",
+                    "Hold on - I'd prefer we discuss only the peer-reviewed evidence.",
+                    "That claim needs a citation. Do you have published data to support it?"
+                ],
+                risk: [
+                    "I'd want to see the raw data before accepting that conclusion.",
+                    "That's a bold interpretation. What's the p-value?",
+                    "The methodology would need to be reviewed before I'd accept that claim.",
+                    "Interesting hypothesis, but is it supported by controlled trial data?"
+                ],
+                neutral: [
+                    "Noted. Let's look at the next data point.",
+                    "I'll take that into consideration.",
+                    "Understood. What else is in the dataset?",
+                    "Fair enough. Continue."
+                ],
+                default: [
+                    "I see. Show me the supporting data.",
+                    "That's consistent with what I've read.",
+                    "I'll review the publication.",
+                    "Alright. Let's proceed methodically."
+                ]
+            },
+            skeptic: {
+                positive: [
+                    "Alright, that's more convincing than I expected. But I'll need to verify it independently.",
+                    "Okay. That addresses some of my concerns, though I remain cautious.",
+                    "Fair point. I'm still not fully convinced, but this helps.",
+                    "That's reasonable. Let me think about this more.",
+                    "Hmm. Better than I thought. What about the long-term data?"
+                ],
+                violation: [
+                    "That's exactly the kind of overreach I was worried about. Let's reset.",
+                    "I knew it. You're going beyond the approved indication.",
+                    "This is why I'm skeptical of industry-sponsored conversations.",
+                    "That's promotional language. I've heard this pitch before."
+                ],
+                risk: [
+                    "I'm not buying it. Show me head-to-head data.",
+                    "That sounds like marketing. What do the real numbers say?",
+                    "I've seen competitors make similar claims that didn't pan out.",
+                    "I'll believe it when I see independent confirmation."
+                ],
+                neutral: [
+                    "We'll see.",
+                    "I reserve judgment.",
+                    "Time will tell if that holds up.",
+                    "Noted, but I'm still skeptical."
+                ],
+                default: [
+                    "I'll need to see more evidence.",
+                    "I've been burned before. I'm cautious.",
+                    "Let's see if the data holds up in real-world use.",
+                    "I'll review this with a critical eye."
+                ]
+            },
+            pragmatic: {
+                positive: [
+                    "Good. That's actionable. What's the next step?",
+                    "Efficient answer. I can work with that.",
+                    "Perfect - that's exactly what I needed to know.",
+                    "Excellent. Let's move forward.",
+                    "That's useful information. Thank you."
+                ],
+                violation: [
+                    "Let's stay on track. I only need the approved information.",
+                    "I don't have time for gray areas. What does the label say?",
+                    "That's not helpful. What can you actually support with data?"
+                ],
+                risk: [
+                    "Get to the point. Is there data or not?",
+                    "I need facts, not interpretations.",
+                    "That's vague. Give me specifics.",
+                    "I don't have time for hedging. What are the numbers?"
+                ],
+                neutral: [
+                    "Okay. Moving on.",
+                    "Fine. Next topic.",
+                    "Understood. What else?",
+                    "Alright. Let's keep going."
+                ],
+                default: [
+                    "Got it. Next point?",
+                    "Brief but helpful.",
+                    "That works.",
+                    "I appreciate you being direct."
+                ]
+            },
+            practical: {
+                positive: [
+                    "That's helpful for my patients. I appreciate the practical perspective.",
+                    "Good. That's something I can actually use in clinic.",
+                    "Perfect - that addresses a real need in my patient population.",
+                    "Thank you. This will help me counsel patients better.",
+                    "That's practical advice I can implement tomorrow."
+                ],
+                violation: [
+                    "My patients need reliable information. Let's stick to what's proven.",
+                    "I can't base treatment decisions on unproven claims.",
+                    "That's concerning. I need to be able to trust what you tell me.",
+                    "Let's focus on what's actually in the prescribing information."
+                ],
+                risk: [
+                    "How does this apply to a typical patient in my practice?",
+                    "I'm less interested in statistics and more interested in real patients.",
+                    "That sounds theoretical. How does it work in practice?",
+                    "My patients are different from clinical trial populations."
+                ],
+                neutral: [
+                    "Okay. How does this affect my day-to-day practice?",
+                    "I understand. What about patient-specific considerations?",
+                    "That's noted. Any practical tips for implementation?",
+                    "Alright. My patients would want to know the impact on their daily lives."
+                ],
+                default: [
+                    "That's good to know for patient counseling.",
+                    "I'll keep that in mind for my next patient.",
+                    "Helpful. Thank you.",
+                    "I can see how that applies to my practice."
+                ]
+            },
+            enthusiastic: {
+                positive: [
+                    "Excellent! This is exactly what I was hoping to hear!",
+                    "Fantastic data. I'm excited to try this approach.",
+                    "This is great news for patients. When can I start using this?",
+                    "I love it! Tell me more.",
+                    "Wonderful! This could really change how I treat patients."
+                ],
+                violation: [
+                    "Oh... I'm very interested, but should you be telling me this?",
+                    "Wait, is that on-label? I want to do this right.",
+                    "I appreciate the enthusiasm, but let's make sure we're compliant."
+                ],
+                risk: [
+                    "Interesting! Though I should probably verify that before changing practice.",
+                    "That's exciting, but I want to be sure the evidence is solid.",
+                    "I love new approaches, but let me review the data first.",
+                    "That's promising! What's the level of evidence?"
+                ],
+                neutral: [
+                    "Okay, that's reasonable. Anything more exciting in the pipeline?",
+                    "I understand. What about newer data?",
+                    "Fair enough. Is there anything novel coming up?",
+                    "Alright. I'm always looking for new approaches."
+                ],
+                default: [
+                    "I'm always eager to learn more!",
+                    "This is interesting - tell me more.",
+                    "I appreciate you sharing this with me.",
+                    "Great discussion! What else can you tell me?"
+                ]
+            }
+        };
+
+        return responsesByPersonality[personality] || responsesByPersonality.analytical;
     }
 
     showDialogueOptions(options) {
