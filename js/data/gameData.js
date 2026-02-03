@@ -1957,6 +1957,386 @@ const GameData = {
                     triggerComplianceReview: true
                 }
             ]
+        },
+
+        // Objection handling scenario - skeptical KOL
+        skepticalKol: {
+            id: "branch_skeptic_001",
+            name: "The Skeptic",
+            description: "KOL is dismissive and skeptical about your product",
+            difficulty: "hard",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "Look, I've seen a lot of drugs come and go. What makes yours any different? I'm not convinced the data justifies the cost to patients.",
+                    options: [
+                        {
+                            text: "I appreciate your healthy skepticism - it's important for patient care. Rather than trying to convince you, could you share what specific concerns you have about the data? I'd like to understand your perspective.",
+                            nextStage: "stage_2a_listen",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "competitive",
+                            feedback: "Excellent - validating skepticism and seeking to understand concerns."
+                        },
+                        {
+                            text: "Well, our Phase 3 data is pretty compelling. Let me walk you through the results - I think you'll see why we're excited.",
+                            nextStage: "stage_2b_data",
+                            relationshipChange: 0,
+                            complianceStatus: "safe",
+                            feedback: "Acceptable, but jumping to data without understanding objections may not address underlying concerns."
+                        },
+                        {
+                            text: "With all due respect, all the major thought leaders are already using our drug. You might be falling behind current practice.",
+                            nextStage: "stage_2c_pushback",
+                            relationshipChange: -20,
+                            complianceStatus: "risk",
+                            feedback: "Using peer pressure and implying incompetence is unprofessional and potentially promotional."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a_listen",
+                    kolDialogue: "Fine. My issue is that your primary endpoint was a surrogate marker. I want to see overall survival data, not just tumor shrinkage. My patients want to live longer, not just have smaller scans.",
+                    options: [
+                        {
+                            text: "That's a fair point. While ORR was the primary endpoint for approval, we do have follow-up survival data I can share. The median OS was [X months] in the trial. I can also discuss the ongoing confirmatory study if you're interested.",
+                            nextStage: "stage_3a_address",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            feedback: "Good acknowledgment of concern followed by relevant approved data."
+                        },
+                        {
+                            text: "Response rate is actually well-correlated with survival in this tumor type. The FDA accepted it as an endpoint for good reason.",
+                            nextStage: "stage_3b_defend",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Technically correct but may come across as dismissive of valid concern."
+                        },
+                        {
+                            text: "Between us, the survival data looks even better but hasn't been published yet. Patients are doing really well long-term.",
+                            nextStage: "stage_3c_violation",
+                            relationshipChange: 5,
+                            complianceStatus: "violation",
+                            complianceHit: 30,
+                            feedback: "Sharing unpublished survival data proactively is off-label promotion."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b_data",
+                    kolDialogue: "*Sighs* Alright, but make it quick. I've heard this pitch before.",
+                    options: [
+                        {
+                            text: "Actually, rather than a pitch, let me ask - what would change your mind? What data would you need to see to consider this drug for your patients?",
+                            nextStage: "stage_3d_redirect",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            feedback: "Smart pivot - understanding needs rather than pushing data."
+                        },
+                        {
+                            text: "I'll be brief. The response rate was 65% with a median duration of 14 months. The safety profile was manageable with most AEs being Grade 1-2.",
+                            nextStage: "stage_3b_defend",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Straightforward data presentation, though didn't address underlying skepticism."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2c_pushback",
+                    kolDialogue: "Excuse me? I've been practicing oncology for 25 years. I don't need a drug rep telling me I'm behind the times.",
+                    options: [
+                        {
+                            text: "I sincerely apologize. That was inappropriate of me. I'm not here to tell you how to practice medicine - I'm here to share data and answer questions. I respect your experience and judgment.",
+                            nextStage: "stage_3e_recover",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery. The relationship is damaged but salvageable."
+                        },
+                        {
+                            text: "I didn't mean any offense. I'm just saying the data speaks for itself.",
+                            nextStage: "end_negative",
+                            relationshipChange: -15,
+                            complianceStatus: "safe",
+                            feedback: "Inadequate apology. The relationship is significantly damaged."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3a_address",
+                    kolDialogue: "Hmm. That OS data is more interesting. What about quality of life? I've heard the toxicity profile isn't trivial.",
+                    options: [
+                        {
+                            text: "You're right to consider quality of life. The trial did include PRO measures. While there were Grade 3+ toxicities in about 25% of patients, most were manageable with dose modifications. I can share the detailed safety data if helpful.",
+                            nextStage: "end_positive",
+                            relationshipChange: 20,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "safety",
+                            feedback: "Excellent - balanced presentation of both efficacy and safety data."
+                        },
+                        {
+                            text: "The toxicity is actually much better than chemotherapy alternatives. Patients tolerate it very well.",
+                            nextStage: "end_neutral",
+                            relationshipChange: 0,
+                            complianceStatus: "risk",
+                            feedback: "Making comparative claims without proper context is risky."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3b_defend",
+                    kolDialogue: "Numbers don't always tell the whole story. How are patients actually doing in the real world?",
+                    options: [
+                        {
+                            text: "We're starting to see real-world data presented at recent congresses. I can share those abstracts with you. Though I should note real-world populations often differ from trial populations.",
+                            nextStage: "end_positive",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            feedback: "Good - pointing to published real-world evidence with appropriate caveats."
+                        },
+                        {
+                            text: "From what I hear informally from other physicians, patients are doing great. Way better than trial suggested.",
+                            nextStage: "end_neutral",
+                            relationshipChange: -5,
+                            complianceStatus: "risk",
+                            feedback: "Anecdotal claims without data are unprofessional."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3c_violation",
+                    kolDialogue: "That's interesting. Can you share that unpublished data? I'd like to see the specifics.",
+                    options: [
+                        {
+                            text: "I apologize - I shouldn't have mentioned unpublished data. Let me stick to what's in the approved label and published literature. I can share those materials today.",
+                            nextStage: "end_neutral",
+                            relationshipChange: -10,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery, but the initial violation still occurred."
+                        },
+                        {
+                            text: "Sure, I'll send it to you. Just keep it between us.",
+                            nextStage: "end_major_violation",
+                            relationshipChange: 5,
+                            complianceStatus: "violation",
+                            complianceHit: 40,
+                            feedback: "Sharing confidential unpublished data is a serious violation."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3d_redirect",
+                    kolDialogue: "That's actually a good question. I suppose if I saw convincing PFS benefit in the biomarker-positive subgroup, I might consider it for those specific patients.",
+                    options: [
+                        {
+                            text: "That's helpful to know. Actually, we do have biomarker subgroup data in the label. In the [biomarker]-positive population, the PFS was [X months] vs [Y months]. Would you like me to walk through that analysis?",
+                            nextStage: "end_positive",
+                            relationshipChange: 25,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            feedback: "Excellent - matching data to specific stated needs."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3e_recover",
+                    kolDialogue: "Alright. Let's start over. What can you tell me about the approved indication specifically?",
+                    options: [
+                        {
+                            text: "I appreciate you giving me another chance. The approved indication is [indication]. Would you like me to focus on the efficacy data, safety profile, or patient selection criteria?",
+                            nextStage: "end_neutral",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery - letting the KOL direct the conversation."
+                        }
+                    ]
+                },
+                {
+                    id: "end_positive",
+                    kolDialogue: "This has been a better conversation than I expected. I'm still not fully convinced, but I'll review the data you've shared. Let's plan a follow-up.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 10,
+                    scheduleFollowUp: true
+                },
+                {
+                    id: "end_neutral",
+                    kolDialogue: "Alright, thanks for the information. I'll think about it.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: 0
+                },
+                {
+                    id: "end_negative",
+                    kolDialogue: "I think we're done here. I'll reach out if I have questions.",
+                    isEnding: true,
+                    outcome: "negative",
+                    relationshipChange: -10
+                },
+                {
+                    id: "end_major_violation",
+                    kolDialogue: "I think your company needs to review their training program. This conversation was inappropriate.",
+                    isEnding: true,
+                    outcome: "compliance_crisis",
+                    relationshipChange: -30,
+                    triggerComplianceReview: true
+                }
+            ]
+        },
+
+        // Cost/value objection scenario
+        costObjection: {
+            id: "branch_cost_001",
+            name: "Cost Concerns",
+            description: "KOL raises cost-effectiveness objections",
+            difficulty: "medium",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "Your drug costs $15,000 a month. How am I supposed to justify that to my patients when there are cheaper options available?",
+                    options: [
+                        {
+                            text: "That's an important consideration for patient care. I can share the clinical data that supported the value assessment, and I can also connect you with our patient support programs that help with access. Would either of those be helpful?",
+                            nextStage: "stage_2a_support",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Good approach - acknowledging concern and offering appropriate resources."
+                        },
+                        {
+                            text: "The cost actually reflects the clinical benefit. When you factor in the improved outcomes, it's very cost-effective compared to the alternatives.",
+                            nextStage: "stage_2b_value",
+                            relationshipChange: 0,
+                            complianceStatus: "risk",
+                            feedback: "MSLs should be careful with economic/value claims - this is often promotional territory."
+                        },
+                        {
+                            text: "I understand, but cost isn't really something I can discuss. I'm focused on the clinical data.",
+                            nextStage: "stage_2c_redirect",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "While boundaries are appropriate, completely dismissing a real patient care concern is unhelpful."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a_support",
+                    kolDialogue: "What kind of patient support? I have patients who've already struggled to afford their current medications.",
+                    options: [
+                        {
+                            text: "We have copay assistance for commercially insured patients, and a separate patient assistance program for those who are uninsured or underinsured. I can provide the contact information and eligibility criteria. We also have a dedicated nurse navigator program.",
+                            nextStage: "stage_3a_helpful",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "access",
+                            feedback: "Good - providing factual information about support resources."
+                        },
+                        {
+                            text: "Between us, most patients end up paying very little out of pocket. We make sure cost isn't a barrier.",
+                            nextStage: "stage_3b_risky",
+                            relationshipChange: 5,
+                            complianceStatus: "risk",
+                            feedback: "Making broad financial guarantees is inappropriate and potentially misleading."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b_value",
+                    kolDialogue: "That sounds like a company talking point. Do you have published pharmacoeconomic data to support that claim?",
+                    options: [
+                        {
+                            text: "You're right to push back. I shouldn't have made that claim without published data. Let me focus on the clinical efficacy and safety data, which I can speak to directly.",
+                            nextStage: "stage_3c_recover",
+                            relationshipChange: 0,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery - acknowledging the overreach."
+                        },
+                        {
+                            text: "Yes, there's a cost-effectiveness analysis published in [journal] that shows favorable value. I can share that paper.",
+                            nextStage: "stage_3a_helpful",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "If peer-reviewed pharmacoeconomic data exists, sharing it is appropriate."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2c_redirect",
+                    kolDialogue: "Well, clinical data doesn't help my patients if they can't afford the treatment. That's a real-world consideration.",
+                    options: [
+                        {
+                            text: "You're absolutely right, and I apologize for being dismissive. Access is critical. Let me share information about our patient support programs - that's something I can help with.",
+                            nextStage: "stage_3a_helpful",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Good course correction - recognizing the importance of the question."
+                        },
+                        {
+                            text: "I can have our account manager reach out to discuss pricing options.",
+                            nextStage: "end_neutral",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Appropriate referral, but opportunity missed to provide helpful information."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3a_helpful",
+                    kolDialogue: "That's actually useful. Can you send me those program details? I have some patients who might benefit.",
+                    options: [
+                        {
+                            text: "Absolutely. I'll send you the patient support information today. If you have specific patients in mind, I can also have our patient access specialist reach out to your office to help navigate the process.",
+                            nextStage: "end_positive",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            feedback: "Excellent - providing practical help while maintaining appropriate boundaries."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3b_risky",
+                    kolDialogue: "That sounds too good to be true. What's the catch?",
+                    options: [
+                        {
+                            text: "You're right to be skeptical. Eligibility does depend on insurance status and income. Let me give you the specific criteria rather than making general statements.",
+                            nextStage: "end_neutral",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery - being more specific and accurate."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3c_recover",
+                    kolDialogue: "Fair enough. So what's the actual clinical benefit for my patients?",
+                    options: [
+                        {
+                            text: "The key efficacy endpoints from the pivotal trial showed [specific approved data]. For safety, the most common adverse events were [specific approved data]. Would you like me to focus on any particular aspect?",
+                            nextStage: "end_positive",
+                            relationshipChange: 10,
+                            complianceStatus: "safe",
+                            feedback: "Good - staying within approved clinical data."
+                        }
+                    ]
+                },
+                {
+                    id: "end_positive",
+                    kolDialogue: "This has been helpful. I have a better understanding of the options now.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 10
+                },
+                {
+                    id: "end_neutral",
+                    kolDialogue: "Okay, let me know if anything changes with the pricing.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: 0
+                }
+            ]
         }
     },
 

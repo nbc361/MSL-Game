@@ -2322,11 +2322,15 @@ class MSLGame {
         this.state.currentScenario = scenario;
         this.state.isBranchingScenario = false;
 
-        // Add KOL's question
+        // Show thinking indicator, then KOL's question
+        this.showThinkingIndicator(this.state.currentKOL.name);
+        const delay = this.calculateResponseDelay(scenario.kolQuestion);
+
         setTimeout(() => {
+            this.hideThinkingIndicator();
             this.addDialogueMessage(this.state.currentKOL.name, scenario.kolQuestion, 'kol');
             this.showDialogueOptions(scenario.options);
-        }, 1500);
+        }, delay);
     }
 
     startBranchingScenario() {
@@ -2362,10 +2366,15 @@ class MSLGame {
         // Get the first stage
         const firstStage = scenario.stages.find(s => s.id === 'stage_1');
         if (firstStage) {
+            // Show thinking indicator
+            this.showThinkingIndicator(this.state.currentKOL.name);
+            const delay = this.calculateResponseDelay(firstStage.kolDialogue);
+
             setTimeout(() => {
+                this.hideThinkingIndicator();
                 this.addDialogueMessage(this.state.currentKOL.name, firstStage.kolDialogue, 'kol');
                 this.showBranchingOptions(firstStage.options);
-            }, 1500);
+            }, delay);
         }
     }
 
@@ -2431,7 +2440,13 @@ class MSLGame {
             if (nextStage) {
                 this.state.currentBranchingStage = nextStage.id;
 
+                // Show thinking indicator while KOL processes
+                this.showThinkingIndicator(kol.name);
+                const delay = this.calculateResponseDelay(nextStage.kolDialogue);
+
                 setTimeout(() => {
+                    this.hideThinkingIndicator();
+
                     // Add KOL's response
                     this.addDialogueMessage(kol.name, nextStage.kolDialogue, 'kol');
 
@@ -2450,9 +2465,9 @@ class MSLGame {
                         // Show next options after a delay
                         setTimeout(() => {
                             this.showBranchingOptions(nextStage.options);
-                        }, 1500);
+                        }, 1000);
                     }
-                }, 1500);
+                }, delay);
             }
         } else {
             // No next stage specified, show feedback and continue options
@@ -2462,8 +2477,8 @@ class MSLGame {
                 }
                 setTimeout(() => {
                     this.showContinueOptions();
-                }, 1500);
-            }, 1000);
+                }, 1000);
+            }, 800);
         }
 
         // Update relationship bar in real-time
@@ -2606,6 +2621,108 @@ class MSLGame {
         this.state.dialogueHistory.push({ speaker, text, type });
     }
 
+    showThinkingIndicator(speaker) {
+        const dialogueHistory = document.getElementById('dialogue-history');
+
+        // Remove any existing thinking indicator
+        this.hideThinkingIndicator();
+
+        const indicator = document.createElement('div');
+        indicator.className = 'dialogue-message kol thinking-indicator';
+        indicator.id = 'kol-thinking';
+        indicator.innerHTML = `
+            <div class="speaker">${speaker}</div>
+            <div class="thinking-dots">
+                <span class="dot"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+        `;
+
+        dialogueHistory.appendChild(indicator);
+        dialogueHistory.scrollTop = dialogueHistory.scrollHeight;
+    }
+
+    hideThinkingIndicator() {
+        const indicator = document.getElementById('kol-thinking');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    // Calculate delay based on response complexity
+    calculateResponseDelay(text) {
+        const baseDelay = 1000;
+        const wordsPerSecond = 3; // Average reading speed for thinking
+        const wordCount = text ? text.split(/\s+/).length : 10;
+        const readingTime = (wordCount / wordsPerSecond) * 1000;
+
+        // Add some randomness for natural feel
+        const randomFactor = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+
+        return Math.min(Math.max(baseDelay + readingTime * randomFactor, 1500), 4000);
+    }
+
+    // Generate KOL follow-up based on player's response
+    generateKOLFollowUp(option, kol) {
+        const personality = kol.personality || 'analytical';
+
+        // Positive outcomes - engaged follow-ups
+        if (option.outcome === 'positive') {
+            const positiveResponses = [
+                "That's a helpful perspective. I appreciate you walking me through that data.",
+                "Thank you - that addresses my question well. I can see you've done your homework.",
+                "That's exactly the kind of information I was looking for. This is useful for my practice.",
+                "Interesting. I hadn't considered it from that angle before.",
+                "Good. That clarifies things. I'll review this more closely."
+            ];
+            return positiveResponses[Math.floor(Math.random() * positiveResponses.length)];
+        }
+
+        // Compliance violations - concerned responses
+        if (option.complianceStatus === 'violation') {
+            const violationResponses = [
+                "Hmm, I'm not sure that's something you should be saying. Let's move on.",
+                "That... doesn't sound quite right. Are you sure you can share that?",
+                "I appreciate the information, but I'm a bit concerned about that statement.",
+                "Wait - shouldn't we stick to what's in the approved labeling?",
+                "I think you may have gone beyond what's appropriate there."
+            ];
+            return violationResponses[Math.floor(Math.random() * violationResponses.length)];
+        }
+
+        // Risky responses - skeptical follow-ups
+        if (option.complianceStatus === 'risk') {
+            const riskyResponses = [
+                "Alright... I'm not sure I agree with how you framed that.",
+                "That's one way to look at it, I suppose.",
+                "Okay. Do you have data to back that up?",
+                "Hmm. I'd need to see the actual numbers before I'm convinced."
+            ];
+            return riskyResponses[Math.floor(Math.random() * riskyResponses.length)];
+        }
+
+        // Neutral outcomes - polite but unimpressed
+        if (option.outcome === 'neutral') {
+            const neutralResponses = [
+                "Okay. That's fair.",
+                "Alright, I understand your position.",
+                "Fine. Let's continue.",
+                "I see. Is there anything else?"
+            ];
+            return neutralResponses[Math.floor(Math.random() * neutralResponses.length)];
+        }
+
+        // Default follow-up
+        const defaultResponses = [
+            "I see. Thank you for that information.",
+            "Okay. Anything else I should know?",
+            "Alright, that's helpful.",
+            "Got it. Let's continue our discussion."
+        ];
+        return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+    }
+
     showDialogueOptions(options) {
         const optionsContainer = document.getElementById('dialogue-options');
         optionsContainer.innerHTML = '';
@@ -2670,15 +2787,25 @@ class MSLGame {
         // Track objectives based on response type
         this.trackObjectivesFromResponse(option);
 
-        // Show feedback
-        setTimeout(() => {
-            this.addDialogueMessage('System', `[Feedback: ${option.feedback}]`, 'system');
+        // KOL follow-up response based on player's answer
+        this.showThinkingIndicator(kol.name);
+        const kolFollowUp = this.generateKOLFollowUp(option, kol);
+        const delay = this.calculateResponseDelay(kolFollowUp);
 
-            // Ask if player wants to continue or end
+        setTimeout(() => {
+            this.hideThinkingIndicator();
+            this.addDialogueMessage(kol.name, kolFollowUp, 'kol');
+
+            // Show feedback after KOL response
             setTimeout(() => {
-                this.showContinueOptions();
-            }, 2000);
-        }, 1000);
+                this.addDialogueMessage('System', `[${option.feedback}]`, 'system');
+
+                // Ask if player wants to continue or end
+                setTimeout(() => {
+                    this.showContinueOptions();
+                }, 1500);
+            }, 1000);
+        }, delay);
 
         // Update UI
         const fillPercent = Math.min(100, (kol.relationshipScore / 100) * 100);

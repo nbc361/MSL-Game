@@ -2937,6 +2937,49 @@ body {
     font-size: 0.95rem;
 }
 
+/* Thinking indicator for KOL responses */
+.thinking-indicator {
+    opacity: 0.8;
+}
+
+.thinking-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    padding: 5px 0;
+}
+
+.thinking-dots .dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--text-muted);
+    border-radius: 50%;
+    animation: thinking-bounce 1.4s ease-in-out infinite both;
+}
+
+.thinking-dots .dot:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.thinking-dots .dot:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+.thinking-dots .dot:nth-child(3) {
+    animation-delay: 0s;
+}
+
+@keyframes thinking-bounce {
+    0%, 80%, 100% {
+        transform: scale(0.6);
+        opacity: 0.4;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
 /* Improved screen-specific layouts */
 #advisory-screen .screen-content,
 #congress-screen .screen-content,
