@@ -35,7 +35,22 @@ class MSLGame {
             gameOver: false
         };
 
+        // Double-click prevention tracker
+        this.processingActions = new Set();
+
         this.init();
+    }
+
+    // Prevent double-clicks on actions
+    preventDoubleClick(actionId, callback, delay = 500) {
+        if (this.processingActions.has(actionId)) {
+            console.log(`Action ${actionId} blocked - already processing`);
+            return false;
+        }
+        this.processingActions.add(actionId);
+        setTimeout(() => this.processingActions.delete(actionId), delay);
+        callback();
+        return true;
     }
 
     init() {
@@ -163,28 +178,36 @@ class MSLGame {
         document.getElementById('end-interaction')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('End interaction clicked');
-            this.endInteraction();
+            this.preventDoubleClick('end-interaction', () => {
+                console.log('End interaction clicked');
+                this.endInteraction();
+            });
         });
         document.getElementById('back-from-interaction')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Back from interaction clicked');
-            this.exitInteractionWithoutSaving();
+            this.preventDoubleClick('back-from-interaction', () => {
+                console.log('Back from interaction clicked');
+                this.exitInteractionWithoutSaving();
+            });
         });
 
         // CRM Modal
         document.getElementById('submit-crm')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Submit CRM clicked');
-            this.submitCRM();
+            this.preventDoubleClick('submit-crm', () => {
+                console.log('Submit CRM clicked');
+                this.submitCRM();
+            });
         });
         document.getElementById('save-draft-crm')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Save CRM draft clicked');
-            this.saveCRMDraft();
+            this.preventDoubleClick('save-draft-crm', () => {
+                console.log('Save CRM draft clicked');
+                this.saveCRMDraft();
+            });
         });
 
         // Back buttons - bind all of them
@@ -245,8 +268,16 @@ class MSLGame {
         });
 
         // Pre-call planning
-        document.getElementById('start-meeting')?.addEventListener('click', () => this.startMeetingFromPlanning());
-        document.getElementById('cancel-planning')?.addEventListener('click', () => this.cancelPlanning());
+        document.getElementById('start-meeting')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.preventDoubleClick('start-meeting', () => this.startMeetingFromPlanning());
+        });
+        document.getElementById('cancel-planning')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.preventDoubleClick('cancel-planning', () => this.cancelPlanning());
+        });
 
         // Objective checkboxes - limit to 3
         document.querySelectorAll('input[name="objectives"]').forEach(checkbox => {
@@ -844,21 +875,104 @@ class MSLGame {
         const container = document.getElementById('map-container');
         container.innerHTML = '';
 
-        // Create simple visual representation of KOL locations
+        // Create US map SVG background
+        const mapSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        mapSvg.setAttribute('class', 'us-map-svg');
+        mapSvg.setAttribute('viewBox', '0 0 100 60');
+        mapSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+        // Simplified US outline
+        const usOutline = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        usOutline.setAttribute('class', 'us-outline');
+        usOutline.setAttribute('d', 'M5,45 L3,35 L5,25 L10,18 L18,15 L25,12 L35,10 L45,8 L55,7 L65,8 L75,10 L82,14 L88,20 L92,28 L94,38 L92,48 L85,54 L75,56 L65,55 L55,53 L45,52 L35,53 L25,55 L15,54 L8,50 L5,45 Z');
+        mapSvg.appendChild(usOutline);
+
+        // Territory region definitions (percentages of container)
+        const territoryRegions = {
+            northeast: { x: 72, y: 8, width: 22, height: 28, label: 'Northeast', cities: ['Boston', 'NYC', 'Philadelphia'] },
+            midwest: { x: 45, y: 12, width: 26, height: 32, label: 'Midwest', cities: ['Chicago', 'Detroit', 'Minneapolis'] },
+            southeast: { x: 58, y: 42, width: 28, height: 30, label: 'Southeast', cities: ['Atlanta', 'Miami', 'Nashville'] },
+            southwest: { x: 28, y: 45, width: 28, height: 30, label: 'Texas', cities: ['Houston', 'Dallas', 'San Antonio'] },
+            westcoast: { x: 3, y: 10, width: 18, height: 50, label: 'West Coast', cities: ['Seattle', 'SF', 'LA'] },
+            mountain: { x: 18, y: 18, width: 22, height: 38, label: 'Mountain', cities: ['Denver', 'Phoenix', 'SLC'] }
+        };
+
+        // Draw all regions (dimmed)
+        Object.entries(territoryRegions).forEach(([key, region]) => {
+            const regionRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            regionRect.setAttribute('class', `territory-region ${key === this.state.territory ? 'active' : 'inactive'}`);
+            regionRect.setAttribute('x', region.x);
+            regionRect.setAttribute('y', region.y);
+            regionRect.setAttribute('width', region.width);
+            regionRect.setAttribute('height', region.height);
+            regionRect.setAttribute('rx', '2');
+            mapSvg.appendChild(regionRect);
+
+            // Add region label
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('class', `region-label ${key === this.state.territory ? 'active' : ''}`);
+            label.setAttribute('x', region.x + region.width / 2);
+            label.setAttribute('y', region.y + region.height + 4);
+            label.setAttribute('text-anchor', 'middle');
+            label.textContent = region.label;
+            mapSvg.appendChild(label);
+        });
+
+        container.appendChild(mapSvg);
+
+        // Position KOLs within the selected territory region
+        const region = territoryRegions[this.state.territory] || territoryRegions.midwest;
+
         this.state.kols.forEach((kol, index) => {
             const location = document.createElement('div');
             location.className = `map-location ${kol.type}`;
 
-            // Pseudo-random positioning based on index
-            const row = Math.floor(index / 6);
-            const col = index % 6;
-            location.style.left = `${10 + col * 15 + Math.random() * 5}%`;
-            location.style.top = `${10 + row * 20 + Math.random() * 10}%`;
+            // Calculate grid position within the territory region
+            const cols = Math.ceil(Math.sqrt(this.state.kols.length * 1.5));
+            const rows = Math.ceil(this.state.kols.length / cols);
+
+            const col = index % cols;
+            const row = Math.floor(index / cols);
+
+            // Calculate position with padding inside the region
+            const padding = 3;
+            const availableWidth = region.width - padding * 2;
+            const availableHeight = region.height - padding * 2;
+            const cellWidth = availableWidth / Math.max(cols, 1);
+            const cellHeight = availableHeight / Math.max(rows, 1);
+
+            // Add small random offset for natural look
+            const randomX = (Math.random() - 0.5) * cellWidth * 0.4;
+            const randomY = (Math.random() - 0.5) * cellHeight * 0.4;
+
+            let xPos = region.x + padding + col * cellWidth + cellWidth / 2 + randomX;
+            let yPos = region.y + padding + row * cellHeight + cellHeight / 2 + randomY;
+
+            // Clamp to stay within region bounds (with margin for icon size)
+            xPos = Math.max(region.x + 2, Math.min(region.x + region.width - 4, xPos));
+            yPos = Math.max(region.y + 2, Math.min(region.y + region.height - 4, yPos));
+
+            location.style.left = `${xPos}%`;
+            location.style.top = `${yPos}%`;
+
+            // Add relationship indicator
+            if (kol.interactionCount > 0) {
+                location.classList.add('visited');
+            }
 
             location.innerHTML = kol.avatar;
-            location.title = `${kol.name}\n${kol.institution}\nTier ${kol.tier}`;
+            location.title = `${kol.name}\n${kol.institution}\nTier ${kol.tier} | ${this.capitalizeFirst(kol.relationship)}`;
 
-            location.addEventListener('click', () => this.startInteraction(kol.id));
+            // Prevent double-clicks
+            let isProcessing = false;
+            location.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isProcessing) return;
+                isProcessing = true;
+                this.startInteraction(kol.id);
+                setTimeout(() => { isProcessing = false; }, 500);
+            });
 
             container.appendChild(location);
         });
@@ -949,7 +1063,11 @@ class MSLGame {
                     <span class="kol-relationship ${kol.relationship}">${this.capitalizeFirst(kol.relationship)}</span>
                 </div>
             `;
-            card.addEventListener('click', () => this.startInteraction(kol.id));
+            card.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.preventDoubleClick(`kol-card-${kol.id}`, () => this.startInteraction(kol.id));
+            });
             list.appendChild(card);
         });
     }
@@ -983,10 +1101,14 @@ class MSLGame {
             `;
 
             if (entry.status === 'pending' || entry.status === 'overdue') {
-                entryElement.addEventListener('click', () => this.openCRMForm(entry));
+                entryElement.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.preventDoubleClick(`crm-entry-${entry.id}`, () => this.openCRMForm(entry));
+                });
             }
 
-            entriesList.appendChild(entry);
+            entriesList.appendChild(entryElement);
         });
 
         if (this.state.pendingCRM.length === 0 && this.state.completedCRM.length === 0) {
@@ -2089,7 +2211,11 @@ class MSLGame {
             button.className = 'dialogue-option';
             // No compliance indicators - player must use their judgment
             button.innerHTML = option.text;
-            button.addEventListener('click', () => this.selectDialogueOption(option));
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.preventDoubleClick(`dialogue-option-${index}`, () => this.selectDialogueOption(option));
+            });
             optionsContainer.appendChild(button);
         });
 
@@ -2214,12 +2340,16 @@ class MSLGame {
             <button class="dialogue-option" id="end-interaction-btn">End the interaction</button>
         `;
 
-        document.getElementById('continue-interaction').addEventListener('click', () => {
-            this.presentScenario();
+        document.getElementById('continue-interaction').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.preventDoubleClick('continue-interaction', () => this.presentScenario());
         });
 
-        document.getElementById('end-interaction-btn').addEventListener('click', () => {
-            this.endInteraction();
+        document.getElementById('end-interaction-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.preventDoubleClick('end-interaction-btn', () => this.endInteraction());
         });
     }
 
@@ -2287,6 +2417,9 @@ class MSLGame {
         const kol = this.state.currentKOL;
         kol.interactionCount++;
         kol.lastContact = { week: this.state.currentWeek, quarter: this.state.currentQuarter };
+
+        // Save immediately to persist the interaction count
+        this.saveGame();
 
         // Calculate meeting score if objectives were set
         let meetingScore = null;
@@ -2579,6 +2712,12 @@ class MSLGame {
 
     closeModal(modalId) {
         document.getElementById(modalId)?.classList.remove('active');
+
+        // When CRM modal is closed by any means, ensure dashboard is updated
+        if (modalId === 'crm-modal') {
+            this.showScreen('dashboard-screen');
+            this.updateDashboard();
+        }
     }
 
     // Congress/Conference
@@ -2616,7 +2755,11 @@ class MSLGame {
                     </div>
                 </div>
             `;
-            item.addEventListener('click', () => this.startInteraction(kol.id));
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.preventDoubleClick(`congress-kol-${kol.id}`, () => this.startInteraction(kol.id));
+            });
             kolList.appendChild(item);
         });
 
