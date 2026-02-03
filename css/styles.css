@@ -3399,6 +3399,55 @@ body {
     font-size: 0.8rem;
 }
 
+/* Precall two-column layout */
+.precall-two-column {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.precall-publications,
+.precall-previous-notes {
+    background: var(--bg-dark);
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    min-height: 80px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.precall-publications ul,
+.precall-previous-notes ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.precall-publications li {
+    padding: 4px 0;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.precall-publications li:last-child {
+    border-bottom: none;
+}
+
+.precall-previous-notes p {
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.5;
+}
+
+.kol-location-info {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
 /* Responsive adjustments for pre-call planning */
 @media (max-width: 768px) {
     .precall-kol-info {

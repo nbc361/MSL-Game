@@ -1853,6 +1853,42 @@ class MSLGame {
             interestsContainer.appendChild(tag);
         });
 
+        // Add location info
+        const locationInfo = document.getElementById('precall-location');
+        if (locationInfo && kol.location) {
+            locationInfo.textContent = `${kol.location.city}, ${kol.location.stateAbbrev}`;
+        }
+
+        // Add personality info
+        const personalityInfo = document.getElementById('precall-personality');
+        if (personalityInfo && kol.personality) {
+            personalityInfo.innerHTML = `<strong>${kol.personality.type || 'Unknown'}</strong>`;
+        }
+
+        // Populate recent publications
+        const publicationsContainer = document.getElementById('precall-publications');
+        if (publicationsContainer) {
+            const publications = this.generateFakePublications(kol);
+            if (publications.length > 0) {
+                publicationsContainer.innerHTML = '<ul>' +
+                    publications.map(pub => `<li>${pub}</li>`).join('') +
+                    '</ul>';
+            } else {
+                publicationsContainer.innerHTML = '<p>No recent publications found.</p>';
+            }
+        }
+
+        // Populate previous interaction notes
+        const previousNotesContainer = document.getElementById('precall-previous-notes');
+        if (previousNotesContainer) {
+            const previousNotes = this.getLastInteractionNotes(kol);
+            if (previousNotes) {
+                previousNotesContainer.innerHTML = previousNotes;
+            } else {
+                previousNotesContainer.innerHTML = '<p>No previous interactions recorded.</p>';
+            }
+        }
+
         // Generate tips based on KOL
         this.generatePreCallTips(kol);
 
@@ -1871,37 +1907,44 @@ class MSLGame {
 
         const tips = [];
 
+        // Personality-based tips (from Phase 7 PERSONALITY_TIPS concept)
+        const personalityTips = {
+            'Data-driven': "This KOL values specific numbers and statistics. Come prepared with exact figures.",
+            'Skeptical': "Expect challenging questions. Acknowledge limitations proactively.",
+            'Patient-focused': "Emphasize quality of life and patient outcomes over mechanism.",
+            'Collaborative': "Ask for their perspective and input throughout the discussion.",
+            'Practical': "Focus on real-world applicability and clinical practice implications.",
+            'Research-focused': "Discuss methodology and study design details.",
+            'Time-constrained': "Be concise and prioritize your key messages."
+        };
+
+        // Add personality-specific tip
+        if (kol.personality && kol.personality.type && personalityTips[kol.personality.type]) {
+            tips.push(`💡 ${personalityTips[kol.personality.type]}`);
+        }
+
         // Tips based on relationship
         if (kol.relationship === 'new') {
-            tips.push('First meeting: Focus on understanding their practice and interests before diving into data');
+            tips.push('First meeting: Focus on understanding their practice and interests');
             tips.push('Ask open-ended questions to learn about their clinical challenges');
         } else if (kol.relationship === 'developing') {
-            tips.push('Building relationship: Reference previous conversations to show you listened');
+            tips.push('Reference previous conversations to show you listened');
         } else if (kol.relationship === 'established' || kol.relationship === 'advocate') {
-            tips.push('Strong relationship: Consider discussing research collaboration opportunities');
+            tips.push('Consider discussing research collaboration opportunities');
         }
 
         // Tips based on tier
         if (kol.tier === 1) {
-            tips.push('Tier 1 KOL: Come prepared with deep scientific data - they expect expertise');
-            tips.push('Time is limited: Be concise and focus on high-impact topics');
+            tips.push('Tier 1 KOL: Come prepared with deep scientific data');
         } else if (kol.tier === 3) {
-            tips.push('Community physician: Focus on practical, real-world application of data');
+            tips.push('Focus on practical, real-world application of data');
         }
 
         // Tips based on type
         if (kol.type === 'academic') {
-            tips.push('Academic setting: Discuss clinical trial data and research methodology');
+            tips.push('Academic setting: Discuss clinical trial data and methodology');
         } else if (kol.type === 'community') {
-            tips.push('Community practice: Address real-world effectiveness and patient access');
-        }
-
-        // Tips based on personality
-        if (kol.personality && kol.personality.includes('Skeptical')) {
-            tips.push('This KOL may be skeptical: Lead with strong evidence and acknowledge limitations');
-        }
-        if (kol.personality && kol.personality.includes('Time-constrained')) {
-            tips.push('Limited time: Get to the point quickly and prioritize your key messages');
+            tips.push('Community practice: Address real-world effectiveness');
         }
 
         // Add generic tip
@@ -1913,6 +1956,60 @@ class MSLGame {
             li.textContent = tip;
             tipsList.appendChild(li);
         });
+    }
+
+    generateFakePublications(kol) {
+        const ta = GameData.therapeuticAreas[this.state.player.therapeuticArea];
+        const taName = ta ? ta.name : 'oncology';
+        const year = this.state.currentYear;
+
+        // Publication templates based on KOL type
+        const templates = {
+            academic: [
+                `${kol.name.split(' ').pop()} et al. "Real-world outcomes in ${taName}: A retrospective cohort study." J Clin Med ${year};`,
+                `"Novel biomarkers for treatment response in ${taName}." Cancer Research ${year - 1};`,
+                `"Long-term follow-up of patients treated with immunotherapy in ${taName}." NEJM ${year - 1};`
+            ],
+            community: [
+                `${kol.name.split(' ').pop()} et al. "Community practice patterns in ${taName} management." Am J Med ${year};`,
+                `"Patient adherence challenges in ${taName} treatment." Patient Preference and Adherence ${year - 1};`
+            ],
+            private: [
+                `"Quality of life outcomes in ${taName} patients." Quality of Life Research ${year};`,
+                `"Treatment decision-making in community ${taName} practice." Curr Oncol ${year - 1};`
+            ]
+        };
+
+        const pubs = templates[kol.type] || templates.community;
+        return pubs.slice(0, Math.min(2, pubs.length));
+    }
+
+    getLastInteractionNotes(kol) {
+        // Find the last interaction with this KOL
+        const interactions = this.state.interactions.filter(i => i.kolId === kol.id);
+        if (interactions.length === 0) return null;
+
+        const lastInteraction = interactions[interactions.length - 1];
+
+        // Get CRM notes for this interaction
+        const crmEntry = this.state.completedCRM.find(c => c.kolId === kol.id);
+
+        let notes = `<strong>Last Meeting:</strong> Week ${lastInteraction.week}, Q${lastInteraction.quarter}<br>`;
+
+        if (lastInteraction.meetingScore) {
+            notes += `<strong>Meeting Quality:</strong> ${this.capitalizeFirst(lastInteraction.meetingScore.rating)} `;
+            notes += `(${lastInteraction.meetingScore.percentage}%)<br>`;
+        }
+
+        if (lastInteraction.objectives && lastInteraction.objectives.length > 0) {
+            notes += `<strong>Objectives Discussed:</strong> ${lastInteraction.objectives.join(', ')}<br>`;
+        }
+
+        if (crmEntry && crmEntry.summary) {
+            notes += `<strong>Summary:</strong> ${crmEntry.summary}`;
+        }
+
+        return notes;
     }
 
     enforceObjectiveLimit() {
