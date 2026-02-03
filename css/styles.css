@@ -805,6 +805,64 @@ body {
     font-weight: 600;
 }
 
+/* Action Points Display */
+.action-points-stat {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.2) 0%, rgba(245, 158, 11, 0.2) 100%);
+    border: 2px solid #f59e0b;
+}
+
+.action-points-stat.low {
+    border-color: #ef4444;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(220, 38, 38, 0.2) 100%);
+}
+
+.action-points-stat.medium {
+    border-color: #f59e0b;
+}
+
+.ap-icon {
+    font-size: 1.2rem;
+}
+
+.ap-value {
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.ap-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* KOL Card Location & Travel Cost */
+.kol-location {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.kol-travel-cost {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.kol-travel-cost.local {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--success-color);
+}
+
+.kol-travel-cost.in-state {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--warning-color);
+}
+
+.kol-travel-cost.travel {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--danger-color);
+}
+
 /* Dashboard Main */
 .dashboard-main {
     flex: 1;

@@ -15,6 +15,12 @@ class MSLGame {
             level: 1,
             xpToNextLevel: 100,
             totalXpEarned: 0,
+            // Action Points System
+            actionPoints: {
+                current: 5,
+                max: 5
+            },
+            homeBase: null, // Set when territory selected
             metrics: {
                 kolEngagement: 0,
                 scientificExchange: 0,
@@ -526,6 +532,12 @@ class MSLGame {
             level: 1,
             xpToNextLevel: 100,
             totalXpEarned: 0,
+            // Action Points System
+            actionPoints: {
+                current: 5,
+                max: 5
+            },
+            homeBase: null,
             // Time management
             weeklyTimeTotal: 40,
             weeklyTimeRemaining: 40,
@@ -738,14 +750,22 @@ class MSLGame {
         const territory = GameData.territories[territoryKey];
 
         document.getElementById('territory-name').textContent = territory.name;
-        document.getElementById('territory-description').textContent = territory.description;
+
+        // Show states covered
+        const statesCovered = territory.states.map(s => s.abbrev).join(', ');
+        const homeBase = `${territory.homeBase.city}, ${territory.homeBase.state}`;
+        document.getElementById('territory-description').innerHTML = `
+            <p>${territory.description}</p>
+            <p class="territory-states"><strong>States Covered:</strong> ${statesCovered}</p>
+            <p class="territory-homebase"><strong>Home Base:</strong> 📍 ${homeBase}</p>
+        `;
 
         // Populate stats
         const statsContainer = document.getElementById('territory-stats');
         statsContainer.innerHTML = `
             <div class="territory-stat">
-                <div class="value">${territory.characteristics.academicCenters}</div>
-                <div class="label">Academic Centers</div>
+                <div class="value">${territory.states.length}</div>
+                <div class="label">States</div>
             </div>
             <div class="territory-stat">
                 <div class="value">${territory.characteristics.kolCount}</div>
@@ -765,6 +785,10 @@ class MSLGame {
     }
 
     startCareer() {
+        // Set home base from territory
+        const territory = GameData.territories[this.state.territory];
+        this.state.homeBase = territory.homeBase;
+
         this.generateKOLs();
         this.generateIISProjects();
         this.showScreen('dashboard-screen');
@@ -776,8 +800,8 @@ class MSLGame {
                 this.showTutorial();
             }, 500);
         } else {
-            this.showNotification('Welcome to ' + GameData.territories[this.state.territory].name + '!',
-                'Your MSL career begins. Start by engaging with KOLs in your territory.', 'info');
+            this.showNotification('Welcome to ' + territory.name + '!',
+                `Your home base is ${territory.homeBase.city}, ${territory.homeBase.state}. Start by engaging with KOLs in your territory.`, 'info');
         }
     }
 
@@ -811,18 +835,29 @@ class MSLGame {
     generateKOL(tier, type, therapeuticArea) {
         const templates = GameData.kolTemplates[type] || GameData.kolTemplates.community;
         const template = templates[Math.floor(Math.random() * templates.length)];
+        const territory = GameData.territories[this.state.territory];
 
         const firstName = GameData.names.firstNames[Math.floor(Math.random() * GameData.names.firstNames.length)];
         const lastName = GameData.names.lastNames[Math.floor(Math.random() * GameData.names.lastNames.length)];
-        const institution = template.institutionTypes[Math.floor(Math.random() * template.institutionTypes.length)];
+
+        // Get location from territory's states
+        const state = territory.states[Math.floor(Math.random() * territory.states.length)];
+        const city = state.cities[Math.floor(Math.random() * state.cities.length)];
+        const institution = state.institutions[Math.floor(Math.random() * state.institutions.length)];
 
         return {
             id: `kol_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             name: `Dr. ${firstName} ${lastName}`,
             title: template.titleTemplate.replace('{TA}', therapeuticArea),
-            institution: `${this.generateInstitutionName()} ${institution}`,
+            institution: institution,
             tier: tier,
             type: type,
+            // Location info
+            location: {
+                state: state.name,
+                stateAbbrev: state.abbrev,
+                city: city
+            },
             relationship: 'new',
             relationshipScore: 0,
             interests: template.interests,
@@ -843,6 +878,92 @@ class MSLGame {
     getRandomAvatar() {
         const avatars = ['👨‍⚕️', '👩‍⚕️', '🧑‍⚕️', '👨‍🔬', '👩‍🔬', '🧑‍🔬'];
         return avatars[Math.floor(Math.random() * avatars.length)];
+    }
+
+    // ==========================================
+    // ACTION POINTS SYSTEM
+    // ==========================================
+
+    calculateTravelCost(kol) {
+        if (!this.state.homeBase || !kol.location) return 1;
+
+        const homeBase = this.state.homeBase;
+        const kolLocation = kol.location;
+        const costs = GameData.actionPoints.costs;
+
+        // Same city = 1 AP
+        if (kolLocation.city === homeBase.city && kolLocation.stateAbbrev === homeBase.state) {
+            return costs.sameCity;
+        }
+
+        // Same state = 2 AP
+        if (kolLocation.stateAbbrev === homeBase.state) {
+            return costs.sameState;
+        }
+
+        // Different state = 3 AP
+        return costs.differentState;
+    }
+
+    getTravelCostLabel(kol) {
+        const cost = this.calculateTravelCost(kol);
+        if (cost === 1) return { cost, label: 'Local', class: 'local' };
+        if (cost === 2) return { cost, label: 'In-State', class: 'in-state' };
+        return { cost, label: 'Travel Required', class: 'travel' };
+    }
+
+    canAffordActionPoints(cost) {
+        return this.state.actionPoints.current >= cost;
+    }
+
+    spendActionPoints(cost, reason = '') {
+        if (!this.canAffordActionPoints(cost)) {
+            return false;
+        }
+        this.state.actionPoints.current -= cost;
+        this.updateActionPointsDisplay();
+        if (reason) {
+            console.log(`Spent ${cost} AP: ${reason}`);
+        }
+        return true;
+    }
+
+    resetActionPoints() {
+        this.state.actionPoints.current = this.state.actionPoints.max;
+        this.updateActionPointsDisplay();
+    }
+
+    updateActionPointsDisplay() {
+        const apDisplay = document.getElementById('action-points-display');
+        if (apDisplay) {
+            const current = this.state.actionPoints.current;
+            const max = this.state.actionPoints.max;
+            apDisplay.innerHTML = `
+                <span class="ap-icon">⚡</span>
+                <span class="ap-value">${current}/${max}</span>
+                <span class="ap-label">AP</span>
+            `;
+
+            // Color based on remaining AP
+            if (current <= 1) {
+                apDisplay.classList.add('low');
+                apDisplay.classList.remove('medium');
+            } else if (current <= 2) {
+                apDisplay.classList.add('medium');
+                apDisplay.classList.remove('low');
+            } else {
+                apDisplay.classList.remove('low', 'medium');
+            }
+        }
+    }
+
+    showInsufficientAPMessage(required) {
+        const current = this.state.actionPoints.current;
+        this.showNotification(
+            'Not Enough Action Points',
+            `This activity requires ${required} AP, but you only have ${current}. End the week to refresh your action points.`,
+            'warning'
+        );
     }
 
     // Dashboard
@@ -877,6 +998,9 @@ class MSLGame {
         // Update XP and Level display
         this.updateXPDisplay();
         this.updateLevelDisplay();
+
+        // Update Action Points display
+        this.updateActionPointsDisplay();
 
         this.updateMap();
         this.updateCalendar();
@@ -1097,6 +1221,13 @@ class MSLGame {
         filteredKOLs.forEach(kol => {
             const card = document.createElement('div');
             card.className = 'kol-card';
+
+            // Get travel cost info
+            const travelInfo = this.getTravelCostLabel(kol);
+            const locationText = kol.location ?
+                `${kol.location.city}, ${kol.location.stateAbbrev}` :
+                'Unknown';
+
             card.innerHTML = `
                 <div class="kol-card-header">
                     <div class="kol-avatar">${kol.avatar}</div>
@@ -1104,11 +1235,13 @@ class MSLGame {
                         <h4>${kol.name}</h4>
                         <p>${kol.title}</p>
                         <p>${kol.institution}</p>
+                        <p class="kol-location">📍 ${locationText}</p>
                     </div>
                 </div>
                 <div class="kol-card-stats">
                     <span class="kol-tier tier-${kol.tier}">Tier ${kol.tier}</span>
                     <span class="kol-relationship ${kol.relationship}">${this.capitalizeFirst(kol.relationship)}</span>
+                    <span class="kol-travel-cost ${travelInfo.class}">⚡${travelInfo.cost} AP</span>
                 </div>
             `;
             card.addEventListener('click', (e) => {
@@ -1626,6 +1759,15 @@ class MSLGame {
         const kol = this.state.kols.find(k => k.id === kolId);
         if (!kol) return;
 
+        // Calculate travel/action point cost
+        const apCost = this.calculateTravelCost(kol);
+
+        // Check if we have enough action points
+        if (!this.canAffordActionPoints(apCost)) {
+            this.showInsufficientAPMessage(apCost);
+            return;
+        }
+
         // Calculate time cost for this visit
         const timeCost = this.getActivityTimeCost('kol-visit', kol);
 
@@ -1634,6 +1776,9 @@ class MSLGame {
             this.showTimeWarning(timeCost);
             return;
         }
+
+        // Spend action points
+        this.spendActionPoints(apCost, `Meeting with ${kol.name}`);
 
         this.state.currentKOL = kol;
         this.state.currentMeetingTimeCost = timeCost;
@@ -3059,6 +3204,9 @@ class MSLGame {
         // Reset weekly time budget
         this.state.weeklyTimeRemaining = this.state.weeklyTimeTotal;
         this.state.lastVisitedLocation = null;
+
+        // Reset action points
+        this.resetActionPoints();
 
         // Check for overdue CRM entries
         this.state.pendingCRM.forEach(entry => {

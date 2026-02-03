@@ -79,47 +79,93 @@ const GameData = {
         }
     },
 
-    // Territories with different difficulties and characteristics
+    // Territories with state-based KOL distribution
     territories: {
         northeast: {
-            name: "Northeast Corridor",
+            name: "Northeast Academic Hub",
             region: "Boston - NYC - Philadelphia",
             difficulty: "hard",
-            description: "Dense concentration of academic medical centers and research institutions. Highly sophisticated KOLs who expect deep scientific engagement. Competitive environment with many pharma companies vying for attention.",
+            description: "Dense concentration of academic medical centers and research institutions. Highly sophisticated KOLs who expect deep scientific engagement.",
+            states: [
+                {
+                    name: "Massachusetts",
+                    abbrev: "MA",
+                    cities: ["Boston", "Cambridge", "Worcester"],
+                    institutions: ["Harvard Medical School", "Massachusetts General Hospital", "Dana-Farber Cancer Institute", "Beth Israel Deaconess", "Brigham and Women's Hospital"]
+                },
+                {
+                    name: "New York",
+                    abbrev: "NY",
+                    cities: ["New York City", "Rochester", "Buffalo"],
+                    institutions: ["Memorial Sloan Kettering", "Mount Sinai", "Columbia University Medical Center", "NYU Langone", "Weill Cornell"]
+                },
+                {
+                    name: "Pennsylvania",
+                    abbrev: "PA",
+                    cities: ["Philadelphia", "Pittsburgh"],
+                    institutions: ["Penn Medicine", "UPMC", "Fox Chase Cancer Center", "Thomas Jefferson University"]
+                }
+            ],
+            homeBase: { city: "Boston", state: "MA" },
             characteristics: {
                 academicCenters: 12,
                 communityHospitals: 8,
                 privatePractices: 15,
                 researchInstitutions: 6,
-                kolCount: 45,
-                tier1Kols: 12,
+                kolCount: 32,
+                tier1Kols: 10,
                 competitorPresence: "Very High",
                 travelRequirement: "Moderate"
             },
             challenges: [
                 "Time-constrained KOLs with packed schedules",
                 "High expectations for scientific depth",
-                "Multiple competing MSLs seeking same KOLs",
-                "Urban traffic and scheduling complexity"
+                "Multiple competing MSLs seeking same KOLs"
             ],
             advantages: [
                 "Access to thought leaders",
                 "Major congress attendance",
-                "Clinical trial site opportunities",
-                "High insight generation potential"
+                "Clinical trial site opportunities"
             ]
         },
         midwest: {
             name: "Great Lakes Region",
             region: "Chicago - Detroit - Minneapolis",
             difficulty: "medium",
-            description: "Mix of major academic centers and community practices. Strong focus on practical, real-world evidence. KOLs value relationship building and consistent presence.",
+            description: "Mix of major academic centers and community practices. Strong focus on practical, real-world evidence.",
+            states: [
+                {
+                    name: "Illinois",
+                    abbrev: "IL",
+                    cities: ["Chicago", "Springfield", "Peoria"],
+                    institutions: ["Northwestern Medicine", "University of Chicago Medicine", "Rush University Medical Center", "Loyola Medicine"]
+                },
+                {
+                    name: "Michigan",
+                    abbrev: "MI",
+                    cities: ["Detroit", "Ann Arbor", "Grand Rapids"],
+                    institutions: ["Michigan Medicine", "Henry Ford Health", "Beaumont Health", "Karmanos Cancer Institute"]
+                },
+                {
+                    name: "Minnesota",
+                    abbrev: "MN",
+                    cities: ["Minneapolis", "Rochester", "St. Paul"],
+                    institutions: ["Mayo Clinic", "University of Minnesota Health", "Allina Health", "HealthPartners"]
+                },
+                {
+                    name: "Ohio",
+                    abbrev: "OH",
+                    cities: ["Cleveland", "Columbus", "Cincinnati"],
+                    institutions: ["Cleveland Clinic", "Ohio State Wexner Medical Center", "Cincinnati Children's", "University Hospitals"]
+                }
+            ],
+            homeBase: { city: "Chicago", state: "IL" },
             characteristics: {
                 academicCenters: 6,
                 communityHospitals: 14,
                 privatePractices: 20,
                 researchInstitutions: 3,
-                kolCount: 35,
+                kolCount: 32,
                 tier1Kols: 6,
                 competitorPresence: "Moderate",
                 travelRequirement: "High"
@@ -132,15 +178,41 @@ const GameData = {
             advantages: [
                 "Strong community practice engagement",
                 "Less competitive pressure",
-                "Longer appointment times",
-                "Genuine relationship building"
+                "Longer appointment times"
             ]
         },
         southeast: {
             name: "Southeast Region",
             region: "Atlanta - Miami - Nashville",
             difficulty: "medium",
-            description: "Growing healthcare market with expanding academic programs. Diverse patient populations and evolving treatment patterns.",
+            description: "Growing healthcare market with expanding academic programs. Diverse patient populations.",
+            states: [
+                {
+                    name: "Georgia",
+                    abbrev: "GA",
+                    cities: ["Atlanta", "Augusta", "Savannah"],
+                    institutions: ["Emory Healthcare", "Winship Cancer Institute", "Piedmont Healthcare", "Augusta University Medical Center"]
+                },
+                {
+                    name: "Florida",
+                    abbrev: "FL",
+                    cities: ["Miami", "Tampa", "Jacksonville", "Orlando"],
+                    institutions: ["Moffitt Cancer Center", "Sylvester Comprehensive Cancer Center", "Mayo Clinic Florida", "UF Health"]
+                },
+                {
+                    name: "Tennessee",
+                    abbrev: "TN",
+                    cities: ["Nashville", "Memphis", "Knoxville"],
+                    institutions: ["Vanderbilt University Medical Center", "St. Jude Children's Research Hospital", "UT Medical Center"]
+                },
+                {
+                    name: "North Carolina",
+                    abbrev: "NC",
+                    cities: ["Durham", "Chapel Hill", "Charlotte"],
+                    institutions: ["Duke University Hospital", "UNC Medical Center", "Atrium Health", "Wake Forest Baptist Health"]
+                }
+            ],
+            homeBase: { city: "Atlanta", state: "GA" },
             characteristics: {
                 academicCenters: 5,
                 communityHospitals: 18,
@@ -154,12 +226,11 @@ const GameData = {
             challenges: [
                 "Diverse practice settings",
                 "Variable institutional protocols",
-                "Hurricane season disruptions"
+                "Large geographic coverage"
             ],
             advantages: [
                 "Growing market opportunity",
                 "Emerging KOL development",
-                "Strong community connections",
                 "Receptive to new therapies"
             ]
         },
@@ -167,13 +238,34 @@ const GameData = {
             name: "Texas Triangle",
             region: "Houston - Dallas - San Antonio",
             difficulty: "easy",
-            description: "Large, growing healthcare market with major medical centers. Strong focus on value-based care and diverse populations.",
+            description: "Large, growing healthcare market with major medical centers. Strong focus on value-based care.",
+            states: [
+                {
+                    name: "Texas",
+                    abbrev: "TX",
+                    cities: ["Houston", "Dallas", "San Antonio", "Austin", "Fort Worth"],
+                    institutions: ["MD Anderson Cancer Center", "UT Southwestern", "Baylor Scott & White", "Methodist Hospital", "Texas Children's Hospital"]
+                },
+                {
+                    name: "Oklahoma",
+                    abbrev: "OK",
+                    cities: ["Oklahoma City", "Tulsa"],
+                    institutions: ["OU Health", "Stephenson Cancer Center", "Saint Francis Health System"]
+                },
+                {
+                    name: "Louisiana",
+                    abbrev: "LA",
+                    cities: ["New Orleans", "Baton Rouge"],
+                    institutions: ["Ochsner Health", "LSU Health", "Tulane Medical Center"]
+                }
+            ],
+            homeBase: { city: "Houston", state: "TX" },
             characteristics: {
                 academicCenters: 4,
                 communityHospitals: 12,
                 privatePractices: 30,
                 researchInstitutions: 3,
-                kolCount: 28,
+                kolCount: 32,
                 tier1Kols: 4,
                 competitorPresence: "Low-Moderate",
                 travelRequirement: "Moderate"
@@ -186,21 +278,41 @@ const GameData = {
             advantages: [
                 "Growing patient populations",
                 "Less saturated market",
-                "Strong MD Anderson presence",
-                "Accessible KOLs"
+                "Strong MD Anderson presence"
             ]
         },
         westcoast: {
             name: "Pacific Coast",
             region: "San Francisco - Los Angeles - Seattle",
             difficulty: "hard",
-            description: "Innovation hub with leading research institutions. Early adopters of new therapies but skeptical of pharma. Strong focus on evidence-based medicine.",
+            description: "Innovation hub with leading research institutions. Early adopters but skeptical of pharma.",
+            states: [
+                {
+                    name: "California",
+                    abbrev: "CA",
+                    cities: ["San Francisco", "Los Angeles", "San Diego", "Sacramento"],
+                    institutions: ["UCSF Medical Center", "Stanford Health Care", "Cedars-Sinai", "UCLA Health", "City of Hope", "UC San Diego Health"]
+                },
+                {
+                    name: "Washington",
+                    abbrev: "WA",
+                    cities: ["Seattle", "Spokane", "Tacoma"],
+                    institutions: ["Fred Hutchinson Cancer Center", "UW Medicine", "Seattle Children's", "Virginia Mason"]
+                },
+                {
+                    name: "Oregon",
+                    abbrev: "OR",
+                    cities: ["Portland", "Eugene"],
+                    institutions: ["OHSU Knight Cancer Institute", "Providence Health", "Legacy Health"]
+                }
+            ],
+            homeBase: { city: "San Francisco", state: "CA" },
             characteristics: {
                 academicCenters: 8,
                 communityHospitals: 10,
                 privatePractices: 18,
                 researchInstitutions: 7,
-                kolCount: 38,
+                kolCount: 32,
                 tier1Kols: 10,
                 competitorPresence: "High",
                 travelRequirement: "High"
@@ -208,27 +320,52 @@ const GameData = {
             challenges: [
                 "Skeptical of pharmaceutical industry",
                 "High evidence standards",
-                "Expensive operating environment",
                 "Traffic and scheduling challenges"
             ],
             advantages: [
                 "Early adopter community",
                 "Innovation-focused",
-                "Strong research partnerships",
-                "Influential publications"
+                "Strong research partnerships"
             ]
         },
         mountain: {
             name: "Mountain West",
             region: "Denver - Phoenix - Salt Lake City",
             difficulty: "easy",
-            description: "Emerging healthcare market with growing populations. Strong outdoor lifestyle focus and integrated health systems.",
+            description: "Emerging healthcare market with growing populations. Strong integrated health systems.",
+            states: [
+                {
+                    name: "Colorado",
+                    abbrev: "CO",
+                    cities: ["Denver", "Aurora", "Colorado Springs"],
+                    institutions: ["UCHealth", "University of Colorado Hospital", "National Jewish Health", "Children's Hospital Colorado"]
+                },
+                {
+                    name: "Arizona",
+                    abbrev: "AZ",
+                    cities: ["Phoenix", "Tucson", "Scottsdale"],
+                    institutions: ["Mayo Clinic Arizona", "Banner Health", "HonorHealth", "University of Arizona Medical Center"]
+                },
+                {
+                    name: "Utah",
+                    abbrev: "UT",
+                    cities: ["Salt Lake City", "Provo"],
+                    institutions: ["Huntsman Cancer Institute", "University of Utah Health", "Intermountain Healthcare"]
+                },
+                {
+                    name: "Nevada",
+                    abbrev: "NV",
+                    cities: ["Las Vegas", "Reno"],
+                    institutions: ["Cleveland Clinic Nevada", "Comprehensive Cancer Centers", "Renown Health"]
+                }
+            ],
+            homeBase: { city: "Denver", state: "CO" },
             characteristics: {
                 academicCenters: 3,
                 communityHospitals: 10,
                 privatePractices: 22,
                 researchInstitutions: 2,
-                kolCount: 22,
+                kolCount: 32,
                 tier1Kols: 3,
                 competitorPresence: "Low",
                 travelRequirement: "Very High"
@@ -730,6 +867,24 @@ const GameData = {
             duration: 3,
             kolAttendance: "Medium",
             activities: ["booth", "networking", "symposium"]
+        }
+    },
+
+    // Action Points configuration
+    actionPoints: {
+        maxPerWeek: 5,
+        costs: {
+            sameCity: 1,      // KOL in same city as home base
+            sameState: 2,     // KOL in same state but different city
+            differentState: 3 // KOL in different state
+        },
+        activities: {
+            kolMeeting: 1,    // Base cost, modified by location
+            congress: 2,
+            advisory: 2,
+            training: 1,
+            iis: 1,
+            crm: 0            // CRM doesn't cost AP
         }
     },
 
