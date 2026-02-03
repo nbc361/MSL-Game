@@ -362,65 +362,73 @@
         </div>
 
         <!-- KOL Interaction Screen -->
-        <div id="interaction-screen" class="screen">
-            <div class="interaction-header">
-                <div class="kol-profile">
-                    <div class="kol-avatar" id="interaction-avatar">👨‍⚕️</div>
-                    <div class="kol-info">
-                        <h2 id="interaction-kol-name">Dr. James Wilson</h2>
-                        <p id="interaction-kol-title">Professor of Oncology</p>
-                        <p id="interaction-kol-institution">Memorial Cancer Center</p>
-                    </div>
-                </div>
-                <div class="interaction-stats">
-                    <div class="interaction-stat">
-                        <span>Relationship Level</span>
-                        <div class="relationship-bar">
-                            <div class="relationship-fill" id="relationship-fill"></div>
-                        </div>
-                        <span id="relationship-label">New</span>
-                    </div>
-                    <div class="interaction-stat">
-                        <span>Interaction Time</span>
-                        <span id="interaction-time">15 min</span>
-                    </div>
+        <div id="interaction-screen" class="screen fullscreen-mode">
+            <div class="screen-nav">
+                <button id="back-from-interaction" class="back-btn">
+                    <span class="back-icon">←</span>
+                    <span>Back to Dashboard</span>
+                </button>
+                <div class="breadcrumb">
+                    <span>Dashboard</span> / <span>KOL Interaction</span>
                 </div>
             </div>
 
-            <div class="interaction-main">
-                <div class="dialogue-container">
-                    <div class="dialogue-history" id="dialogue-history">
-                        <!-- Dialogue will be populated here -->
+            <div class="interaction-container">
+                <div class="interaction-header">
+                    <div class="kol-profile">
+                        <div class="kol-avatar large" id="interaction-avatar">👨‍⚕️</div>
+                        <div class="kol-info">
+                            <h2 id="interaction-kol-name">Dr. James Wilson</h2>
+                            <p id="interaction-kol-title">Professor of Oncology</p>
+                            <p id="interaction-kol-institution">Memorial Cancer Center</p>
+                        </div>
                     </div>
-                    <div class="dialogue-options" id="dialogue-options">
-                        <!-- Response options will appear here -->
+                    <div class="interaction-stats">
+                        <div class="interaction-stat">
+                            <span class="stat-label">Relationship</span>
+                            <div class="relationship-bar">
+                                <div class="relationship-fill" id="relationship-fill"></div>
+                            </div>
+                            <span class="relationship-level" id="relationship-label">New</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="interaction-sidebar">
-                    <div class="sidebar-section">
-                        <h4>Quick Reference</h4>
-                        <div class="quick-ref" id="quick-reference">
-                            <p>Press 'R' to access approved resources</p>
-                            <p>Press 'C' for compliance guidelines</p>
+                <div class="interaction-main">
+                    <div class="dialogue-container">
+                        <div class="dialogue-history" id="dialogue-history">
+                            <!-- Dialogue will be populated here -->
+                        </div>
+                        <div class="dialogue-options" id="dialogue-options">
+                            <!-- Response options will appear here -->
                         </div>
                     </div>
-                    <div class="sidebar-section">
-                        <h4>Compliance Status</h4>
-                        <div class="compliance-indicator" id="compliance-indicator">
-                            <span class="status-dot green"></span>
-                            <span>On-Label Discussion</span>
+
+                    <div class="interaction-sidebar">
+                        <div class="sidebar-section kol-details">
+                            <h4>About This KOL</h4>
+                            <div id="kol-background-info">
+                                <p class="kol-detail"><strong>Specialty:</strong> <span id="kol-specialty"></span></p>
+                                <p class="kol-detail"><strong>Interests:</strong> <span id="kol-interests"></span></p>
+                                <p class="kol-detail"><strong>Previous Interactions:</strong> <span id="kol-prev-interactions">0</span></p>
+                            </div>
                         </div>
-                    </div>
-                    <div class="sidebar-section">
-                        <h4>Notes</h4>
-                        <textarea id="interaction-notes" placeholder="Take notes during the interaction..."></textarea>
+                        <div class="sidebar-section">
+                            <h4>Compliance Status</h4>
+                            <div class="compliance-indicator" id="compliance-indicator">
+                                <span class="status-dot green"></span>
+                                <span>Active conversation</span>
+                            </div>
+                        </div>
+                        <div class="sidebar-section">
+                            <h4>Your Notes</h4>
+                            <textarea id="interaction-notes" placeholder="Take notes during this interaction..."></textarea>
+                        </div>
+                        <div class="sidebar-section">
+                            <button id="end-interaction" class="action-btn full-width">End Interaction</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="interaction-footer">
-                <button id="end-interaction" class="action-btn">End Interaction</button>
             </div>
         </div>
 
@@ -519,179 +527,209 @@
         </div>
 
         <!-- Advisory Board Screen -->
-        <div id="advisory-screen" class="screen">
-            <div class="advisory-header">
-                <h2>Advisory Board Planning</h2>
-                <p>Organize expert meetings to gather insights and inform medical strategy</p>
-            </div>
-
-            <div class="advisory-content">
-                <div class="advisory-planning" id="advisory-planning">
-                    <h3>Plan New Advisory Board</h3>
-
-                    <div class="form-group">
-                        <label>Meeting Topic</label>
-                        <select id="advisory-topic">
-                            <option value="">Select topic...</option>
-                            <option value="treatment-landscape">Treatment Landscape Assessment</option>
-                            <option value="clinical-data">Clinical Data Review</option>
-                            <option value="unmet-needs">Unmet Needs Exploration</option>
-                            <option value="real-world">Real-World Evidence Discussion</option>
-                            <option value="guidelines">Guideline Implications</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Select Advisors (3-8 recommended)</label>
-                        <div class="advisor-selection" id="advisor-selection">
-                            <!-- KOL selection will be populated by JS -->
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Meeting Format</label>
-                        <div class="radio-group">
-                            <label><input type="radio" name="format" value="in-person"> In-Person</label>
-                            <label><input type="radio" name="format" value="virtual" checked> Virtual</label>
-                            <label><input type="radio" name="format" value="hybrid"> Hybrid</label>
-                        </div>
-                    </div>
-
-                    <div class="advisory-preview">
-                        <h4>Estimated Outcomes</h4>
-                        <div id="advisory-preview-content">
-                            <p>Select advisors to see projected outcomes...</p>
-                        </div>
-                    </div>
-
-                    <button id="submit-advisory" class="action-btn primary" disabled>Submit for Approval</button>
-                </div>
-
-                <div class="advisory-history">
-                    <h3>Past Advisory Boards</h3>
-                    <div id="advisory-history-list">
-                        <!-- Past advisory boards will be listed here -->
-                    </div>
+        <div id="advisory-screen" class="screen fullscreen-mode">
+            <div class="screen-nav">
+                <button id="back-to-dashboard" class="back-btn">
+                    <span class="back-icon">←</span>
+                    <span>Back to Dashboard</span>
+                </button>
+                <div class="breadcrumb">
+                    <span>Dashboard</span> / <span>Advisory Board</span>
                 </div>
             </div>
 
-            <button id="back-to-dashboard" class="action-btn">Back to Dashboard</button>
+            <div class="screen-content">
+                <div class="advisory-header">
+                    <h2>Advisory Board Planning</h2>
+                    <p>Organize expert meetings to gather insights and inform medical strategy</p>
+                </div>
+
+                <div class="advisory-content">
+                    <div class="advisory-planning" id="advisory-planning">
+                        <h3>Plan New Advisory Board</h3>
+
+                        <div class="form-group">
+                            <label>Meeting Topic</label>
+                            <select id="advisory-topic">
+                                <option value="">Select topic...</option>
+                                <option value="treatment-landscape">Treatment Landscape Assessment</option>
+                                <option value="clinical-data">Clinical Data Review</option>
+                                <option value="unmet-needs">Unmet Needs Exploration</option>
+                                <option value="real-world">Real-World Evidence Discussion</option>
+                                <option value="guidelines">Guideline Implications</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Select Advisors (3-8 recommended)</label>
+                            <div class="advisor-selection" id="advisor-selection">
+                                <!-- KOL selection will be populated by JS -->
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Meeting Format</label>
+                            <div class="radio-group">
+                                <label><input type="radio" name="format" value="in-person"> In-Person</label>
+                                <label><input type="radio" name="format" value="virtual" checked> Virtual</label>
+                                <label><input type="radio" name="format" value="hybrid"> Hybrid</label>
+                            </div>
+                        </div>
+
+                        <div class="advisory-preview">
+                            <h4>Estimated Outcomes</h4>
+                            <div id="advisory-preview-content">
+                                <p>Select advisors to see projected outcomes...</p>
+                            </div>
+                        </div>
+
+                        <button id="submit-advisory" class="action-btn primary" disabled>Submit for Approval</button>
+                    </div>
+
+                    <div class="advisory-history">
+                        <h3>Past Advisory Boards</h3>
+                        <div id="advisory-history-list">
+                            <!-- Past advisory boards will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Congress Screen -->
-        <div id="congress-screen" class="screen">
-            <div class="congress-header">
-                <h2 id="congress-name">ASCO Annual Meeting</h2>
-                <p id="congress-dates">June 2-6, 2024 | Chicago, IL</p>
-            </div>
-
-            <div class="congress-content">
-                <div class="congress-schedule">
-                    <h3>Your Congress Schedule</h3>
-                    <div class="schedule-day" id="congress-schedule">
-                        <!-- Schedule will be populated by JS -->
-                    </div>
-                </div>
-
-                <div class="congress-activities">
-                    <h3>Available Activities</h3>
-                    <div class="activity-list">
-                        <button class="activity-btn" data-activity="booth">
-                            <span class="activity-icon">🏢</span>
-                            <span>Staff Medical Booth</span>
-                            <span class="activity-desc">Answer HCP questions at the medical information booth</span>
-                        </button>
-                        <button class="activity-btn" data-activity="poster">
-                            <span class="activity-icon">📊</span>
-                            <span>Poster Presentation Support</span>
-                            <span class="activity-desc">Support investigators presenting company-sponsored research</span>
-                        </button>
-                        <button class="activity-btn" data-activity="symposium">
-                            <span class="activity-icon">🎤</span>
-                            <span>Attend Scientific Symposium</span>
-                            <span class="activity-desc">Learn about latest research in your therapeutic area</span>
-                        </button>
-                        <button class="activity-btn" data-activity="networking">
-                            <span class="activity-icon">🤝</span>
-                            <span>KOL Networking</span>
-                            <span class="activity-desc">Connect with KOLs in informal setting</span>
-                        </button>
-                        <button class="activity-btn" data-activity="competitive">
-                            <span class="activity-icon">🔍</span>
-                            <span>Competitive Intelligence</span>
-                            <span class="activity-desc">Gather information on competitor presentations</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div class="congress-kols">
-                    <h3>KOLs at Congress</h3>
-                    <div id="congress-kol-list">
-                        <!-- KOLs attending will be listed here -->
-                    </div>
+        <div id="congress-screen" class="screen fullscreen-mode">
+            <div class="screen-nav">
+                <button id="leave-congress" class="back-btn">
+                    <span class="back-icon">←</span>
+                    <span>Leave Congress</span>
+                </button>
+                <div class="breadcrumb">
+                    <span>Dashboard</span> / <span>Congress</span>
                 </div>
             </div>
 
-            <button id="leave-congress" class="action-btn">Leave Congress</button>
+            <div class="screen-content">
+                <div class="congress-header">
+                    <h2 id="congress-name">ASCO Annual Meeting</h2>
+                    <p id="congress-dates">June 2-6, 2024 | Chicago, IL</p>
+                </div>
+
+                <div class="congress-content">
+                    <div class="congress-schedule">
+                        <h3>Your Congress Schedule</h3>
+                        <div class="schedule-day" id="congress-schedule">
+                            <!-- Schedule will be populated by JS -->
+                        </div>
+                    </div>
+
+                    <div class="congress-activities">
+                        <h3>Available Activities</h3>
+                        <div class="activity-list">
+                            <button class="activity-btn" data-activity="booth">
+                                <span class="activity-icon">🏢</span>
+                                <span>Staff Medical Booth</span>
+                                <span class="activity-desc">Answer HCP questions at the medical information booth</span>
+                            </button>
+                            <button class="activity-btn" data-activity="poster">
+                                <span class="activity-icon">📊</span>
+                                <span>Poster Presentation Support</span>
+                                <span class="activity-desc">Support investigators presenting company-sponsored research</span>
+                            </button>
+                            <button class="activity-btn" data-activity="symposium">
+                                <span class="activity-icon">🎤</span>
+                                <span>Attend Scientific Symposium</span>
+                                <span class="activity-desc">Learn about latest research in your therapeutic area</span>
+                            </button>
+                            <button class="activity-btn" data-activity="networking">
+                                <span class="activity-icon">🤝</span>
+                                <span>KOL Networking</span>
+                                <span class="activity-desc">Connect with KOLs in informal setting</span>
+                            </button>
+                            <button class="activity-btn" data-activity="competitive">
+                                <span class="activity-icon">🔍</span>
+                                <span>Competitive Intelligence</span>
+                                <span class="activity-desc">Gather information on competitor presentations</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="congress-kols">
+                        <h3>KOLs at Congress</h3>
+                        <div id="congress-kol-list">
+                            <!-- KOLs attending will be listed here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- IIS Screen -->
-        <div id="iis-screen" class="screen">
-            <div class="iis-header">
-                <h2>Investigator-Initiated Studies (IIS)</h2>
-                <p>Support investigators interested in conducting independent research</p>
-            </div>
-
-            <div class="iis-content">
-                <div class="iis-pipeline">
-                    <h3>IIS Pipeline</h3>
-                    <div class="pipeline-stages">
-                        <div class="stage">
-                            <h4>Inquiry</h4>
-                            <div class="stage-items" id="iis-inquiry"></div>
-                        </div>
-                        <div class="stage">
-                            <h4>Under Review</h4>
-                            <div class="stage-items" id="iis-review"></div>
-                        </div>
-                        <div class="stage">
-                            <h4>Approved</h4>
-                            <div class="stage-items" id="iis-approved"></div>
-                        </div>
-                        <div class="stage">
-                            <h4>Active</h4>
-                            <div class="stage-items" id="iis-active"></div>
-                        </div>
-                        <div class="stage">
-                            <h4>Completed</h4>
-                            <div class="stage-items" id="iis-completed"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="iis-details" id="iis-details">
-                    <h3>Study Details</h3>
-                    <p>Select a study to view details...</p>
-                </div>
-
-                <div class="iis-actions">
-                    <h3>MSL Actions</h3>
-                    <p class="iis-reminder">Remember: MSLs facilitate but do not design or influence IIS protocols</p>
-                    <div class="iis-action-list">
-                        <button class="iis-action-btn" data-action="inquiry">
-                            <span>Process New Inquiry</span>
-                        </button>
-                        <button class="iis-action-btn" data-action="update">
-                            <span>Provide Study Update</span>
-                        </button>
-                        <button class="iis-action-btn" data-action="site-visit">
-                            <span>Conduct Site Visit</span>
-                        </button>
-                    </div>
+        <div id="iis-screen" class="screen fullscreen-mode">
+            <div class="screen-nav">
+                <button id="back-from-iis" class="back-btn">
+                    <span class="back-icon">←</span>
+                    <span>Back to Dashboard</span>
+                </button>
+                <div class="breadcrumb">
+                    <span>Dashboard</span> / <span>IIS Management</span>
                 </div>
             </div>
 
-            <button id="back-from-iis" class="action-btn">Back to Dashboard</button>
+            <div class="screen-content">
+                <div class="iis-header">
+                    <h2>Investigator-Initiated Studies (IIS)</h2>
+                    <p>Support investigators interested in conducting independent research</p>
+                </div>
+
+                <div class="iis-content">
+                    <div class="iis-pipeline">
+                        <h3>IIS Pipeline</h3>
+                        <div class="pipeline-stages">
+                            <div class="stage">
+                                <h4>Inquiry</h4>
+                                <div class="stage-items" id="iis-inquiry"></div>
+                            </div>
+                            <div class="stage">
+                                <h4>Under Review</h4>
+                                <div class="stage-items" id="iis-review"></div>
+                            </div>
+                            <div class="stage">
+                                <h4>Approved</h4>
+                                <div class="stage-items" id="iis-approved"></div>
+                            </div>
+                            <div class="stage">
+                                <h4>Active</h4>
+                                <div class="stage-items" id="iis-active"></div>
+                            </div>
+                            <div class="stage">
+                                <h4>Completed</h4>
+                                <div class="stage-items" id="iis-completed"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="iis-details" id="iis-details">
+                        <h3>Study Details</h3>
+                        <p>Select a study to view details...</p>
+                    </div>
+
+                    <div class="iis-actions">
+                        <h3>MSL Actions</h3>
+                        <p class="iis-reminder">Remember: MSLs facilitate but do not design or influence IIS protocols</p>
+                        <div class="iis-action-list">
+                            <button class="iis-action-btn" data-action="inquiry">
+                                <span>Process New Inquiry</span>
+                            </button>
+                            <button class="iis-action-btn" data-action="update">
+                                <span>Provide Study Update</span>
+                            </button>
+                            <button class="iis-action-btn" data-action="site-visit">
+                                <span>Conduct Site Visit</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Performance Review Screen -->
@@ -796,34 +834,44 @@
         </div>
 
         <!-- Training Screen -->
-        <div id="training-screen" class="screen">
-            <div class="training-content">
-                <h2>Internal Training Session</h2>
-                <p>Share your medical expertise with internal stakeholders</p>
+        <div id="training-screen" class="screen fullscreen-mode">
+            <div class="screen-nav">
+                <button id="back-from-training" class="back-btn">
+                    <span class="back-icon">←</span>
+                    <span>Back to Dashboard</span>
+                </button>
+                <div class="breadcrumb">
+                    <span>Dashboard</span> / <span>Internal Training</span>
+                </div>
+            </div>
 
-                <div class="training-options">
-                    <div class="training-card" data-training="sales">
-                        <h3>Sales Team Training</h3>
-                        <p>Provide disease state education and product knowledge training</p>
-                        <span class="training-reward">+10 Internal Collaboration</span>
+            <div class="screen-content">
+                <div class="training-content">
+                    <h2>Internal Training Session</h2>
+                    <p>Share your medical expertise with internal stakeholders</p>
+
+                    <div class="training-options">
+                        <div class="training-card" data-training="sales">
+                            <h3>Sales Team Training</h3>
+                            <p>Provide disease state education and product knowledge training</p>
+                            <span class="training-reward">+10 Internal Collaboration</span>
+                        </div>
+                        <div class="training-card" data-training="marketing">
+                            <h3>Marketing Review</h3>
+                            <p>Review promotional materials for medical accuracy</p>
+                            <span class="training-reward">+5 Compliance Score</span>
+                        </div>
+                        <div class="training-card" data-training="medical">
+                            <h3>Medical Team Update</h3>
+                            <p>Share field insights with medical affairs colleagues</p>
+                            <span class="training-reward">+15 Insight Value</span>
+                        </div>
                     </div>
-                    <div class="training-card" data-training="marketing">
-                        <h3>Marketing Review</h3>
-                        <p>Review promotional materials for medical accuracy</p>
-                        <span class="training-reward">+5 Compliance Score</span>
-                    </div>
-                    <div class="training-card" data-training="medical">
-                        <h3>Medical Team Update</h3>
-                        <p>Share field insights with medical affairs colleagues</p>
-                        <span class="training-reward">+15 Insight Value</span>
+
+                    <div class="training-scenario" id="training-scenario" style="display: none;">
+                        <!-- Training scenario will be populated here -->
                     </div>
                 </div>
-
-                <div class="training-scenario" id="training-scenario" style="display: none;">
-                    <!-- Training scenario will be populated here -->
-                </div>
-
-                <button id="back-from-training" class="action-btn">Back to Dashboard</button>
             </div>
         </div>
     </div>

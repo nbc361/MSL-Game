@@ -88,6 +88,7 @@ class MSLGame {
 
         // Interaction screen
         document.getElementById('end-interaction')?.addEventListener('click', () => this.endInteraction());
+        document.getElementById('back-from-interaction')?.addEventListener('click', () => this.exitInteractionWithoutSaving());
 
         // CRM Modal
         document.getElementById('submit-crm')?.addEventListener('click', () => this.submitCRM());
@@ -732,13 +733,40 @@ class MSLGame {
         document.getElementById('interaction-kol-institution').textContent = kol.institution;
         document.getElementById('interaction-avatar').textContent = kol.avatar;
 
+        // Update KOL details in sidebar
+        const specialty = document.getElementById('kol-specialty');
+        const interests = document.getElementById('kol-interests');
+        const prevInteractions = document.getElementById('kol-prev-interactions');
+
+        if (specialty) specialty.textContent = kol.title;
+        if (interests) interests.textContent = kol.interests ? kol.interests.join(', ') : 'Research, Clinical Practice';
+        if (prevInteractions) prevInteractions.textContent = kol.interactionCount || 0;
+
         // Update relationship bar
         const fillPercent = Math.min(100, (kol.relationshipScore / 100) * 100);
         document.getElementById('relationship-fill').style.width = `${fillPercent}%`;
         document.getElementById('relationship-label').textContent = this.capitalizeFirst(kol.relationship);
 
+        // Clear notes field
+        const notesField = document.getElementById('interaction-notes');
+        if (notesField) notesField.value = '';
+
         this.showScreen('interaction-screen');
         this.startDialogue();
+    }
+
+    exitInteractionWithoutSaving() {
+        // Confirm if there was any dialogue
+        if (this.state.dialogueHistory.length > 2) {
+            if (!confirm('You have an ongoing conversation. Are you sure you want to leave without completing the interaction?')) {
+                return;
+            }
+        }
+        this.state.currentKOL = null;
+        this.state.dialogueHistory = [];
+        this.state.currentScenario = null;
+        this.showScreen('dashboard-screen');
+        this.updateDashboard();
     }
 
     startDialogue() {
@@ -805,24 +833,20 @@ class MSLGame {
         const optionsContainer = document.getElementById('dialogue-options');
         optionsContainer.innerHTML = '';
 
-        options.forEach((option, index) => {
+        // Shuffle options to randomize order (so "best" answer isn't always first)
+        const shuffledOptions = [...options].sort(() => Math.random() - 0.5);
+
+        shuffledOptions.forEach((option, index) => {
             const button = document.createElement('button');
-            button.className = `dialogue-option ${option.complianceStatus === 'violation' ? 'compliance-violation' : ''} ${option.complianceStatus === 'risk' ? 'compliance-risk' : ''}`;
-
-            let tagHTML = '';
-            if (option.complianceStatus === 'violation') {
-                tagHTML = '<span class="option-tag violation">Compliance Risk</span>';
-            } else if (option.complianceStatus === 'risk') {
-                tagHTML = '<span class="option-tag risk">Caution</span>';
-            }
-
-            button.innerHTML = `${option.text}${tagHTML}`;
+            button.className = 'dialogue-option';
+            // No compliance indicators - player must use their judgment
+            button.innerHTML = option.text;
             button.addEventListener('click', () => this.selectDialogueOption(option));
             optionsContainer.appendChild(button);
         });
 
-        // Update compliance indicator
-        this.updateComplianceIndicator('green', 'Reviewing options...');
+        // Update compliance indicator to neutral state
+        this.updateComplianceIndicator('green', 'Active conversation');
     }
 
     selectDialogueOption(option) {
