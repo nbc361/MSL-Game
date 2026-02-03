@@ -4396,3 +4396,216 @@ body {
         flex-wrap: wrap;
     }
 }
+
+/* ========================
+   Adverse Event Modal
+   ======================== */
+.ae-report-form {
+    max-width: 650px;
+}
+
+.ae-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.ae-urgent-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--danger-color), #dc2626);
+    color: white;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    margin-bottom: 15px;
+    animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.ae-reminder {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.ae-reminder .deadline {
+    color: var(--danger-color);
+    font-weight: bold;
+}
+
+.ae-timer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 15px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--danger-color);
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.timer-icon {
+    font-size: 1.5rem;
+}
+
+.timer-text {
+    font-size: 1.1rem;
+    color: var(--danger-color);
+    font-weight: bold;
+}
+
+.ae-timer.urgent {
+    background: rgba(239, 68, 68, 0.2);
+    animation: timer-urgent 1s infinite;
+}
+
+@keyframes timer-urgent {
+    0%, 100% { border-color: var(--danger-color); }
+    50% { border-color: #fca5a5; }
+}
+
+/* Severity options */
+.severity-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.severity-option {
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.severity-option:hover {
+    border-color: var(--primary-color);
+}
+
+.severity-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.severity-option input[type="radio"]:checked + .severity-label {
+    color: var(--primary-color);
+}
+
+.severity-option:has(input:checked) {
+    border-color: var(--primary-color);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.severity-label {
+    font-weight: bold;
+    font-size: 1rem;
+    margin-bottom: 5px;
+}
+
+.severity-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.severity-option.mild:has(input:checked) {
+    border-color: var(--success-color);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.severity-option.moderate:has(input:checked) {
+    border-color: var(--warning-color);
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.severity-option.severe:has(input:checked) {
+    border-color: #f97316;
+    background: rgba(249, 115, 22, 0.1);
+}
+
+.severity-option.serious:has(input:checked) {
+    border-color: var(--danger-color);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.ae-compliance-note {
+    padding: 15px;
+    background: var(--bg-dark);
+    border-left: 4px solid var(--warning-color);
+    border-radius: 5px;
+    margin: 20px 0;
+    font-size: 0.9rem;
+}
+
+.ae-compliance-note strong {
+    color: var(--warning-color);
+}
+
+/* AE notification badge in header */
+.ae-notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--danger-color);
+    color: white;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+/* Pending AE indicator in dashboard */
+.pending-ae-alert {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+    border: 1px solid var(--danger-color);
+    border-radius: 10px;
+    margin: 15px 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.pending-ae-alert:hover {
+    background: rgba(239, 68, 68, 0.15);
+    transform: translateY(-2px);
+}
+
+.pending-ae-alert .alert-icon {
+    font-size: 2rem;
+}
+
+.pending-ae-alert .alert-content h4 {
+    color: var(--danger-color);
+    margin-bottom: 5px;
+}
+
+.pending-ae-alert .alert-content p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .severity-options {
+        grid-template-columns: 1fr;
+    }
+}

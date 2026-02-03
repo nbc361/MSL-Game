@@ -2337,6 +2337,142 @@ const GameData = {
                     relationshipChange: 0
                 }
             ]
+        },
+
+        // Adverse event reporting scenario
+        adverseEventReport: {
+            id: "branch_ae_001",
+            name: "Safety Signal",
+            description: "KOL reports a potential adverse event during conversation",
+            difficulty: "medium",
+            stages: [
+                {
+                    id: "stage_1",
+                    kolDialogue: "Before we continue, I need to mention something. One of my patients on your drug was hospitalized last week with severe liver enzyme elevations. I've reported it to the FDA, but I thought you should know too.",
+                    options: [
+                        {
+                            text: "Thank you for sharing that - this is exactly the kind of information our safety team needs to hear. I need to document this as an adverse event. Can you provide some additional details about the patient and the event?",
+                            nextStage: "stage_2a_proper",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            insightOpportunity: true,
+                            insightType: "safety",
+                            feedback: "Excellent - recognizing and properly escalating a safety signal."
+                        },
+                        {
+                            text: "I'm sorry to hear that. Liver enzyme elevations are listed in the prescribing information though, so it's not unexpected. Let's move on to discuss the efficacy data.",
+                            nextStage: "stage_2b_dismissive",
+                            relationshipChange: -15,
+                            complianceStatus: "risk",
+                            feedback: "Dismissing safety concerns is inappropriate. All AEs should be documented regardless of expectedness."
+                        },
+                        {
+                            text: "That's concerning. How sure are you it was related to our drug? The patient was probably on other medications too.",
+                            nextStage: "stage_2c_defensive",
+                            relationshipChange: -10,
+                            complianceStatus: "risk",
+                            feedback: "Appearing defensive about safety reports damages trust. AEs must be reported regardless of causality."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2a_proper",
+                    kolDialogue: "Sure. The patient is a 62-year-old male, had been on your drug for about 3 months. ALT and AST were 5 times the upper limit of normal. They stopped the drug and the enzymes are improving. I have the labs if you need them.",
+                    options: [
+                        {
+                            text: "I appreciate the detail. I'll document this carefully and ensure it's reported through our pharmacovigilance system within 24 hours. Would you be willing to be contacted by our medical safety team for follow-up if they have additional questions?",
+                            nextStage: "end_ae_positive",
+                            relationshipChange: 15,
+                            complianceStatus: "safe",
+                            feedback: "Perfect handling - gathering details, committing to proper reporting, and requesting consent for follow-up."
+                        },
+                        {
+                            text: "Got it. I'll make a note. Was there anything else you wanted to discuss about the drug?",
+                            nextStage: "stage_3_incomplete",
+                            relationshipChange: -5,
+                            complianceStatus: "risk",
+                            feedback: "The response is inadequate - proper AE documentation requires more detail and a clear commitment to reporting."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2b_dismissive",
+                    kolDialogue: "Whether it's expected or not isn't the point. This was a serious event - the patient was hospitalized. Don't you need to report these things?",
+                    options: [
+                        {
+                            text: "You're absolutely right, and I apologize. Let me correct my approach. Yes, all serious adverse events must be reported regardless of expectedness. Can you share the details so I can document this properly?",
+                            nextStage: "end_ae_recovered",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Good recovery - acknowledging the mistake and getting back on track."
+                        },
+                        {
+                            text: "We do have processes for reporting, but I'm the medical liaison, not the safety team. You should contact our drug safety department directly.",
+                            nextStage: "end_ae_negative",
+                            relationshipChange: -20,
+                            complianceStatus: "violation",
+                            complianceHit: 20,
+                            feedback: "MSLs are obligated to collect and report AEs they become aware of. Deflecting is a compliance failure."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_2c_defensive",
+                    kolDialogue: "Look, I've been practicing for 30 years. I know what a drug-induced liver injury looks like. The timing and pattern fit perfectly. I'm not accusing your drug of anything, but this needs to be on record.",
+                    options: [
+                        {
+                            text: "I apologize - I didn't mean to question your clinical judgment. You're right that this needs to be documented properly. Can you share the patient details so I can report this through our pharmacovigilance system?",
+                            nextStage: "end_ae_recovered",
+                            relationshipChange: -5,
+                            complianceStatus: "safe",
+                            feedback: "Adequate recovery, though the initial defensiveness may have damaged trust."
+                        },
+                        {
+                            text: "I understand. I'm just trying to make sure we have the complete picture before making any conclusions.",
+                            nextStage: "end_ae_negative",
+                            relationshipChange: -15,
+                            complianceStatus: "risk",
+                            feedback: "Still appearing defensive. The KOL is unlikely to report future AEs to you."
+                        }
+                    ]
+                },
+                {
+                    id: "stage_3_incomplete",
+                    kolDialogue: "That's it? This is a serious safety concern. I expected a more thorough response from someone in your position.",
+                    options: [
+                        {
+                            text: "You're right, I should take this more seriously. Let me document this properly - I need the patient demographics, the specific lab values, timeline, and outcome. Our safety team may also want to follow up. What's the best contact for that?",
+                            nextStage: "end_ae_recovered",
+                            relationshipChange: 5,
+                            complianceStatus: "safe",
+                            feedback: "Good course correction after initial inadequate response."
+                        }
+                    ]
+                },
+                {
+                    id: "end_ae_positive",
+                    kolDialogue: "Good. I appreciate you taking this seriously. That's exactly how these things should be handled. I feel better knowing the information is getting to the right people.",
+                    isEnding: true,
+                    outcome: "positive",
+                    relationshipChange: 15,
+                    aeReported: true
+                },
+                {
+                    id: "end_ae_recovered",
+                    kolDialogue: "Okay, thank you. Here are the details. I'm glad we got this documented properly.",
+                    isEnding: true,
+                    outcome: "neutral",
+                    relationshipChange: 0,
+                    aeReported: true
+                },
+                {
+                    id: "end_ae_negative",
+                    kolDialogue: "I see. Well, I'll make sure the FDA has all the information they need. I'm disappointed in how this was handled.",
+                    isEnding: true,
+                    outcome: "negative",
+                    relationshipChange: -20
+                }
+            ]
         }
     },
 

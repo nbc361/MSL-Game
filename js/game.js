@@ -50,6 +50,15 @@ class MSLGame {
                 totalEntries: 0,
                 averageScore: 0,
                 grades: { A: 0, 'B+': 0, B: 0, 'C+': 0, C: 0, D: 0 }
+            },
+            // Adverse Event Tracking
+            adverseEvents: {
+                pending: [],      // AEs detected but not yet reported
+                reported: [],     // Successfully reported AEs
+                missed: [],       // AEs that weren't reported in time
+                totalDetected: 0,
+                totalReported: 0,
+                totalMissed: 0
             }
         };
 
@@ -360,6 +369,277 @@ class MSLGame {
                 }
             });
         });
+
+        // AE Modal events
+        document.getElementById('submit-ae')?.addEventListener('click', () => this.submitAEReport());
+        document.getElementById('cancel-ae')?.addEventListener('click', () => this.closeModal('ae-modal'));
+    }
+
+    // ========================
+    // Adverse Event System
+    // ========================
+
+    detectAdverseEvent(dialogueText, kol) {
+        // AE trigger phrases that suggest an adverse event was mentioned
+        const aeTriggers = [
+            'side effect', 'adverse event', 'adverse reaction',
+            'stopped taking', 'discontinued', 'couldn\'t tolerate',
+            'hospitalized', 'emergency room', 'ER visit',
+            'severe reaction', 'allergic reaction', 'anaphylaxis',
+            'died', 'death', 'fatal', 'life-threatening',
+            'rash', 'swelling', 'bleeding', 'infection',
+            'liver problems', 'kidney problems', 'heart problems',
+            'couldn\'t walk', 'collapsed', 'seizure',
+            'my patient had', 'one of my patients experienced'
+        ];
+
+        const lowerText = dialogueText.toLowerCase();
+        const triggered = aeTriggers.some(trigger => lowerText.includes(trigger));
+
+        if (triggered) {
+            return {
+                detected: true,
+                source: kol?.name || 'Unknown',
+                dialogue: dialogueText,
+                timestamp: Date.now()
+            };
+        }
+        return { detected: false };
+    }
+
+    triggerAEDetection(aeInfo) {
+        // Create pending AE entry
+        const aeEntry = {
+            id: `ae_${Date.now()}`,
+            kolId: this.state.currentKOL?.id,
+            kolName: aeInfo.source,
+            detectedWeek: this.state.currentWeek,
+            detectedQuarter: this.state.currentQuarter,
+            dialogue: aeInfo.dialogue,
+            deadline: this.state.currentWeek + 1, // Due by next week
+            status: 'pending'
+        };
+
+        this.state.adverseEvents.pending.push(aeEntry);
+        this.state.adverseEvents.totalDetected++;
+
+        // Show alert notification
+        this.showNotification(
+            '⚠️ Adverse Event Detected',
+            'An adverse event was mentioned. Complete the AE report within 24 hours.',
+            'warning'
+        );
+
+        // Auto-open AE form if not in middle of conversation
+        if (!this.state.currentScenario && !this.state.currentBranchingScenario) {
+            setTimeout(() => this.openAEModal(aeEntry), 1500);
+        }
+    }
+
+    openAEModal(aeEntry = null) {
+        const modal = document.getElementById('ae-modal');
+        if (!modal) return;
+
+        // Set the current AE being reported
+        this.state.currentAE = aeEntry || this.state.adverseEvents.pending[0];
+
+        // Reset form
+        document.getElementById('ae-source').value = '';
+        document.getElementById('ae-description').value = '';
+        document.getElementById('ae-reporter-name').value = '';
+        document.getElementById('ae-reporter-contact').value = '';
+        document.getElementById('ae-additional-notes').value = '';
+        document.querySelectorAll('input[name="ae-severity"]').forEach(r => r.checked = false);
+        document.querySelectorAll('input[name="ae-expected"]').forEach(r => r.checked = false);
+
+        // Pre-fill if we have context
+        if (this.state.currentAE) {
+            document.getElementById('ae-reporter-name').value = this.state.currentAE.kolName || '';
+            if (this.state.currentAE.dialogue) {
+                document.getElementById('ae-description').value =
+                    `KOL mentioned: "${this.state.currentAE.dialogue.substring(0, 200)}..."`;
+            }
+        }
+
+        // Update deadline display
+        this.updateAETimer();
+
+        modal.classList.add('active');
+    }
+
+    updateAETimer() {
+        const timerEl = document.getElementById('ae-time-remaining');
+        const timerContainer = document.getElementById('ae-timer');
+        if (!timerEl) return;
+
+        // For simplicity, show deadline in weeks (since we use weeks as time unit)
+        if (this.state.currentAE) {
+            const weeksRemaining = this.state.currentAE.deadline - this.state.currentWeek;
+            if (weeksRemaining <= 0) {
+                timerEl.textContent = 'OVERDUE!';
+                timerContainer?.classList.add('urgent');
+            } else if (weeksRemaining === 1) {
+                timerEl.textContent = 'Due this week!';
+                timerContainer?.classList.add('urgent');
+            } else {
+                timerEl.textContent = `${weeksRemaining} weeks`;
+                timerContainer?.classList.remove('urgent');
+            }
+        } else {
+            timerEl.textContent = '24:00:00';
+        }
+    }
+
+    submitAEReport() {
+        const source = document.getElementById('ae-source').value;
+        const description = document.getElementById('ae-description').value;
+        const severity = document.querySelector('input[name="ae-severity"]:checked')?.value;
+        const expected = document.querySelector('input[name="ae-expected"]:checked')?.value;
+        const reporterName = document.getElementById('ae-reporter-name').value;
+        const reporterContact = document.getElementById('ae-reporter-contact').value;
+        const additionalNotes = document.getElementById('ae-additional-notes').value;
+
+        // Validation
+        if (!source || !description || !severity) {
+            this.showNotification('Incomplete Report', 'Please fill in all required fields: Source, Description, and Severity.', 'warning');
+            return;
+        }
+
+        if (description.length < 30) {
+            this.showNotification('More Detail Needed', 'Please provide a more detailed description of the adverse event.', 'warning');
+            return;
+        }
+
+        // Create completed AE report
+        const report = {
+            id: this.state.currentAE?.id || `ae_${Date.now()}`,
+            source,
+            description,
+            severity,
+            expected,
+            reporterName,
+            reporterContact,
+            additionalNotes,
+            reportedWeek: this.state.currentWeek,
+            reportedQuarter: this.state.currentQuarter,
+            timely: true // Reported on time
+        };
+
+        // Move from pending to reported
+        if (this.state.currentAE) {
+            const pendingIndex = this.state.adverseEvents.pending.findIndex(
+                ae => ae.id === this.state.currentAE.id
+            );
+            if (pendingIndex >= 0) {
+                const wasOverdue = this.state.currentAE.deadline <= this.state.currentWeek;
+                report.timely = !wasOverdue;
+                this.state.adverseEvents.pending.splice(pendingIndex, 1);
+            }
+        }
+
+        this.state.adverseEvents.reported.push(report);
+        this.state.adverseEvents.totalReported++;
+
+        // Calculate XP reward based on quality
+        let xpReward = GameData.xpRewards.crmEntry; // Base XP
+        let bonusMessage = '';
+
+        if (severity === 'serious' || severity === 'severe') {
+            xpReward += 15; // Bonus for handling serious AEs
+            bonusMessage = ' (Serious AE properly documented)';
+        }
+
+        if (report.timely) {
+            xpReward += 10; // Bonus for timely reporting
+            bonusMessage += ' (Timely submission)';
+
+            // Boost compliance
+            this.state.metrics.regulatoryCompliance = Math.min(100,
+                this.state.metrics.regulatoryCompliance + 5
+            );
+        }
+
+        this.awardXP(xpReward, `AE Report Submitted${bonusMessage}`);
+
+        this.closeModal('ae-modal');
+        this.state.currentAE = null;
+
+        this.showNotification(
+            'AE Report Submitted',
+            `Adverse event has been documented and forwarded to pharmacovigilance.${bonusMessage}`,
+            'success'
+        );
+
+        this.updateDashboard();
+        this.saveGame();
+    }
+
+    checkOverdueAEs() {
+        // Check for overdue AEs during week advancement
+        const overdue = this.state.adverseEvents.pending.filter(
+            ae => ae.deadline <= this.state.currentWeek
+        );
+
+        overdue.forEach(ae => {
+            // Move to missed
+            const index = this.state.adverseEvents.pending.findIndex(p => p.id === ae.id);
+            if (index >= 0) {
+                this.state.adverseEvents.pending.splice(index, 1);
+                ae.missedWeek = this.state.currentWeek;
+                this.state.adverseEvents.missed.push(ae);
+                this.state.adverseEvents.totalMissed++;
+
+                // Compliance penalty
+                this.state.metrics.regulatoryCompliance = Math.max(0,
+                    this.state.metrics.regulatoryCompliance - 15
+                );
+
+                // Warning
+                this.state.warnings++;
+
+                this.showNotification(
+                    '⚠️ Missed AE Deadline',
+                    `You failed to report an adverse event in time. This is a serious regulatory violation. (-15% Compliance)`,
+                    'danger'
+                );
+
+                // Check for termination
+                if (this.state.adverseEvents.totalMissed >= 3) {
+                    this.triggerComplianceCrisis();
+                }
+            }
+        });
+    }
+
+    getPendingAECount() {
+        return this.state.adverseEvents.pending.length;
+    }
+
+    updatePendingAEDisplay() {
+        const alertEl = document.getElementById('pending-ae-alert');
+        const messageEl = document.getElementById('pending-ae-message');
+        if (!alertEl) return;
+
+        const pendingCount = this.getPendingAECount();
+
+        if (pendingCount > 0) {
+            alertEl.style.display = 'flex';
+
+            // Check for urgent AEs
+            const urgentAEs = this.state.adverseEvents.pending.filter(
+                ae => ae.deadline - this.state.currentWeek <= 1
+            );
+
+            if (urgentAEs.length > 0) {
+                messageEl.textContent = `URGENT: ${urgentAEs.length} adverse event${urgentAEs.length > 1 ? 's' : ''} due this week!`;
+                alertEl.classList.add('urgent');
+            } else {
+                messageEl.textContent = `${pendingCount} adverse event${pendingCount > 1 ? 's' : ''} require${pendingCount === 1 ? 's' : ''} documentation`;
+                alertEl.classList.remove('urgent');
+            }
+        } else {
+            alertEl.style.display = 'none';
+        }
     }
 
     updateCRMQualityScore() {
@@ -1085,6 +1365,9 @@ class MSLGame {
 
         // Update Action Points display
         this.updateActionPointsDisplay();
+
+        // Update pending AE display
+        this.updatePendingAEDisplay();
 
         this.updateMap();
         this.updateCalendar();
@@ -2619,6 +2902,15 @@ class MSLGame {
         dialogueHistory.scrollTop = dialogueHistory.scrollHeight;
 
         this.state.dialogueHistory.push({ speaker, text, type });
+
+        // Check for adverse event mentions in KOL dialogue
+        if (type === 'kol' && this.state.currentKOL) {
+            const aeDetection = this.detectAdverseEvent(text, this.state.currentKOL);
+            if (aeDetection.detected) {
+                // Delay the AE trigger to not interrupt conversation flow
+                setTimeout(() => this.triggerAEDetection(aeDetection), 2000);
+            }
+        }
     }
 
     showThinkingIndicator(speaker) {
@@ -3573,6 +3865,9 @@ class MSLGame {
                 entry.status = 'overdue';
             }
         });
+
+        // Check for overdue AE reports
+        this.checkOverdueAEs();
 
         // Update CRM compliance
         this.updateCRMCompliance();

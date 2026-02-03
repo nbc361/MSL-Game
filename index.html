@@ -387,6 +387,18 @@
                 </div>
             </div>
 
+            <!-- Pending AE Alert -->
+            <div class="pending-ae-alert" id="pending-ae-alert" style="display: none;" onclick="game.openAEModal()">
+                <div class="alert-icon">⚠️</div>
+                <div class="alert-content">
+                    <h4>Pending Adverse Event Report</h4>
+                    <p id="pending-ae-message">1 adverse event requires documentation within 24 hours</p>
+                </div>
+                <div class="alert-action">
+                    <span class="arrow">→</span>
+                </div>
+            </div>
+
             <!-- Next Action Prompt -->
             <div class="next-action-prompt" id="next-action-prompt">
                 <div class="prompt-icon" id="prompt-icon">💡</div>
@@ -655,6 +667,95 @@
                 <div class="modal-actions">
                     <button id="submit-crm" class="action-btn primary" disabled>Submit Documentation</button>
                     <button id="save-draft-crm" class="action-btn">Save as Draft</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Adverse Event Reporting Modal -->
+        <div id="ae-modal" class="modal">
+            <div class="modal-content ae-report-form">
+                <div class="ae-header">
+                    <div class="ae-urgent-badge">⚠️ PHARMACOVIGILANCE REQUIRED</div>
+                    <h2>Adverse Event Report</h2>
+                    <p class="ae-reminder">Complete this report within <span id="ae-deadline" class="deadline">24 hours</span></p>
+                </div>
+
+                <div class="ae-timer" id="ae-timer">
+                    <div class="timer-icon">⏱️</div>
+                    <div class="timer-text">Time Remaining: <span id="ae-time-remaining">24:00:00</span></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Source of AE Information</label>
+                    <select id="ae-source">
+                        <option value="">Select source...</option>
+                        <option value="hcp-direct">HCP Direct Report</option>
+                        <option value="hcp-secondhand">HCP Second-hand Report</option>
+                        <option value="patient-direct">Patient Direct Report</option>
+                        <option value="literature">Published Literature</option>
+                        <option value="social-media">Social Media/Online</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Event Description <span class="field-hint">*Required</span></label>
+                    <textarea id="ae-description" placeholder="Describe the adverse event in detail: What happened? When did it occur? What was the outcome?"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Severity Assessment</label>
+                    <div class="severity-options">
+                        <label class="severity-option mild">
+                            <input type="radio" name="ae-severity" value="mild">
+                            <span class="severity-label">Mild</span>
+                            <span class="severity-desc">No intervention needed</span>
+                        </label>
+                        <label class="severity-option moderate">
+                            <input type="radio" name="ae-severity" value="moderate">
+                            <span class="severity-label">Moderate</span>
+                            <span class="severity-desc">Treatment modification</span>
+                        </label>
+                        <label class="severity-option severe">
+                            <input type="radio" name="ae-severity" value="severe">
+                            <span class="severity-label">Severe</span>
+                            <span class="severity-desc">Hospitalization required</span>
+                        </label>
+                        <label class="severity-option serious">
+                            <input type="radio" name="ae-severity" value="serious">
+                            <span class="severity-label">Serious</span>
+                            <span class="severity-desc">Life-threatening/Death</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Is this event expected based on known safety profile?</label>
+                    <div class="radio-group">
+                        <label><input type="radio" name="ae-expected" value="yes"> Yes - Listed in prescribing information</label>
+                        <label><input type="radio" name="ae-expected" value="no"> No - Unexpected adverse event</label>
+                        <label><input type="radio" name="ae-expected" value="unknown"> Unknown</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Reporter Information</label>
+                    <input type="text" id="ae-reporter-name" placeholder="Reporter name (HCP or patient)">
+                    <input type="text" id="ae-reporter-contact" placeholder="Contact information (phone/email)">
+                </div>
+
+                <div class="form-group">
+                    <label>Additional Notes</label>
+                    <textarea id="ae-additional-notes" placeholder="Any additional relevant information: concomitant medications, medical history, etc."></textarea>
+                </div>
+
+                <div class="ae-compliance-note">
+                    <strong>Reminder:</strong> All adverse events must be reported regardless of causality assessment.
+                    Failure to report AEs promptly is a serious regulatory violation.
+                </div>
+
+                <div class="modal-actions">
+                    <button id="submit-ae" class="action-btn primary">Submit AE Report</button>
+                    <button id="cancel-ae" class="action-btn">Cancel</button>
                 </div>
             </div>
         </div>
