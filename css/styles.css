@@ -932,11 +932,10 @@ body {
 .map-container {
     background: var(--bg-card);
     border-radius: 12px;
-    padding: 20px;
     min-height: 350px;
     max-height: 450px;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* US Map SVG */
@@ -4218,9 +4217,70 @@ body {
 
 /* CRM Quality Scoring Styles */
 .crm-form {
-    max-width: 700px;
-    max-height: 90vh;
+    max-width: 550px;
+    max-height: 85vh;
     overflow-y: auto;
+}
+
+/* Compact CRM layout */
+.crm-compact-row {
+    display: flex;
+    gap: 12px;
+}
+
+.crm-compact-row .form-group {
+    flex: 1;
+    min-width: 0;
+}
+
+.crm-form .form-group {
+    margin-bottom: 12px;
+}
+
+.crm-form label {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+}
+
+.crm-form textarea {
+    min-height: 60px;
+}
+
+.crm-form select,
+.crm-form input[type="text"] {
+    padding: 8px 10px;
+    font-size: 0.9rem;
+}
+
+.checkbox-group.compact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 15px;
+}
+
+.checkbox-group.compact label {
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.crm-flags {
+    display: flex;
+    gap: 20px;
+    padding: 10px 0;
+    border-top: 1px solid var(--border-color);
+    margin-top: 10px;
+}
+
+.flag-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.flag-option input[type="checkbox"] {
+    margin: 0;
 }
 
 .crm-quality-indicator {

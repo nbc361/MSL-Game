@@ -665,33 +665,23 @@ class MSLGame {
 
     updateCRMQualityScore() {
         let score = 0;
-        let maxScore = 60; // Base max score (required fields)
-        const feedback = [];
+        let maxScore = 50; // Simplified scoring
+        let hasPromotional = false;
 
         // Check interaction type (10 points)
         const typeField = document.getElementById('crm-interaction-type');
-        const typeComplete = typeField && typeField.value !== '';
-        if (typeComplete) score += 10;
-        this.updateChecklistItem('check-type', typeComplete);
+        if (typeField && typeField.value !== '') score += 10;
 
-        // Check duration (10 points)
+        // Check duration (5 points)
         const durationField = document.getElementById('crm-duration');
-        const durationComplete = durationField && durationField.value !== '';
-        if (durationComplete) score += 10;
-        this.updateChecklistItem('check-duration', durationComplete);
+        if (durationField && durationField.value !== '') score += 5;
 
         // Check topics selected (10 points)
         const topicsChecked = document.querySelectorAll('input[name="topics"]:checked').length;
-        const topicsComplete = topicsChecked > 0;
-        if (topicsComplete) {
+        if (topicsChecked > 0) {
             score += 10;
-            if (topicsChecked >= 2) {
-                score += 5; // Bonus for multiple topics
-            }
-        } else {
-            feedback.push("Select all relevant discussion topics");
+            if (topicsChecked >= 2) score += 5; // Bonus for multiple topics
         }
-        this.updateChecklistItem('check-topics', topicsComplete);
 
         // Check summary (15 points) with promotional language check
         const summaryField = document.getElementById('crm-discussion-summary');
@@ -704,70 +694,26 @@ class MSLGame {
             'amazing', 'excellent drug', 'first-line', 'preferred',
             'works great', 'outperforms', 'beats', 'destroys', 'miracle'
         ];
-        const hasPromotional = promotionalPhrases.some(phrase =>
+        hasPromotional = promotionalPhrases.some(phrase =>
             summaryText.toLowerCase().includes(phrase)
         );
 
         if (hasPromotional) {
             score -= 15; // Penalty for promotional language
-            feedback.push("⚠️ COMPLIANCE WARNING: Remove promotional language from documentation");
-            this.updateChecklistItem('check-objectivity', false, false, true); // isWarning = true
-        } else {
-            this.updateChecklistItem('check-objectivity', true); // Objective language - good
-            if (summaryComplete) {
-                score += 15;
-            }
+        } else if (summaryComplete) {
+            score += 15;
         }
-
-        // Check for specific data points (bonus)
-        const hasSpecificData = /\d+%|\d+\s*(mg|patients|weeks|months|years|days)/.test(summaryText);
-        if (hasSpecificData && summaryComplete) {
-            score += 5; // Bonus for specific data
-        } else if (summaryComplete && !hasSpecificData) {
-            feedback.push("Consider including specific data points discussed");
-        }
-
-        // Check summary length (ideal is 2-4 sentences)
-        const sentences = summaryText.split(/[.!?]+/).filter(s => s.trim().length > 0);
-        if (sentences.length >= 2 && sentences.length <= 4) {
-            score += 5; // Ideal length bonus
-        } else if (sentences.length === 1) {
-            feedback.push("Summary too brief - add more detail about the discussion");
-        } else if (sentences.length > 6) {
-            feedback.push("Consider being more concise");
-        }
-
-        this.updateChecklistItem('check-summary', summaryComplete);
 
         // Check sentiment (10 points)
         const sentimentField = document.getElementById('crm-sentiment');
-        const sentimentComplete = sentimentField && sentimentField.value !== '';
-        if (sentimentComplete) score += 10;
-        this.updateChecklistItem('check-sentiment', sentimentComplete);
+        if (sentimentField && sentimentField.value !== '') score += 10;
 
-        // Check follow-up (5 points)
+        // Check follow-up/insights (bonus 10 points)
         const followupField = document.getElementById('crm-followup');
-        const followupComplete = followupField && followupField.value.length >= 10;
-        if (followupComplete) score += 5;
-        this.updateChecklistItem('check-followup', followupComplete);
-
-        // Bonus: Insights (20 points)
-        const insightsField = document.getElementById('crm-insights');
-        const insightsComplete = insightsField && insightsField.value.length >= 30;
-        if (insightsComplete) {
-            score += 20;
-            maxScore += 20;
+        if (followupField && followupField.value.length >= 10) {
+            score += 10;
+            maxScore += 10;
         }
-        this.updateChecklistItem('check-insights', insightsComplete, true);
-
-        // Bonus: Next steps (20 points)
-        const nextStepsField = document.getElementById('crm-next-steps');
-        const nextStepsComplete = nextStepsField && nextStepsField.value.length >= 20;
-        if (nextStepsComplete) {
-            score += 20;
-            maxScore += 20;
-        }
-        this.updateChecklistItem('check-nextsteps', nextStepsComplete, true);
 
         // Calculate percentage (ensure minimum 0)
         const percentage = Math.max(0, Math.round((score / maxScore) * 100));
@@ -796,21 +742,18 @@ class MSLGame {
             gradeEl.style.color = grade.color;
         }
 
-        if (feedbackEl && feedback.length > 0) {
-            feedbackEl.innerHTML = feedback.map(f => `<li>${f}</li>`).join('');
-            feedbackEl.style.display = 'block';
-        } else if (feedbackEl) {
-            feedbackEl.style.display = 'none';
-        }
+        // Check required fields for submit button
+        const typeComplete = typeField && typeField.value !== '';
+        const topicsComplete = topicsChecked > 0;
+        const requiredComplete = typeComplete && topicsComplete && summaryComplete;
 
         // Enable/disable submit button
         const submitBtn = document.getElementById('submit-crm');
-        const requiredComplete = typeComplete && topicsComplete && summaryComplete;
         if (submitBtn) {
             submitBtn.disabled = !requiredComplete;
         }
 
-        return { score, percentage, requiredComplete, grade, feedback, hasPromotional };
+        return { score, percentage, requiredComplete, grade, hasPromotional };
     }
 
     getCRMGrade(percentage) {
@@ -3580,25 +3523,27 @@ class MSLGame {
         document.getElementById('crm-duration').value = '';
         document.getElementById('crm-discussion-summary').value = '';
         document.getElementById('crm-sentiment').value = '';
-        document.getElementById('crm-insights').value = '';
         document.getElementById('crm-insight-category').value = '';
         document.getElementById('crm-followup').value = '';
-        document.getElementById('crm-next-steps').value = '';
+
+        // Reset hidden fields
+        const insightsField = document.getElementById('crm-insights');
+        const nextStepsField = document.getElementById('crm-next-steps');
+        if (insightsField) insightsField.value = '';
+        if (nextStepsField) nextStepsField.value = '';
 
         // Reset checkboxes
         document.querySelectorAll('input[name="topics"]').forEach(cb => cb.checked = false);
-        document.querySelectorAll('input[name="off-label"]').forEach(r => r.checked = r.value === 'no');
-        document.querySelectorAll('input[name="ae"]').forEach(r => r.checked = r.value === 'no');
 
-        // Hide conditional sections
-        document.getElementById('off-label-details').style.display = 'none';
-        document.getElementById('ae-details').style.display = 'none';
-        document.getElementById('crm-offlabel-details').value = '';
-        document.getElementById('crm-ae-details').value = '';
+        // Reset flag checkboxes
+        const offlabelFlag = document.getElementById('crm-offlabel-flag');
+        const aeFlag = document.getElementById('crm-ae-flag');
+        if (offlabelFlag) offlabelFlag.checked = false;
+        if (aeFlag) aeFlag.checked = false;
 
         // Reset character counts
-        document.getElementById('summary-char-count').textContent = '0';
-        document.getElementById('insights-char-count').textContent = '0';
+        const summaryCount = document.getElementById('summary-char-count');
+        if (summaryCount) summaryCount.textContent = '0';
 
         // Reset quality score
         this.updateCRMQualityScore();
@@ -3615,58 +3560,38 @@ class MSLGame {
 
     submitCRM() {
         const qualityResult = this.updateCRMQualityScore();
-        const offLabelValue = document.querySelector('input[name="off-label"]:checked')?.value;
-        const aeValue = document.querySelector('input[name="ae"]:checked')?.value;
-        const insights = document.getElementById('crm-insights').value;
+        const offLabelFlag = document.getElementById('crm-offlabel-flag')?.checked || false;
+        const aeFlag = document.getElementById('crm-ae-flag')?.checked || false;
         const insightCategory = document.getElementById('crm-insight-category').value;
         const discussionSummary = document.getElementById('crm-discussion-summary').value;
         const followup = document.getElementById('crm-followup').value;
-        const nextSteps = document.getElementById('crm-next-steps').value;
         const sentiment = document.getElementById('crm-sentiment').value;
 
-        // Check for compliance issues in documentation
-        if (offLabelValue === 'yes-proactive') {
-            this.state.metrics.regulatoryCompliance -= 15;
-            this.showNotification('Compliance Alert', 'Documenting proactive off-label discussion. This may be reviewed.', 'warning');
+        // Handle off-label flag
+        if (offLabelFlag) {
+            this.showNotification('Off-Label Noted', 'Off-label discussion documented.', 'info');
         }
 
-        // Handle off-label documentation requirement
-        if (offLabelValue !== 'no') {
-            const offLabelDetails = document.getElementById('crm-offlabel-details').value;
-            if (offLabelDetails.length < 20) {
-                this.showNotification('Missing Details', 'Please provide details about the off-label discussion.', 'warning');
-                return;
-            }
+        // Handle AE flag - open AE modal if checked
+        if (aeFlag) {
+            this.showNotification('AE Reporting', 'Please complete the adverse event report.', 'info');
+            setTimeout(() => this.openAEModal(), 500);
         }
 
-        if (aeValue === 'yes') {
-            const aeDetails = document.getElementById('crm-ae-details').value;
-            if (aeDetails.length < 20) {
-                this.showNotification('AE Details Required', 'Please provide adverse event details.', 'warning');
-                return;
-            }
-            this.showNotification('AE Reporting', 'Adverse event documented. Submit formal AE report within 24 hours.', 'info');
-            // Bonus for proper AE documentation
-            this.state.metrics.regulatoryCompliance = Math.min(100, this.state.metrics.regulatoryCompliance + 5);
-        }
-
-        // Add insight if provided
-        if (insights && insightCategory && insights.length >= 30) {
+        // Add insight if category selected and followup has content
+        if (insightCategory && followup && followup.length >= 10) {
             const kol = this.state.currentKOL;
             this.state.insights.push({
                 id: `insight_${Date.now()}`,
                 category: insightCategory,
-                text: insights,
+                text: followup,
                 source: kol?.name || 'Unknown',
                 week: this.state.currentWeek,
                 quarter: this.state.currentQuarter,
-                quality: insights.length >= 100 ? 'high' : 'standard'
+                quality: followup.length >= 50 ? 'high' : 'standard'
             });
 
-            // Bonus for quality insights
-            if (insights.length >= 100) {
-                this.state.metrics.insightGeneration = Math.min(100, this.state.metrics.insightGeneration + 5);
-            }
+            this.state.metrics.insightGeneration = Math.min(100, this.state.metrics.insightGeneration + 3);
         }
 
         // Calculate CRM quality impact on metrics
@@ -3704,7 +3629,7 @@ class MSLGame {
             entry.qualityScore = qualityResult.percentage;
             entry.summary = discussionSummary.substring(0, 100);
             entry.sentiment = sentiment;
-            entry.hasInsight = insights.length >= 30;
+            entry.hasInsight = insightCategory !== '';
             entry.hasFollowup = followup.length >= 10;
             this.state.completedCRM.push(entry);
         }
