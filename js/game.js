@@ -57,49 +57,151 @@ class MSLGame {
 
     bindEvents() {
         // Title screen
-        document.getElementById('new-game-btn')?.addEventListener('click', () => this.startNewGame());
-        document.getElementById('continue-btn')?.addEventListener('click', () => this.continueGame());
-        document.getElementById('tutorial-btn')?.addEventListener('click', () => this.showScreen('tutorial-screen'));
-        document.getElementById('back-to-title')?.addEventListener('click', () => this.showScreen('title-screen'));
+        document.getElementById('new-game-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('New Game clicked');
+            this.startNewGame();
+        });
+        document.getElementById('continue-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Continue clicked');
+            this.continueGame();
+        });
+        document.getElementById('tutorial-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Tutorial clicked');
+            this.showScreen('tutorial-screen');
+        });
+        document.getElementById('back-to-title')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.showScreen('title-screen');
+        });
 
         // Character creation
         document.querySelectorAll('.education-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.selectEducation(e.target.dataset.value));
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const value = e.currentTarget.dataset.value;
+                console.log('Education selected:', value);
+                this.selectEducation(value);
+            });
         });
         document.querySelectorAll('.ta-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.selectTherapeuticArea(e.target.dataset.value));
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const value = e.currentTarget.dataset.value;
+                console.log('TA selected:', value);
+                this.selectTherapeuticArea(value);
+            });
         });
-        document.getElementById('proceed-territory')?.addEventListener('click', () => this.proceedToTerritory());
+        document.getElementById('proceed-territory')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Proceed to territory clicked');
+            this.proceedToTerritory();
+        });
 
         // Territory selection
         document.getElementById('start-career')?.addEventListener('click', () => this.startCareer());
 
         // Dashboard navigation
         document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.switchPanel(e.target.dataset.panel));
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const panel = e.currentTarget.dataset.panel;
+                console.log('Switching panel to:', panel);
+                this.switchPanel(panel);
+            });
         });
 
         // Dashboard actions
-        document.getElementById('action-visit-kol')?.addEventListener('click', () => this.showKOLSelection());
-        document.getElementById('action-congress')?.addEventListener('click', () => this.showCongressScreen());
-        document.getElementById('action-advisory')?.addEventListener('click', () => this.showAdvisoryScreen());
-        document.getElementById('action-training')?.addEventListener('click', () => this.showTrainingScreen());
-        document.getElementById('action-iis')?.addEventListener('click', () => this.showIISScreen());
-        document.getElementById('advance-time')?.addEventListener('click', () => this.advanceWeek());
+        document.getElementById('action-visit-kol')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Visit KOL clicked');
+            this.showKOLSelection();
+        });
+        document.getElementById('action-congress')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Congress clicked');
+            this.showCongressScreen();
+        });
+        document.getElementById('action-advisory')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Advisory clicked');
+            this.showAdvisoryScreen();
+        });
+        document.getElementById('action-training')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Training clicked');
+            this.showTrainingScreen();
+        });
+        document.getElementById('action-iis')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('IIS clicked');
+            this.showIISScreen();
+        });
+        document.getElementById('advance-time')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Advance week clicked');
+            this.advanceWeek();
+        });
 
         // Interaction screen
-        document.getElementById('end-interaction')?.addEventListener('click', () => this.endInteraction());
-        document.getElementById('back-from-interaction')?.addEventListener('click', () => this.exitInteractionWithoutSaving());
+        document.getElementById('end-interaction')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('End interaction clicked');
+            this.endInteraction();
+        });
+        document.getElementById('back-from-interaction')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Back from interaction clicked');
+            this.exitInteractionWithoutSaving();
+        });
 
         // CRM Modal
-        document.getElementById('submit-crm')?.addEventListener('click', () => this.submitCRM());
-        document.getElementById('save-draft-crm')?.addEventListener('click', () => this.saveCRMDraft());
+        document.getElementById('submit-crm')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Submit CRM clicked');
+            this.submitCRM();
+        });
+        document.getElementById('save-draft-crm')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Save CRM draft clicked');
+            this.saveCRMDraft();
+        });
 
-        // Back buttons
-        document.getElementById('back-to-dashboard')?.addEventListener('click', () => this.showScreen('dashboard-screen'));
-        document.getElementById('back-from-iis')?.addEventListener('click', () => this.showScreen('dashboard-screen'));
-        document.getElementById('back-from-training')?.addEventListener('click', () => this.showScreen('dashboard-screen'));
-        document.getElementById('leave-congress')?.addEventListener('click', () => this.leaveCongress());
+        // Back buttons - bind all of them
+        document.querySelectorAll('[id^="back-to-dashboard"], [id^="back-from-"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Back button clicked:', btn.id);
+                this.showScreen('dashboard-screen');
+            });
+        });
+        document.getElementById('leave-congress')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Leave congress clicked');
+            this.leaveCongress();
+        });
 
         // Review screen
         document.getElementById('continue-after-review')?.addEventListener('click', () => this.continueAfterReview());
@@ -153,6 +255,13 @@ class MSLGame {
 
         // CRM quality scoring
         this.bindCRMScoringEvents();
+
+        // Next action prompt button (dynamically handled in updateNextActionPrompt)
+        document.getElementById('prompt-action-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            // Action is set dynamically via onclick in updateNextActionPrompt
+        });
     }
 
     bindCRMScoringEvents() {
@@ -300,11 +409,29 @@ class MSLGame {
 
     // Screen Management
     showScreen(screenId) {
+        console.log('Navigating to screen:', screenId);
+
+        // Close any open modals first
+        document.querySelectorAll('.modal.active').forEach(modal => {
+            modal.classList.remove('active');
+        });
+
+        // Hide all screens
         document.querySelectorAll('.screen').forEach(screen => {
             screen.classList.remove('active');
         });
-        document.getElementById(screenId)?.classList.add('active');
-        this.state.screen = screenId;
+
+        // Show target screen
+        const targetScreen = document.getElementById(screenId);
+        if (targetScreen) {
+            targetScreen.classList.add('active');
+            this.state.screen = screenId;
+
+            // Scroll to top of the screen
+            window.scrollTo(0, 0);
+        } else {
+            console.error('Screen not found:', screenId);
+        }
     }
 
     showLoadingScreen() {
