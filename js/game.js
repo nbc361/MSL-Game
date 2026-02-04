@@ -313,6 +313,13 @@ class MSLGame {
             card.addEventListener('click', (e) => this.startTraining(e.currentTarget.dataset.training));
         });
 
+        // Advisory board submit
+        document.getElementById('submit-advisory')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.submitAdvisoryBoard();
+        });
+
         // Congress activities
         document.querySelectorAll('.activity-btn').forEach(btn => {
             btn.addEventListener('click', (e) => this.startCongressActivity(e.currentTarget.dataset.activity));
@@ -1435,35 +1442,42 @@ class MSLGame {
     }
 
     updateMap() {
-        const container = document.getElementById('map-container');
-        if (!container) {
-            console.error('Map container not found');
-            return;
-        }
-        container.innerHTML = '';
+        try {
+            const container = document.getElementById('map-container');
+            if (!container) {
+                console.error('Map container not found');
+                return;
+            }
+            container.innerHTML = '';
 
-        console.log('updateMap called, territory:', this.state.territory);
-        console.log('KOLs count:', this.state.kols?.length);
+            console.log('updateMap called, territory:', this.state.territory);
+            console.log('KOLs count:', this.state.kols?.length);
+            console.log('GameData.territories:', Object.keys(GameData.territories || {}));
 
-        const territory = GameData.territories[this.state.territory];
-        if (!territory) {
-            console.error('Territory not found:', this.state.territory);
-            container.innerHTML = `
-                <div class="map-error-state">
-                    <div class="error-icon">🗺️</div>
-                    <h4>No Territory Selected</h4>
-                    <p>Please start a new game to select your territory.</p>
-                    <button class="menu-btn primary" onclick="game.startNewGame()">Start New Game</button>
-                </div>
-            `;
-            return;
-        }
+            const territory = GameData.territories[this.state.territory];
+            if (!territory) {
+                console.error('Territory not found:', this.state.territory);
+                container.innerHTML = `
+                    <div class="map-error-state">
+                        <div class="error-icon">🗺️</div>
+                        <h4>No Territory Selected</h4>
+                        <p>Territory key: ${this.state.territory || 'undefined'}</p>
+                        <p>Please start a new game to select your territory.</p>
+                        <button class="menu-btn primary" onclick="game.startNewGame()">Start New Game</button>
+                    </div>
+                `;
+                return;
+            }
 
-        // Regenerate KOLs if missing
-        if (!this.state.kols || this.state.kols.length === 0) {
-            console.warn('No KOLs generated, regenerating...');
-            this.generateKOLs();
-        }
+            console.log('Territory found:', territory.name);
+            console.log('Territory states:', territory.states?.length);
+
+            // Regenerate KOLs if missing
+            if (!this.state.kols || this.state.kols.length === 0) {
+                console.warn('No KOLs generated, regenerating...');
+                this.generateKOLs();
+                console.log('KOLs after regeneration:', this.state.kols?.length);
+            }
 
         // Create territory-focused map showing only the states in this territory
         const mapWrapper = document.createElement('div');
@@ -1558,6 +1572,22 @@ class MSLGame {
 
         // Update the legend to show state-specific info
         this.updateMapLegend();
+
+        console.log('Map rendered successfully');
+        } catch (error) {
+            console.error('Error in updateMap:', error);
+            const container = document.getElementById('map-container');
+            if (container) {
+                container.innerHTML = `
+                    <div class="map-error-state">
+                        <div class="error-icon">⚠️</div>
+                        <h4>Error Loading Map</h4>
+                        <p>${error.message}</p>
+                        <button class="menu-btn primary" onclick="game.updateMap()">Retry</button>
+                    </div>
+                `;
+            }
+        }
     }
 
     updateMapLegend() {
@@ -3883,6 +3913,13 @@ class MSLGame {
 
     // Congress/Conference
     showCongressScreen() {
+        // Congress costs 3 AP
+        const congressAPCost = 3;
+        if (!this.canAffordActionPoints(congressAPCost)) {
+            this.showInsufficientAPMessage(congressAPCost);
+            return;
+        }
+
         const ta = this.state.player.therapeuticArea;
         const availableCongresses = Object.entries(GameData.congresses).filter(([key, congress]) =>
             congress.therapeuticArea === ta || congress.type === 'Major International'
@@ -3892,6 +3929,19 @@ class MSLGame {
             this.showNotification('No Congresses', 'No relevant congresses available this quarter.', 'info');
             return;
         }
+
+        // Check if already attended congress this week
+        if (this.state.congressAttendedThisWeek) {
+            this.showNotification('Already Attended', 'You can only attend one congress per week.', 'warning');
+            return;
+        }
+
+        // Spend AP to attend congress
+        this.spendActionPoints(congressAPCost, 'Congress attendance');
+
+        // Track congress attendance
+        this.state.congressAttendedThisWeek = true;
+        this.state.congressActivitiesThisSession = [];
 
         const [key, congress] = availableCongresses[0];
 
@@ -3925,9 +3975,39 @@ class MSLGame {
         });
 
         this.showScreen('congress-screen');
+        this.updateCongressActivityButtons();
+    }
+
+    updateCongressActivityButtons() {
+        // Disable buttons for activities already done
+        const activities = ['booth', 'poster', 'symposium', 'networking', 'competitive'];
+        activities.forEach(activity => {
+            const btn = document.querySelector(`[onclick*="startCongressActivity('${activity}')"]`);
+            if (btn) {
+                const done = this.state.congressActivitiesThisSession?.includes(activity);
+                btn.disabled = done;
+                if (done) {
+                    btn.style.opacity = '0.5';
+                    btn.title = 'Already completed this activity';
+                }
+            }
+        });
     }
 
     startCongressActivity(activity) {
+        // Check if already done this activity
+        if (!this.state.congressActivitiesThisSession) {
+            this.state.congressActivitiesThisSession = [];
+        }
+
+        if (this.state.congressActivitiesThisSession.includes(activity)) {
+            this.showNotification('Already Done', 'You\'ve already completed this activity at this congress.', 'warning');
+            return;
+        }
+
+        // Mark activity as done
+        this.state.congressActivitiesThisSession.push(activity);
+
         let reward = { relationship: 0, insight: false, collaboration: 0 };
         let message = '';
 
@@ -3983,6 +4063,7 @@ class MSLGame {
         this.awardXP(GameData.xpRewards.conferenceAttendance, 'Congress activity completed');
 
         this.showNotification('Congress Activity', message, 'success');
+        this.updateCongressActivityButtons();
     }
 
     leaveCongress() {
@@ -3992,6 +4073,19 @@ class MSLGame {
 
     // Advisory Board
     showAdvisoryScreen() {
+        // Advisory board costs 2 AP
+        const advisoryAPCost = 2;
+        if (!this.canAffordActionPoints(advisoryAPCost)) {
+            this.showInsufficientAPMessage(advisoryAPCost);
+            return;
+        }
+
+        // Check if already held advisory board this week
+        if (this.state.advisoryBoardThisWeek) {
+            this.showNotification('Already Scheduled', 'You can only organize one advisory board per week.', 'warning');
+            return;
+        }
+
         this.populateAdvisorSelection();
         this.showScreen('advisory-screen');
     }
@@ -4003,22 +4097,63 @@ class MSLGame {
         // Show tier 1 and 2 KOLs as potential advisors
         const potentialAdvisors = this.state.kols.filter(k => k.tier <= 2);
 
+        if (potentialAdvisors.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted); text-align: center;">No KOLs available for advisory board. Engage with more Tier 1-2 KOLs first.</p>';
+            return;
+        }
+
         potentialAdvisors.forEach(kol => {
             const option = document.createElement('div');
             option.className = 'advisor-option';
             option.dataset.kolId = kol.id;
+
+            // Calculate likelihood of accepting based on relationship
+            const acceptChance = this.calculateAdvisoryAcceptChance(kol);
+            const statusClass = acceptChance >= 70 ? 'likely' : acceptChance >= 40 ? 'uncertain' : 'unlikely';
+            const statusText = acceptChance >= 70 ? 'Likely to accept' : acceptChance >= 40 ? 'May decline' : 'Unlikely to accept';
+
             option.innerHTML = `
                 <input type="checkbox" id="advisor-${kol.id}">
                 <label for="advisor-${kol.id}">
-                    ${kol.avatar} ${kol.name} - ${kol.title}
+                    <span class="advisor-avatar">${kol.avatar}</span>
+                    <span class="advisor-info">
+                        <strong>${kol.name}</strong>
+                        <span class="advisor-title">${kol.title}</span>
+                        <span class="advisor-relationship">${this.capitalizeFirst(kol.relationship)} | Score: ${kol.relationshipScore}</span>
+                    </span>
+                    <span class="accept-chance ${statusClass}">${statusText} (${acceptChance}%)</span>
                 </label>
             `;
             option.addEventListener('click', () => {
                 option.classList.toggle('selected');
+                const checkbox = option.querySelector('input');
+                checkbox.checked = option.classList.contains('selected');
                 this.updateAdvisoryPreview();
             });
             container.appendChild(option);
         });
+    }
+
+    calculateAdvisoryAcceptChance(kol) {
+        let chance = 30; // Base chance
+
+        // Relationship affects acceptance
+        if (kol.relationship === 'trusted') chance += 50;
+        else if (kol.relationship === 'engaged') chance += 35;
+        else if (kol.relationship === 'familiar') chance += 20;
+        else if (kol.relationship === 'new') chance -= 10;
+
+        // Relationship score bonus
+        chance += Math.floor(kol.relationshipScore / 10);
+
+        // Personality affects willingness
+        if (kol.dominantPersonality === 'enthusiastic') chance += 15;
+        else if (kol.dominantPersonality === 'skeptic') chance -= 15;
+
+        // Previous interactions
+        if (kol.interactionCount > 0) chance += kol.interactionCount * 5;
+
+        return Math.max(5, Math.min(95, chance));
     }
 
     updateAdvisoryPreview() {
@@ -4027,16 +4162,144 @@ class MSLGame {
         const submitBtn = document.getElementById('submit-advisory');
 
         if (selected.length >= 3 && selected.length <= 8) {
+            // Calculate success probability
+            let totalAcceptChance = 0;
+            selected.forEach(opt => {
+                const kolId = opt.dataset.kolId;
+                const kol = this.state.kols.find(k => k.id === kolId);
+                if (kol) {
+                    totalAcceptChance += this.calculateAdvisoryAcceptChance(kol);
+                }
+            });
+            const avgChance = Math.round(totalAcceptChance / selected.length);
+
             submitBtn.disabled = false;
             preview.innerHTML = `
                 <p><strong>${selected.length} advisors selected</strong></p>
-                <p>Projected insights: ${selected.length * 2}-${selected.length * 3}</p>
-                <p>Relationship impact: +${selected.length * 5} with participants</p>
+                <p>Average acceptance likelihood: <strong>${avgChance}%</strong></p>
+                <p>Potential insights: ${selected.length * 2}-${selected.length * 3}</p>
+                <p>Relationship impact: +${selected.length * 5} with participants who attend</p>
+                <p class="warning-text">${avgChance < 50 ? '⚠️ Some KOLs may decline - strengthen relationships first!' : ''}</p>
             `;
         } else {
             submitBtn.disabled = true;
             preview.innerHTML = `<p>Select 3-8 advisors to proceed. Currently selected: ${selected.length}</p>`;
         }
+    }
+
+    submitAdvisoryBoard() {
+        const selected = document.querySelectorAll('.advisor-option.selected');
+        if (selected.length < 3) {
+            this.showNotification('Not Enough Advisors', 'Select at least 3 advisors.', 'warning');
+            return;
+        }
+
+        // Spend AP
+        this.spendActionPoints(2, 'Advisory Board');
+        this.state.advisoryBoardThisWeek = true;
+
+        // Determine which KOLs accept
+        const acceptedKOLs = [];
+        const declinedKOLs = [];
+
+        selected.forEach(opt => {
+            const kolId = opt.dataset.kolId;
+            const kol = this.state.kols.find(k => k.id === kolId);
+            if (kol) {
+                const acceptChance = this.calculateAdvisoryAcceptChance(kol);
+                if (Math.random() * 100 < acceptChance) {
+                    acceptedKOLs.push(kol);
+                } else {
+                    declinedKOLs.push(kol);
+                }
+            }
+        });
+
+        // Check if enough KOLs accepted
+        if (acceptedKOLs.length < 2) {
+            this.showNotification('Advisory Board Cancelled',
+                `Not enough KOLs accepted your invitation. ${declinedKOLs.length} declined. Build stronger relationships first.`,
+                'warning');
+            this.showScreen('dashboard-screen');
+            this.updateDashboard();
+            return;
+        }
+
+        // Run the advisory board
+        let message = `Advisory board held with ${acceptedKOLs.length} KOLs.`;
+        if (declinedKOLs.length > 0) {
+            message += ` (${declinedKOLs.length} declined)`;
+        }
+
+        // Generate insights from the advisory board
+        const insightCount = Math.floor(acceptedKOLs.length * (0.5 + Math.random()));
+        for (let i = 0; i < insightCount; i++) {
+            const categories = ['unmet-need', 'clinical', 'competitive', 'safety'];
+            const category = categories[Math.floor(Math.random() * categories.length)];
+            const kol = acceptedKOLs[Math.floor(Math.random() * acceptedKOLs.length)];
+
+            this.state.insights.push({
+                id: `insight_${Date.now()}_${i}`,
+                category: category,
+                text: this.generateAdvisoryInsight(category, kol),
+                source: `Advisory Board - ${kol.name}`,
+                week: this.state.currentWeek,
+                quarter: this.state.currentQuarter
+            });
+        }
+
+        // Improve relationships with attending KOLs
+        acceptedKOLs.forEach(kol => {
+            kol.relationshipScore += 15;
+            this.updateRelationshipLevel(kol);
+        });
+
+        // Slightly damage relationships with declined KOLs (they felt they weren't ready)
+        declinedKOLs.forEach(kol => {
+            kol.relationshipScore = Math.max(0, kol.relationshipScore - 5);
+        });
+
+        // Update metrics
+        this.state.metrics.kolEngagement = Math.min(100, this.state.metrics.kolEngagement + acceptedKOLs.length * 3);
+        this.state.metrics.insightGeneration = Math.min(100, this.state.metrics.insightGeneration + insightCount * 5);
+
+        // Award XP
+        this.awardXP(GameData.xpRewards.advisoryBoard || 40, 'Advisory Board completed');
+
+        this.showNotification('Advisory Board Complete',
+            `${message} Generated ${insightCount} valuable insights!`,
+            'success');
+
+        this.showScreen('dashboard-screen');
+        this.updateDashboard();
+        this.saveGame();
+    }
+
+    generateAdvisoryInsight(category, kol) {
+        const insights = {
+            'unmet-need': [
+                'Patients need better options for managing treatment side effects.',
+                'There\'s a significant gap in therapies for elderly patients with comorbidities.',
+                'Physicians want better tools for predicting treatment response.'
+            ],
+            'clinical': [
+                'Real-world outcomes differ significantly from clinical trial populations.',
+                'Combination therapies are showing promise in treatment-resistant cases.',
+                'Earlier intervention leads to better long-term outcomes.'
+            ],
+            'competitive': [
+                'Competitor product has supply chain issues affecting availability.',
+                'New competitor entering market with different dosing schedule.',
+                'Physicians considering switching due to formulary changes.'
+            ],
+            'safety': [
+                'Rare adverse events may be underreported in specific populations.',
+                'Drug interactions with common medications need more study.',
+                'Long-term safety data would increase prescriber confidence.'
+            ]
+        };
+        const categoryInsights = insights[category] || insights['clinical'];
+        return categoryInsights[Math.floor(Math.random() * categoryInsights.length)];
     }
 
     // IIS Management
@@ -4097,11 +4360,76 @@ class MSLGame {
 
     // Training
     showTrainingScreen() {
+        // Training costs 1 AP
+        const trainingAPCost = 1;
+        if (!this.canAffordActionPoints(trainingAPCost)) {
+            this.showInsufficientAPMessage(trainingAPCost);
+            return;
+        }
+
+        // Initialize training tracking for this week if needed
+        if (!this.state.trainingCompletedThisWeek) {
+            this.state.trainingCompletedThisWeek = [];
+        }
+
         document.getElementById('training-scenario').style.display = 'none';
+        this.updateTrainingCards();
         this.showScreen('training-screen');
     }
 
+    updateTrainingCards() {
+        const trainingTypes = ['sales', 'marketing', 'medical'];
+        trainingTypes.forEach(type => {
+            const card = document.querySelector(`.training-card[data-training="${type}"]`);
+            if (card) {
+                const completed = this.state.trainingCompletedThisWeek?.includes(type);
+                if (completed) {
+                    card.classList.add('completed');
+                    card.style.opacity = '0.5';
+                    card.style.pointerEvents = 'none';
+                    // Add completed badge
+                    if (!card.querySelector('.completed-badge')) {
+                        const badge = document.createElement('span');
+                        badge.className = 'completed-badge';
+                        badge.textContent = '✓ Done this week';
+                        badge.style.cssText = 'position:absolute;top:10px;right:10px;background:var(--success-color);color:white;padding:4px 8px;border-radius:4px;font-size:0.7rem;';
+                        card.style.position = 'relative';
+                        card.appendChild(badge);
+                    }
+                } else {
+                    card.classList.remove('completed');
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                    const badge = card.querySelector('.completed-badge');
+                    if (badge) badge.remove();
+                }
+            }
+        });
+    }
+
     startTraining(type) {
+        // Check if already done this training this week
+        if (!this.state.trainingCompletedThisWeek) {
+            this.state.trainingCompletedThisWeek = [];
+        }
+
+        if (this.state.trainingCompletedThisWeek.includes(type)) {
+            this.showNotification('Already Completed', 'You\'ve already done this training this week.', 'warning');
+            return;
+        }
+
+        // Check AP
+        if (!this.canAffordActionPoints(1)) {
+            this.showInsufficientAPMessage(1);
+            return;
+        }
+
+        // Spend AP
+        this.spendActionPoints(1, `Internal Training: ${type}`);
+
+        // Mark as completed this week
+        this.state.trainingCompletedThisWeek.push(type);
+
         let result = { message: '', reward: {} };
 
         switch (type) {
@@ -4139,10 +4467,13 @@ class MSLGame {
         this.showNotification('Training Complete', result.message, 'success');
         this.showScreen('dashboard-screen');
         this.updateDashboard();
+        this.saveGame();
     }
 
     // Time Advancement
     advanceWeek() {
+        console.log('advanceWeek called');
+
         this.state.currentWeek++;
 
         // Reset weekly time budget
@@ -4151,6 +4482,12 @@ class MSLGame {
 
         // Reset action points
         this.resetActionPoints();
+
+        // Reset weekly activity tracking
+        this.state.trainingCompletedThisWeek = [];
+        this.state.congressAttendedThisWeek = false;
+        this.state.congressActivitiesThisSession = [];
+        this.state.advisoryBoardThisWeek = false;
 
         // Check for overdue CRM entries
         this.state.pendingCRM.forEach(entry => {
