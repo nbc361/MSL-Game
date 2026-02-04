@@ -41,6 +41,8 @@ class MSLGame {
             currentKOL: null,
             currentScenario: null,
             dialogueHistory: [],
+            visitMode: 'in-person',
+            currentMeetingMode: 'in-person',
             quarterlyReviews: [],
             warnings: 0,
             gameOver: false,
@@ -53,9 +55,9 @@ class MSLGame {
             },
             // Adverse Event Tracking
             adverseEvents: {
-                pending: [],      // AEs detected but not yet reported
-                reported: [],     // Successfully reported AEs
-                missed: [],       // AEs that weren't reported in time
+                pending: [],
+                reported: [],
+                missed: [],
                 totalDetected: 0,
                 totalReported: 0,
                 totalMissed: 0
@@ -200,8 +202,15 @@ class MSLGame {
         document.getElementById('action-visit-kol')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Visit KOL clicked');
             this.closeActionMenu();
+            this.state.visitMode = 'in-person';
+            this.showKOLSelection();
+        });
+        document.getElementById('action-virtual-call')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.closeActionMenu();
+            this.state.visitMode = 'virtual';
             this.showKOLSelection();
         });
         document.getElementById('action-congress')?.addEventListener('click', (e) => {
@@ -954,6 +963,8 @@ class MSLGame {
             currentKOL: null,
             currentScenario: null,
             dialogueHistory: [],
+            visitMode: 'in-person',
+            currentMeetingMode: 'in-person',
             quarterlyReviews: [],
             warnings: 0,
             gameOver: false,
@@ -1811,20 +1822,37 @@ class MSLGame {
 
                 const canUpgrade = this.state.skillPoints > 0 && currentLevel < skill.maxLevel;
 
+                // Build bonus description showing unlocked and locked bonuses
+                let bonusHTML = '';
+                if (skill.bonuses && skill.bonuses.length > 0) {
+                    bonusHTML = '<div class="skill-bonuses">';
+                    skill.bonuses.forEach(b => {
+                        const lvMatch = b.match(/Lv(\d)/);
+                        const reqLevel = lvMatch ? parseInt(lvMatch[1]) : 0;
+                        const unlocked = currentLevel >= reqLevel;
+                        bonusHTML += `<span class="skill-bonus ${unlocked ? 'unlocked' : 'locked'}">${b}</span>`;
+                    });
+                    bonusHTML += '</div>';
+                }
+
                 skillsHTML += `
-                    <div class="skill-item">
-                        <span class="skill-name" title="${skill.description}">${skill.name}</span>
-                        <div class="skill-level">${pips}</div>
-                        <button class="skill-upgrade"
-                                data-category="${categoryKey}"
-                                data-skill="${skill.name}"
-                                ${canUpgrade ? '' : 'disabled'}>+</button>
+                    <div class="skill-item ${currentLevel > 0 ? 'has-points' : ''}">
+                        <div class="skill-header">
+                            <span class="skill-name" title="${skill.description}">${skill.name}</span>
+                            <div class="skill-level">${pips}</div>
+                            <button class="skill-upgrade"
+                                    data-category="${categoryKey}"
+                                    data-skill="${skill.name}"
+                                    ${canUpgrade ? '' : 'disabled'}>+</button>
+                        </div>
+                        ${bonusHTML}
                     </div>
                 `;
             });
 
             categoryElement.innerHTML = `
-                <h4>${category.name}</h4>
+                <h4><span class="category-icon">${category.icon || ''}</span> ${category.name}</h4>
+                <p class="category-desc">${category.description}</p>
                 ${skillsHTML}
             `;
 
@@ -2289,28 +2317,13 @@ class MSLGame {
     }
 
     highlightElement(elementId) {
-        // Try to find the element - could be an ID or a nav button panel
-        let element = document.getElementById(elementId);
-
-        // If it's a panel, we might need to switch to it first
+        // During tutorial, just switch panels for context without elevating z-index
         const panelNames = ['territory-map', 'calendar', 'kol-database', 'crm', 'skills', 'insights-panel', 'performance'];
         if (panelNames.includes(elementId)) {
             this.switchPanel(elementId);
-            element = document.getElementById(elementId);
         }
-
-        // Special handling for action menu
-        if (elementId === 'action-menu-toggle') {
-            this.openActionMenu();
-            element = document.getElementById('action-menu-container');
-        }
-
-        if (element) {
-            element.classList.add('tutorial-highlight');
-
-            // Scroll element into view if needed
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
+        // Don't try to visually highlight elements during tutorial - it distorts the UI
+        // The tutorial modal already describes what each element does
     }
 
     nextTutorialStep() {
@@ -2390,17 +2403,28 @@ class MSLGame {
         const kol = this.state.kols.find(k => k.id === kolId);
         if (!kol) return;
 
-        // Calculate travel/action point cost
-        const apCost = this.calculateTravelCost(kol);
+        const isVirtual = this.state.visitMode === 'virtual';
+
+        // Virtual calls always cost 1 AP (or 0 with Territory Planning Lv4)
+        let apCost;
+        if (isVirtual) {
+            apCost = this.getSkillLevel('strategic', 'Territory Planning') >= 4 ? 0 : 1;
+        } else {
+            apCost = this.calculateTravelCost(kol);
+            // Territory Planning Lv2: -1 AP for same-state travel
+            if (apCost === 2 && this.getSkillLevel('strategic', 'Territory Planning') >= 2) {
+                apCost = 1;
+            }
+        }
 
         // Check if we have enough action points
-        if (!this.canAffordActionPoints(apCost)) {
+        if (apCost > 0 && !this.canAffordActionPoints(apCost)) {
             this.showInsufficientAPMessage(apCost);
             return;
         }
 
         // Calculate time cost for this visit
-        const timeCost = this.getActivityTimeCost('kol-visit', kol);
+        const timeCost = isVirtual ? 2 : this.getActivityTimeCost('kol-visit', kol);
 
         // Check if we have enough time
         if (!this.canAffordTime(timeCost)) {
@@ -2409,7 +2433,13 @@ class MSLGame {
         }
 
         // Spend action points
-        this.spendActionPoints(apCost, `Meeting with ${kol.name}`);
+        const meetingType = isVirtual ? 'Virtual call' : 'Meeting';
+        if (apCost > 0) {
+            this.spendActionPoints(apCost, `${meetingType} with ${kol.name}`);
+        }
+
+        // Track meeting mode for relationship calculations
+        this.state.currentMeetingMode = isVirtual ? 'virtual' : 'in-person';
 
         this.state.currentKOL = kol;
         this.state.currentMeetingTimeCost = timeCost;
@@ -2456,14 +2486,19 @@ class MSLGame {
             }
         }
 
+        const isVirtual = this.state.currentMeetingMode === 'virtual';
         timeInfo.innerHTML = `
-            <div class="time-breakdown">
+            <div class="meeting-mode-badge ${isVirtual ? 'virtual' : 'in-person'}">
+                ${isVirtual ? '💻 Virtual Call' : '👤 In-Person Visit'}
+                ${isVirtual ? '<span class="mode-note">Relationship gain reduced 50%</span>' : '<span class="mode-note">Full relationship gain</span>'}
+            </div>
+            ${!isVirtual ? `<div class="time-breakdown">
                 <span class="time-label">Travel time:</span>
                 <span class="time-value">${travelTime} hrs</span>
-            </div>
+            </div>` : ''}
             <div class="time-breakdown">
-                <span class="time-label">Meeting time:</span>
-                <span class="time-value">${meetingTime} hrs</span>
+                <span class="time-label">${isVirtual ? 'Call' : 'Meeting'} time:</span>
+                <span class="time-value">${isVirtual ? '2' : meetingTime} hrs</span>
             </div>
             <div class="time-breakdown total">
                 <span class="time-label">Total:</span>
@@ -2820,12 +2855,90 @@ class MSLGame {
         }
     }
 
+    // Substitute TA-specific context tokens in scenario text
+    substituteTA(text) {
+        if (!text) return text;
+        const ta = GameData.therapeuticAreas[this.state.player.therapeuticArea];
+        if (!ta || !ta.context) return text;
+        const ctx = ta.context;
+        return text
+            .replace(/\{drugName\}/g, ctx.drugName)
+            .replace(/\{drugClass\}/g, ctx.drugClass)
+            .replace(/\{mechanism\}/g, ctx.mechanism)
+            .replace(/\{indication\}/g, ctx.indication)
+            .replace(/\{shortIndication\}/g, ctx.shortIndication)
+            .replace(/\{primaryEndpoint\}/g, ctx.primaryEndpoint)
+            .replace(/\{secondaryEndpoint1\}/g, ctx.secondaryEndpoints[0] || '')
+            .replace(/\{secondaryEndpoint2\}/g, ctx.secondaryEndpoints[1] || '')
+            .replace(/\{pivotalTrial\}/g, ctx.pivotalTrial)
+            .replace(/\{conference\}/g, ctx.conference)
+            .replace(/\{guidelines\}/g, ctx.guidelines)
+            .replace(/\{competitorShort\}/g, ctx.competitorShort)
+            .replace(/\{commonAE\}/g, ctx.commonAE)
+            .replace(/\{biomarker1\}/g, ctx.biomarkers[0] || '')
+            .replace(/\{patientPopulation\}/g, ctx.patientPopulation)
+            .replace(/\{relatedCondition\}/g, ctx.relatedCondition)
+            .replace(/\{dosing\}/g, ctx.dosing)
+            .replace(/\{trialResult\}/g, ctx.trialResult)
+            .replace(/\{durability\}/g, ctx.durability)
+            .replace(/\{subgroupBenefit\}/g, ctx.subgroupBenefit)
+            .replace(/\{realWorldConcern\}/g, ctx.realWorldConcern);
+    }
+
+    // Deep-clone and substitute TA context in a scenario
+    prepareScenario(scenario) {
+        const prepared = JSON.parse(JSON.stringify(scenario));
+        prepared.kolQuestion = this.substituteTA(prepared.kolQuestion);
+        if (prepared.options) {
+            prepared.options.forEach(opt => {
+                opt.text = this.substituteTA(opt.text);
+                opt.feedback = this.substituteTA(opt.feedback);
+            });
+        }
+        if (prepared.stages) {
+            prepared.stages.forEach(stage => {
+                stage.kolDialogue = this.substituteTA(stage.kolDialogue);
+                if (stage.options) {
+                    stage.options.forEach(opt => {
+                        opt.text = this.substituteTA(opt.text);
+                        opt.feedback = this.substituteTA(opt.feedback);
+                    });
+                }
+            });
+        }
+        return prepared;
+    }
+
+    // Check if player meets skill requirement for a dialogue option
+    meetsSkillRequirement(requirement) {
+        if (!requirement) return true;
+        const { category, skill, minLevel } = requirement;
+        const currentLevel = (this.state.skills[category] && this.state.skills[category][skill]) || 0;
+        return currentLevel >= minLevel;
+    }
+
+    // Get skill level for a given category and skill name
+    getSkillLevel(category, skillName) {
+        return (this.state.skills[category] && this.state.skills[category][skillName]) || 0;
+    }
+
+    // Calculate bonus relationship gain from skills
+    getSkillRelationshipBonus() {
+        let bonus = 1.0;
+        if (this.getSkillLevel('communication', 'Scientific Storytelling') >= 2) bonus += 0.05;
+        if (this.getSkillLevel('communication', 'Active Listening') >= 3) bonus += 0.05;
+        return bonus;
+    }
+
     startSimpleScenario() {
         // Select a random scenario based on interaction history
         const scenarioTypes = Object.keys(GameData.scenarios);
         const randomType = scenarioTypes[Math.floor(Math.random() * scenarioTypes.length)];
         const scenarios = GameData.scenarios[randomType];
-        const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+        const rawScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+
+        // Substitute TA-specific context
+        const scenario = this.prepareScenario(rawScenario);
 
         this.state.currentScenario = scenario;
         this.state.isBranchingScenario = false;
@@ -2857,9 +2970,9 @@ class MSLGame {
             });
         }
 
-        // Select a random scenario
+        // Select a random scenario and prepare with TA context
         const randomIndex = Math.floor(Math.random() * allScenarios.length);
-        const scenario = allScenarios[randomIndex];
+        const scenario = this.prepareScenario(allScenarios[randomIndex]);
 
         this.state.currentBranchingScenario = scenario;
         this.state.currentBranchingStage = 'stage_1';
@@ -2895,9 +3008,19 @@ class MSLGame {
 
         shuffledOptions.forEach((option, index) => {
             const button = document.createElement('button');
-            button.className = 'dialogue-option';
-            button.innerHTML = option.text;
-            button.addEventListener('click', () => this.selectBranchingOption(option));
+            const hasRequirement = option.skillRequirement;
+            const meetsReq = hasRequirement ? this.meetsSkillRequirement(option.skillRequirement) : true;
+
+            if (meetsReq) {
+                button.className = 'dialogue-option';
+                button.innerHTML = option.text;
+                button.addEventListener('click', () => this.selectBranchingOption(option));
+            } else {
+                const req = option.skillRequirement;
+                button.className = 'dialogue-option locked';
+                button.innerHTML = `<span class="lock-icon">🔒</span> <span class="locked-text">${option.text.substring(0, 60)}...</span><span class="skill-req-badge">Requires: ${req.skill} Lv${req.minLevel}</span>`;
+                button.disabled = true;
+            }
             optionsContainer.appendChild(button);
         });
 
@@ -3395,14 +3518,26 @@ class MSLGame {
 
         shuffledOptions.forEach((option, index) => {
             const button = document.createElement('button');
-            button.className = 'dialogue-option';
-            // No compliance indicators - player must use their judgment
-            button.innerHTML = option.text;
-            button.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this.preventDoubleClick(`dialogue-option-${index}`, () => this.selectDialogueOption(option));
-            });
+            const hasRequirement = option.skillRequirement;
+            const meetsReq = hasRequirement ? this.meetsSkillRequirement(option.skillRequirement) : true;
+
+            if (meetsReq) {
+                button.className = 'dialogue-option';
+                button.innerHTML = option.text;
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.preventDoubleClick(`dialogue-option-${index}`, () => this.selectDialogueOption(option));
+                });
+            } else {
+                // Show locked option with skill requirement hint
+                const req = option.skillRequirement;
+                const skillCategory = GameData.skills[req.category];
+                const skillDef = skillCategory?.skills.find(s => s.name === req.skill);
+                button.className = 'dialogue-option locked';
+                button.innerHTML = `<span class="lock-icon">🔒</span> <span class="locked-text">${option.text.substring(0, 60)}...</span><span class="skill-req-badge">Requires: ${req.skill} Lv${req.minLevel}</span>`;
+                button.disabled = true;
+            }
             optionsContainer.appendChild(button);
         });
 
@@ -3426,8 +3561,17 @@ class MSLGame {
             this.showNotification('Compliance Note', 'This response walks a fine line. Be careful with similar situations.', 'warning');
         }
 
-        // Apply relationship changes
-        kol.relationshipScore += option.relationshipChange || 0;
+        // Apply relationship changes (reduced for virtual calls, boosted by skills)
+        let relChange = option.relationshipChange || 0;
+        if (relChange > 0) {
+            // Virtual calls give 50% relationship gain
+            if (this.state.currentMeetingMode === 'virtual') {
+                relChange = Math.ceil(relChange * 0.5);
+            }
+            // Apply skill bonuses
+            relChange = Math.ceil(relChange * this.getSkillRelationshipBonus());
+        }
+        kol.relationshipScore += relChange;
         kol.relationshipScore = Math.max(0, Math.min(100, kol.relationshipScore));
         this.updateRelationshipLevel(kol);
 
@@ -4809,9 +4953,14 @@ class MSLGame {
 
         const icons = {
             success: '✓',
-            warning: '⚠️',
-            error: '❌',
-            info: 'ℹ️'
+            warning: '⚠',
+            error: '✕',
+            info: 'i'
+        };
+
+        const dismissNotification = () => {
+            notification.style.animation = 'fadeOut 0.2s ease forwards';
+            setTimeout(() => notification.remove(), 200);
         };
 
         notification.innerHTML = `
@@ -4820,14 +4969,25 @@ class MSLGame {
                 <div class="notification-title">${title}</div>
                 <div class="notification-message">${message}</div>
             </div>
+            <button class="notification-close" title="Dismiss">&times;</button>
         `;
+
+        notification.querySelector('.notification-close').addEventListener('click', (e) => {
+            e.stopPropagation();
+            dismissNotification();
+        });
+
+        // Click anywhere on the notification to dismiss
+        notification.addEventListener('click', dismissNotification);
 
         container.appendChild(notification);
 
+        // Auto-dismiss after 3 seconds (faster than before)
         setTimeout(() => {
-            notification.style.animation = 'fadeOut 0.3s ease forwards';
-            setTimeout(() => notification.remove(), 300);
-        }, 5000);
+            if (notification.parentNode) {
+                dismissNotification();
+            }
+        }, 3000);
     }
 
     capitalizeFirst(str) {

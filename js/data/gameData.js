@@ -45,37 +45,157 @@ const GameData = {
         }
     },
 
-    // Therapeutic areas
+    // Therapeutic areas with context for scenario generation
     therapeuticAreas: {
         oncology: {
             name: "Oncology",
             description: "High-science therapeutic area with rapidly evolving treatment landscape. Complex regimens and significant unmet needs.",
             complexity: "high",
-            kolDensity: "high"
+            kolDensity: "high",
+            context: {
+                drugName: "VELORIX",
+                drugClass: "anti-PD-L1 monoclonal antibody",
+                mechanism: "PD-L1 checkpoint inhibitor that reactivates T-cell mediated antitumor immunity",
+                indication: "locally advanced or metastatic non-small cell lung cancer (NSCLC)",
+                shortIndication: "advanced NSCLC",
+                primaryEndpoint: "overall survival (OS)",
+                secondaryEndpoints: ["progression-free survival (PFS)", "objective response rate (ORR)", "duration of response (DoR)"],
+                pivotalTrial: "VELORA-301",
+                conference: "ASCO",
+                guidelines: "NCCN Clinical Practice Guidelines in Oncology",
+                competitors: ["pembrolizumab (Keytruda)", "nivolumab (Opdivo)", "atezolizumab (Tecentriq)"],
+                competitorShort: "pembrolizumab",
+                sideEffects: ["immune-related pneumonitis", "colitis", "hepatitis", "thyroid dysfunction", "fatigue"],
+                commonAE: "immune-related pneumonitis",
+                biomarkers: ["PD-L1 expression (TPS)", "tumor mutational burden (TMB)", "microsatellite instability (MSI)"],
+                patientPopulation: "patients with PD-L1 TPS >=50% who have not received prior systemic therapy",
+                relatedCondition: "small cell lung cancer",
+                dosing: "200mg IV every 3 weeks",
+                trialResult: "median OS of 22.1 months vs 14.3 months with chemotherapy (HR 0.68, p<0.001)",
+                durability: "median duration of response of 18.4 months",
+                subgroupBenefit: "PD-L1 high expressors (TPS >=50%)",
+                realWorldConcern: "managing immune-related adverse events in elderly patients"
+            }
         },
         immunology: {
             name: "Immunology",
             description: "Autoimmune and inflammatory conditions with biologic therapies. Growing competitive landscape.",
             complexity: "medium-high",
-            kolDensity: "medium"
+            kolDensity: "medium",
+            context: {
+                drugName: "RHEUMAVEX",
+                drugClass: "selective JAK1/JAK3 inhibitor",
+                mechanism: "selective Janus kinase inhibitor that modulates the signaling of multiple cytokines involved in inflammation",
+                indication: "moderate-to-severe active rheumatoid arthritis in adults who have had an inadequate response to methotrexate",
+                shortIndication: "moderate-to-severe RA",
+                primaryEndpoint: "ACR50 response rate at week 24",
+                secondaryEndpoints: ["DAS28-CRP remission rate", "HAQ-DI change from baseline", "radiographic progression (mTSS)"],
+                pivotalTrial: "RHEUMAX-FLEX",
+                conference: "ACR Convergence",
+                guidelines: "ACR/EULAR Guidelines for Management of Rheumatoid Arthritis",
+                competitors: ["adalimumab (Humira)", "tofacitinib (Xeljanz)", "upadacitinib (Rinvoq)", "baricitinib (Olumiant)"],
+                competitorShort: "adalimumab",
+                sideEffects: ["serious infections", "elevated LDL cholesterol", "lymphopenia", "herpes zoster reactivation", "venous thromboembolism"],
+                commonAE: "upper respiratory tract infections and elevated cholesterol",
+                biomarkers: ["CRP levels", "ESR", "anti-CCP antibodies", "rheumatoid factor"],
+                patientPopulation: "patients with inadequate response or intolerance to at least one DMARD",
+                relatedCondition: "psoriatic arthritis",
+                dosing: "15mg oral once daily",
+                trialResult: "ACR50 response of 48% vs 28% with placebo at week 24 (p<0.001)",
+                durability: "sustained ACR50 response maintained through week 52 in 71% of responders",
+                subgroupBenefit: "anti-CCP positive patients with high disease activity (DAS28-CRP >5.1)",
+                realWorldConcern: "cardiovascular safety signals seen with JAK inhibitor class"
+            }
         },
         neurology: {
             name: "Neurology",
             description: "CNS disorders with challenging trial endpoints. Long development cycles and high unmet needs.",
             complexity: "high",
-            kolDensity: "medium"
+            kolDensity: "medium",
+            context: {
+                drugName: "NEUROVANT",
+                drugClass: "anti-CGRP monoclonal antibody",
+                mechanism: "monoclonal antibody that binds to calcitonin gene-related peptide (CGRP) ligand, blocking its receptor interaction",
+                indication: "preventive treatment of episodic and chronic migraine in adults",
+                shortIndication: "migraine prevention",
+                primaryEndpoint: "change from baseline in monthly migraine days (MMD) at weeks 1-12",
+                secondaryEndpoints: [">=50% responder rate", "change in monthly acute medication days", "Migraine-Specific Quality of Life (MSQ) score"],
+                pivotalTrial: "NEUROGUARD-1",
+                conference: "AAN Annual Meeting",
+                guidelines: "AAN/AHS Practice Guidelines for Migraine Prevention",
+                competitors: ["erenumab (Aimovig)", "fremanezumab (Ajovy)", "galcanezumab (Emgality)"],
+                competitorShort: "erenumab",
+                sideEffects: ["injection site reactions", "constipation", "hypersensitivity reactions", "antibody development"],
+                commonAE: "injection site reactions and constipation",
+                biomarkers: ["CGRP serum levels", "migraine frequency at baseline", "prior preventive treatment failures"],
+                patientPopulation: "adults with >=4 migraine days per month who have failed at least one prior preventive treatment",
+                relatedCondition: "cluster headache",
+                dosing: "225mg subcutaneous monthly or 675mg quarterly",
+                trialResult: "reduction of 4.7 monthly migraine days vs 2.2 with placebo (p<0.001)",
+                durability: "sustained efficacy through 52 weeks with no evidence of tolerance",
+                subgroupBenefit: "patients with chronic migraine (>=15 headache days/month)",
+                realWorldConcern: "long-term effects of CGRP pathway blockade on cardiovascular and wound healing"
+            }
         },
         cardiology: {
             name: "Cardiology",
             description: "Cardiovascular disease with established guidelines. Large patient populations and outcome-driven evidence.",
             complexity: "medium",
-            kolDensity: "high"
+            kolDensity: "high",
+            context: {
+                drugName: "CARDIVEX",
+                drugClass: "PCSK9 inhibitor",
+                mechanism: "monoclonal antibody targeting PCSK9 that significantly reduces LDL cholesterol by increasing hepatic LDL receptor recycling",
+                indication: "adults with established atherosclerotic cardiovascular disease (ASCVD) or heterozygous familial hypercholesterolemia (HeFH) requiring additional LDL lowering",
+                shortIndication: "ASCVD with inadequate LDL control",
+                primaryEndpoint: "percent change in LDL-C from baseline at week 12",
+                secondaryEndpoints: ["MACE (major adverse cardiovascular events)", "change in apolipoprotein B", "change in non-HDL cholesterol"],
+                pivotalTrial: "CARDIOGUARD-OUTCOMES",
+                conference: "ACC Scientific Session",
+                guidelines: "ACC/AHA Guidelines on Management of Blood Cholesterol",
+                competitors: ["evolocumab (Repatha)", "alirocumab (Praluent)", "inclisiran (Leqvio)"],
+                competitorShort: "evolocumab",
+                sideEffects: ["injection site reactions", "nasopharyngitis", "myalgia", "neurocognitive effects (under monitoring)"],
+                commonAE: "injection site reactions and upper respiratory infections",
+                biomarkers: ["LDL-C levels", "Lp(a)", "apolipoprotein B", "hsCRP"],
+                patientPopulation: "patients with ASCVD on maximally tolerated statin therapy with LDL-C >=70 mg/dL",
+                relatedCondition: "homozygous familial hypercholesterolemia",
+                dosing: "150mg subcutaneous every 2 weeks or 300mg monthly",
+                trialResult: "58% reduction in LDL-C from baseline vs 2% with placebo; 15% relative risk reduction in MACE",
+                durability: "sustained LDL-C reduction maintained through 4 years of follow-up",
+                subgroupBenefit: "patients with baseline LDL-C >=100 mg/dL on high-intensity statins",
+                realWorldConcern: "very low LDL-C levels and potential neurocognitive effects"
+            }
         },
         "rare-disease": {
             name: "Rare Disease",
             description: "Small patient populations with limited treatment options. Close-knit KOL community and unique challenges.",
             complexity: "high",
-            kolDensity: "low"
+            kolDensity: "low",
+            context: {
+                drugName: "RAREVIX",
+                drugClass: "enzyme replacement therapy (ERT)",
+                mechanism: "recombinant enzyme that replaces deficient alpha-galactosidase A, reducing substrate accumulation in lysosomes",
+                indication: "confirmed Fabry disease in adults and pediatric patients aged 8 years and older",
+                shortIndication: "Fabry disease",
+                primaryEndpoint: "change from baseline in plasma globotriaosylsphingosine (lyso-Gb3) at week 24",
+                secondaryEndpoints: ["eGFR slope", "cardiac MRI (LVMi)", "patient-reported pain scores (BPI-SF)"],
+                pivotalTrial: "RAREWARD-301",
+                conference: "WORLDSymposium",
+                guidelines: "Expert Consensus Guidelines on Management of Fabry Disease",
+                competitors: ["agalsidase beta (Fabrazyme)", "migalastat (Galafold)"],
+                competitorShort: "agalsidase beta",
+                sideEffects: ["infusion-related reactions", "antibody development", "hypersensitivity", "headache"],
+                commonAE: "infusion-related reactions including rigors and fever",
+                biomarkers: ["plasma lyso-Gb3", "eGFR", "cardiac biomarkers (NT-proBNP, troponin)"],
+                patientPopulation: "patients with genetically confirmed Fabry disease with measurable substrate elevation",
+                relatedCondition: "other lysosomal storage disorders",
+                dosing: "1 mg/kg IV infusion every 2 weeks",
+                trialResult: "72% reduction in plasma lyso-Gb3 vs 8% with placebo at week 24 (p<0.001)",
+                durability: "continued substrate reduction and stabilization of renal function through 3 years",
+                subgroupBenefit: "treatment-naive patients with classic Fabry phenotype",
+                realWorldConcern: "long-term antibody development reducing efficacy and managing infusion reactions at home"
+            }
         }
     },
 
@@ -513,74 +633,147 @@ const GameData = {
         lastNames: ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin", "Lee", "Thompson", "White", "Harris", "Sanchez", "Clark", "Patel", "Kumar", "Chen", "Wang", "Kim", "Nguyen", "Yamamoto", "Tanaka", "Singh", "Shah", "Cohen", "Goldstein", "Murphy", "O'Brien", "Sullivan"]
     },
 
-    // Scientific exchange scenarios
+    // Scientific exchange scenarios - uses {tokens} replaced with TA context
     scenarios: {
         efficacy: [
             {
                 id: "efficacy_001",
                 trigger: "KOL asks about clinical trial results",
-                kolQuestion: "I saw your poster at ASCO. Can you walk me through the primary endpoint data from your Phase 3 trial?",
+                kolQuestion: "I saw your poster at {conference}. Can you walk me through the {primaryEndpoint} data from the {pivotalTrial} study in {shortIndication}?",
                 options: [
                     {
-                        text: "Share the approved efficacy data from the pivotal trial, focusing on the primary endpoint and key secondary endpoints.",
+                        text: "Walk through the {pivotalTrial} results: {trialResult}. Then review the key secondary endpoints including {secondaryEndpoint1} and {secondaryEndpoint2}.",
                         complianceStatus: "safe",
                         outcome: "positive",
                         relationshipChange: 10,
                         insightOpportunity: true,
-                        feedback: "Excellent response. You stayed within approved labeling while providing comprehensive information."
+                        feedback: "Excellent response. You stayed within approved labeling while providing comprehensive, TA-specific information."
                     },
                     {
-                        text: "Go beyond the approved indication to discuss unpublished subgroup analyses that show even better results.",
+                        text: "Go beyond the approved indication to discuss unpublished subgroup analyses from {pivotalTrial} showing even better results in {subgroupBenefit}.",
                         complianceStatus: "violation",
                         outcome: "compliance_issue",
                         relationshipChange: -5,
                         complianceHit: 25,
-                        feedback: "This is a compliance violation. Discussing unpublished data or unapproved uses proactively is off-label promotion."
+                        feedback: "Compliance violation. Discussing unpublished data or unapproved subgroup analyses proactively is off-label promotion."
                     },
                     {
-                        text: "Deflect by saying you can't discuss clinical data and offer to send approved materials.",
+                        text: "Deflect by saying you can't discuss clinical data and offer to send the approved prescribing information for {drugName}.",
                         complianceStatus: "safe",
                         outcome: "neutral",
                         relationshipChange: -5,
                         feedback: "While compliant, you missed an opportunity for scientific exchange. MSLs can and should discuss approved clinical data."
                     },
                     {
-                        text: "Compare your drug's efficacy directly to competitors, claiming superiority without head-to-head data.",
+                        text: "Compare {drugName}'s {primaryEndpoint} directly to {competitorShort}, claiming superiority without head-to-head data.",
                         complianceStatus: "violation",
                         outcome: "compliance_issue",
                         relationshipChange: -10,
                         complianceHit: 30,
                         feedback: "Serious violation. Making comparative claims without head-to-head data is misleading and promotional."
+                    },
+                    {
+                        text: "Present the data objectively and then ask what specific aspects of {primaryEndpoint} outcomes matter most for their patient population.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 15,
+                        insightOpportunity: true,
+                        insightType: "clinical",
+                        feedback: "Outstanding. You shared approved data and gathered insight about what drives their clinical decisions.",
+                        skillRequirement: { category: "communication", skill: "Active Listening", minLevel: 2 }
                     }
                 ]
             },
             {
                 id: "efficacy_002",
                 trigger: "KOL questions durability of response",
-                kolQuestion: "The response rates look good, but what about durability? My patients need long-term disease control.",
+                kolQuestion: "The initial response rates with {drugName} look promising, but what about durability? My {shortIndication} patients need sustained disease control. What does the long-term data show?",
                 options: [
                     {
-                        text: "Present the long-term follow-up data from the approved label, including duration of response and progression-free survival data.",
+                        text: "Present the long-term follow-up data: {durability}. Note the patient population studied was {patientPopulation}.",
                         complianceStatus: "safe",
                         outcome: "positive",
                         relationshipChange: 10,
                         insightOpportunity: true,
-                        feedback: "Good approach. You addressed the concern with relevant, approved data."
+                        feedback: "Good approach. You addressed the concern with relevant, approved data specific to the therapeutic area."
                     },
                     {
-                        text: "Acknowledge the importance of durability and mention an ongoing extension study, noting you can share results when published.",
+                        text: "Acknowledge the importance of durability and mention an ongoing extension study of {pivotalTrial}, noting you can share results when published.",
                         complianceStatus: "safe",
                         outcome: "positive",
                         relationshipChange: 5,
                         feedback: "Appropriate response. You acknowledged limitations while setting expectations for future data."
                     },
                     {
-                        text: "Share preliminary data from the ongoing extension study since it looks very promising.",
+                        text: "Share preliminary data from the ongoing extension study since it looks very promising for {subgroupBenefit}.",
                         complianceStatus: "violation",
                         outcome: "compliance_issue",
                         complianceHit: 20,
                         relationshipChange: 0,
                         feedback: "Violation. Sharing unpublished preliminary data proactively constitutes off-label promotion."
+                    },
+                    {
+                        text: "Discuss the known mechanism of {drugClass} and how it supports sustained efficacy, while being transparent about what data gaps remain.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 12,
+                        feedback: "Strong scientific approach. Connecting mechanism to clinical outcomes within approved information.",
+                        skillRequirement: { category: "scientific", skill: "Mechanism of Action Mastery", minLevel: 2 }
+                    },
+                    {
+                        text: "Honestly say that long-term data beyond 2 years is limited and ask what duration of response would be clinically meaningful in their practice.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 8,
+                        insightOpportunity: true,
+                        insightType: "unmet-need",
+                        feedback: "Good transparency. Acknowledging limitations builds trust and the question generated a valuable insight."
+                    }
+                ]
+            },
+            {
+                id: "efficacy_003",
+                trigger: "KOL challenges trial design",
+                kolQuestion: "I've looked at {pivotalTrial} closely. The study population - {patientPopulation} - doesn't reflect my real-world patients. How applicable are these results to a broader population?",
+                options: [
+                    {
+                        text: "Acknowledge the limitation of trial inclusion criteria. Discuss the baseline characteristics of enrolled patients and how they compare to real-world demographics. Offer to share any published real-world evidence.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 15,
+                        insightOpportunity: true,
+                        insightType: "clinical",
+                        feedback: "Excellent handling. You acknowledged limitations transparently and gathered insight about their patient population."
+                    },
+                    {
+                        text: "Argue that the trial population is actually quite representative and the results should generalize well.",
+                        complianceStatus: "risk",
+                        outcome: "neutral",
+                        relationshipChange: -5,
+                        feedback: "Risky. Overstating generalizability beyond what the data supports can erode credibility with sophisticated KOLs."
+                    },
+                    {
+                        text: "Pivot to discussing the subgroup analyses that show benefit across different patient populations, including some not in the approved label.",
+                        complianceStatus: "violation",
+                        outcome: "compliance_issue",
+                        complianceHit: 20,
+                        relationshipChange: 0,
+                        feedback: "Violation. Proactively sharing subgroup data to expand perceived applicability beyond the approved indication is promotional."
+                    },
+                    {
+                        text: "Discuss the statistical methodology including sensitivity analyses and how the trial was powered to detect clinically meaningful differences.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 12,
+                        feedback: "Strong scientific response. Demonstrating deep trial design knowledge builds credibility.",
+                        skillRequirement: { category: "scientific", skill: "Clinical Trial Interpretation", minLevel: 3 }
+                    },
+                    {
+                        text: "Tell them you understand their concern and suggest they could explore this question through an investigator-initiated study with their patient population.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 10,
+                        feedback: "Good pivot to a compliant collaboration opportunity that addresses their scientific question."
                     }
                 ]
             }
@@ -589,70 +782,142 @@ const GameData = {
             {
                 id: "safety_001",
                 trigger: "KOL concerned about adverse events",
-                kolQuestion: "I've had a few patients with significant fatigue on your drug. Is this common? How do other physicians manage it?",
+                kolQuestion: "I've had a few patients with {commonAE} on {drugName}. Is this consistent with the trial data? How are other physicians managing it?",
                 options: [
                     {
-                        text: "Review the safety profile from clinical trials, including incidence of fatigue, and share the management recommendations from the prescribing information.",
+                        text: "Review the safety profile from {pivotalTrial}: the incidence, severity grading, and management recommendations in the prescribing information.",
                         complianceStatus: "safe",
                         outcome: "positive",
                         relationshipChange: 10,
                         insightOpportunity: true,
                         insightType: "safety",
-                        feedback: "Excellent response. You addressed the safety concern with approved information."
+                        feedback: "Excellent response. You addressed the safety concern with approved information from the relevant trial."
                     },
                     {
-                        text: "Tell them that in your experience talking to other physicians, most just tell patients to push through it.",
+                        text: "Tell them that in your experience talking to other physicians, most manage {commonAE} with standard supportive care and it resolves quickly.",
                         complianceStatus: "risk",
                         outcome: "neutral",
                         relationshipChange: 0,
                         feedback: "Risky approach. Sharing anecdotal management strategies could be seen as practice recommendations outside your role."
                     },
                     {
-                        text: "Downplay the fatigue by saying it's much less than with chemotherapy alternatives.",
+                        text: "Downplay the adverse events by saying they're much less severe than with {competitorShort}.",
                         complianceStatus: "violation",
                         outcome: "compliance_issue",
                         complianceHit: 15,
                         relationshipChange: -10,
-                        feedback: "Violation. Minimizing safety concerns and making unsupported comparative claims is misleading."
+                        feedback: "Violation. Minimizing safety concerns and making unsupported comparative safety claims is misleading."
                     },
                     {
-                        text: "Ask clarifying questions about the fatigue severity and timing to better understand their experience and document as a potential insight.",
+                        text: "Ask clarifying questions about the severity, timing, and patient characteristics to better understand their specific experience. Document as a potential safety insight.",
                         complianceStatus: "safe",
                         outcome: "positive",
                         relationshipChange: 15,
                         insightOpportunity: true,
                         insightType: "safety",
-                        feedback: "Outstanding. You gathered valuable insight while showing genuine interest in the physician's experience."
+                        feedback: "Outstanding. You gathered valuable safety insight while showing genuine interest in their clinical experience."
+                    },
+                    {
+                        text: "Walk through the published risk mitigation framework including monitoring recommendations, dose modification guidelines, and when to consider treatment discontinuation.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 12,
+                        feedback: "Strong response. Providing practical, label-consistent management guidance adds real value.",
+                        skillRequirement: { category: "compliance", skill: "Fair Balance", minLevel: 2 }
                     }
                 ]
             },
             {
                 id: "safety_002",
                 trigger: "KOL reports potential adverse event",
-                kolQuestion: "I had a patient develop severe liver toxicity that might be related to your drug. Who should I report this to?",
+                kolQuestion: "I had a patient develop a serious adverse event that might be related to {drugName}. It was unexpected - not something I've seen in the trial data. Who should I report this to?",
                 options: [
                     {
-                        text: "Thank them for reporting, explain you're required to collect adverse event information, and walk them through the reporting process while taking initial details.",
+                        text: "Thank them for reporting. Explain that you're required to collect initial details about any adverse event. Walk them through the reporting process and take down the key information now.",
                         complianceStatus: "safe",
                         outcome: "positive",
                         relationshipChange: 10,
                         feedback: "Correct response. MSLs must take adverse event reports seriously and facilitate proper reporting."
                     },
                     {
-                        text: "Say you'll look into it and get back to them, then move on to your planned discussion topics.",
+                        text: "Say you'll look into it and get back to them, then move on to your planned discussion about {pivotalTrial} data.",
                         complianceStatus: "violation",
                         outcome: "compliance_issue",
                         complianceHit: 40,
                         relationshipChange: -15,
-                        feedback: "Serious violation. Failing to properly handle adverse event reports is a major compliance issue with potential regulatory consequences."
+                        feedback: "Serious violation. Failing to properly handle adverse event reports is a major compliance issue with regulatory consequences."
                     },
                     {
-                        text: "Suggest the liver toxicity is probably due to other medications the patient was taking.",
+                        text: "Suggest the adverse event is probably due to other medications or the underlying {shortIndication} rather than {drugName}.",
                         complianceStatus: "violation",
                         outcome: "compliance_issue",
                         complianceHit: 30,
                         relationshipChange: -20,
-                        feedback: "Major violation. Never minimize or dismiss potential adverse events. All reports must be taken seriously."
+                        feedback: "Major violation. Never minimize or dismiss potential adverse events. All reports must be taken seriously regardless of suspected causality."
+                    },
+                    {
+                        text: "Immediately collect the initial details, provide the pharmacovigilance hotline number, and explain the expected timeline for follow-up. Ask if they've reported to the FDA MedWatch program as well.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 15,
+                        feedback: "Exemplary response. Thorough AE handling demonstrates both competence and genuine concern for patient safety.",
+                        skillRequirement: { category: "compliance", skill: "Adverse Event Reporting", minLevel: 2 }
+                    },
+                    {
+                        text: "Express concern and ask for more clinical details to understand the event. Explain you'll work with pharmacovigilance to see if this represents a new safety signal.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 12,
+                        insightOpportunity: true,
+                        insightType: "safety",
+                        feedback: "Good approach. You showed concern, gathered details, and positioned yourself as a safety partner."
+                    }
+                ]
+            },
+            {
+                id: "safety_003",
+                trigger: "KOL asks about long-term safety",
+                kolQuestion: "What do we know about the long-term safety of {drugName}? I'm particularly worried about {realWorldConcern}. Is there enough data to feel comfortable keeping patients on it indefinitely?",
+                options: [
+                    {
+                        text: "Review the available long-term safety data from the extension phase of {pivotalTrial}. Be transparent about the duration of follow-up and acknowledge where data gaps exist.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 12,
+                        insightOpportunity: true,
+                        insightType: "safety",
+                        feedback: "Good balanced approach. Transparency about data limitations builds credibility."
+                    },
+                    {
+                        text: "Reassure them that the drug is very safe long-term based on the mechanism of action, even though long-term data is limited.",
+                        complianceStatus: "risk",
+                        outcome: "neutral",
+                        relationshipChange: -5,
+                        feedback: "Risky. Making safety assurances beyond what the data supports can backfire and erode trust."
+                    },
+                    {
+                        text: "Acknowledge their concern about {realWorldConcern} specifically. Share what the label says about monitoring recommendations and suggest this could be an important area for future research.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 15,
+                        insightOpportunity: true,
+                        insightType: "safety",
+                        feedback: "Excellent. You validated their concern, provided practical guidance, and identified a research opportunity.",
+                        skillRequirement: { category: "scientific", skill: "Real-World Evidence", minLevel: 2 }
+                    },
+                    {
+                        text: "Dismiss their concern by pointing out that the class has been around for years with other agents.",
+                        complianceStatus: "risk",
+                        outcome: "neutral",
+                        relationshipChange: -8,
+                        feedback: "Dismissing legitimate safety concerns damages trust. Each drug has its own safety profile."
+                    },
+                    {
+                        text: "Present the safety monitoring protocol from the label and discuss how you can help connect their institution with the ongoing pharmacovigilance registry.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 10,
+                        feedback: "Practical approach that adds value while keeping the discussion within approved information."
                     }
                 ]
             }
@@ -661,17 +926,17 @@ const GameData = {
             {
                 id: "offlabel_001",
                 trigger: "KOL asks about unapproved use",
-                kolQuestion: "I have patients with [related but unapproved condition]. Has anyone studied your drug in this population?",
+                kolQuestion: "I have patients with {relatedCondition} who aren't responding to current treatment. Has anyone studied {drugName} in that population? The mechanism of {drugClass} seems like it could be relevant.",
                 options: [
                     {
-                        text: "Clarify that the question is unsolicited, confirm your drug is not approved for that indication, and offer to provide published peer-reviewed literature if available.",
+                        text: "Clarify that the question is unsolicited, confirm {drugName} is only approved for {shortIndication}, and offer to provide any published peer-reviewed literature if available.",
                         complianceStatus: "safe",
                         outcome: "positive",
                         relationshipChange: 10,
                         feedback: "Perfect handling. You responded to an unsolicited request appropriately while maintaining compliance."
                     },
                     {
-                        text: "Proactively share all the off-label data you have since the physician clearly needs it for patient care.",
+                        text: "Proactively share all the off-label data you have since the physician clearly needs it for patient care in {relatedCondition}.",
                         complianceStatus: "violation",
                         outcome: "compliance_issue",
                         complianceHit: 35,
@@ -679,19 +944,29 @@ const GameData = {
                         feedback: "Violation. Even with good intentions, proactively sharing off-label information is promotional."
                     },
                     {
-                        text: "Refuse to discuss anything related to off-label use under any circumstances.",
+                        text: "Refuse to discuss anything related to off-label use of {drugName} under any circumstances.",
                         complianceStatus: "safe",
                         outcome: "negative",
                         relationshipChange: -15,
                         feedback: "Overly restrictive. MSLs can respond to unsolicited requests for off-label information with appropriate disclosures."
                     },
                     {
-                        text: "Say 'I can't talk about that' but then hint that there's promising data they should look for online.",
+                        text: "Say 'I can't officially talk about that' but suggest there's promising data they should search for on PubMed.",
                         complianceStatus: "violation",
                         outcome: "compliance_issue",
                         complianceHit: 25,
                         relationshipChange: -10,
-                        feedback: "Violation. Indirect suggestions about off-label uses are still considered promotion."
+                        feedback: "Violation. Indirect suggestions or 'wink-and-nod' references to off-label data are still considered promotion."
+                    },
+                    {
+                        text: "Confirm the request is unsolicited, then provide a balanced summary of published literature including study limitations. Clearly state the drug is not approved for {relatedCondition} and document the interaction.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 15,
+                        insightOpportunity: true,
+                        insightType: "unmet-need",
+                        feedback: "Exemplary handling. Thorough, balanced, compliant response to an unsolicited medical information request.",
+                        skillRequirement: { category: "compliance", skill: "Off-label Boundaries", minLevel: 3 }
                     }
                 ]
             }
@@ -700,17 +975,17 @@ const GameData = {
             {
                 id: "competitive_001",
                 trigger: "KOL asks for competitive comparison",
-                kolQuestion: "How does your drug compare to [Competitor Drug]? I'm trying to decide which to use first-line.",
+                kolQuestion: "How does {drugName} compare to {competitorShort}? I'm trying to decide treatment sequencing for my {shortIndication} patients. What differentiates your product?",
                 options: [
                     {
-                        text: "Explain there's no head-to-head trial data, but offer to review the individual trial designs and patient populations to help them understand differences in the evidence base.",
+                        text: "Explain there's no head-to-head trial data between {drugName} and {competitorShort}. Offer to review the individual trial designs and patient populations so they can understand differences in the evidence base.",
                         complianceStatus: "safe",
                         outcome: "positive",
                         relationshipChange: 10,
                         feedback: "Excellent approach. You provided context without making unsupported comparative claims."
                     },
                     {
-                        text: "Pull out a comparison chart showing your drug is clearly superior across all measures.",
+                        text: "Pull out a comparison chart showing {drugName} is clearly superior across all measures compared to {competitorShort}.",
                         complianceStatus: "violation",
                         outcome: "compliance_issue",
                         complianceHit: 30,
@@ -718,18 +993,28 @@ const GameData = {
                         feedback: "Violation. Cross-trial comparisons presented as superiority claims are misleading and promotional."
                     },
                     {
-                        text: "Decline to discuss competitors at all, saying you can only talk about your own product.",
+                        text: "Decline to discuss {competitorShort} at all, saying you can only talk about {drugName}.",
                         complianceStatus: "safe",
                         outcome: "neutral",
                         relationshipChange: -5,
                         feedback: "Compliant but missed opportunity. You can discuss publicly available competitor data in a balanced, fair way."
                     },
                     {
-                        text: "Offer to share what you've heard from other physicians about their preferences and experiences with both drugs.",
+                        text: "Discuss the key differences in mechanism, dosing ({dosing}), and trial populations without making comparative efficacy claims. Let the data speak for itself.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 12,
+                        insightOpportunity: true,
+                        insightType: "competitive",
+                        feedback: "Strong approach. Objective comparison of approved information helps physicians make informed decisions.",
+                        skillRequirement: { category: "scientific", skill: "Competitive Landscape", minLevel: 2 }
+                    },
+                    {
+                        text: "Offer to share what you've heard from other physicians about their preferences and switching patterns between {drugName} and {competitorShort}.",
                         complianceStatus: "risk",
                         outcome: "neutral",
                         relationshipChange: 0,
-                        feedback: "Risky. Sharing anecdotal physician opinions could be seen as testimonials or influencing prescribing."
+                        feedback: "Risky. Sharing anecdotal physician opinions could be seen as testimonials or influencing prescribing decisions."
                     }
                 ]
             }
@@ -738,7 +1023,7 @@ const GameData = {
             {
                 id: "iis_001",
                 trigger: "KOL expresses research interest",
-                kolQuestion: "I have an idea for a study using your drug in a unique patient population. Does your company support investigator-initiated research?",
+                kolQuestion: "I have an idea for a study using {drugName} in a unique patient population with {shortIndication}. I think there's a real evidence gap here. Does your company support investigator-initiated research?",
                 options: [
                     {
                         text: "Explain the IIS program exists, describe the submission process, and offer to facilitate their connection with the grants office without guaranteeing approval.",
@@ -748,7 +1033,7 @@ const GameData = {
                         feedback: "Perfect response. You facilitated appropriately without influencing the research direction or making promises."
                     },
                     {
-                        text: "Get excited and start discussing potential study designs and endpoints that would be most useful for your marketing team.",
+                        text: "Get excited and start discussing study designs and endpoints that would be most useful for the {drugName} marketing team's key messages.",
                         complianceStatus: "violation",
                         outcome: "compliance_issue",
                         complianceHit: 40,
@@ -756,7 +1041,7 @@ const GameData = {
                         feedback: "Serious violation. MSLs must never influence IIS design for commercial purposes. Studies must be truly investigator-initiated."
                     },
                     {
-                        text: "Promise them funding approval if they design the study to show specific outcomes.",
+                        text: "Promise them funding approval if they design the study to show specific outcomes favorable to {drugName}.",
                         complianceStatus: "violation",
                         outcome: "compliance_issue",
                         complianceHit: 50,
@@ -768,7 +1053,17 @@ const GameData = {
                         complianceStatus: "safe",
                         outcome: "negative",
                         relationshipChange: -10,
-                        feedback: "Missed opportunity. If an IIS program exists, you should facilitate appropriately. Being overly restrictive harms relationships."
+                        feedback: "Missed opportunity. If an IIS program exists, you should facilitate appropriately."
+                    },
+                    {
+                        text: "Listen to their research question, ask clarifying questions about their proposed methodology, and explain how the IIS submission committee evaluates scientific merit independently from commercial interests.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 20,
+                        insightOpportunity: true,
+                        insightType: "clinical",
+                        feedback: "Excellent. You engaged scientifically, facilitated appropriately, and gathered valuable insight about evidence gaps.",
+                        skillRequirement: { category: "strategic", skill: "Insight Synthesis", minLevel: 2 }
                     }
                 ]
             }
@@ -777,30 +1072,46 @@ const GameData = {
             {
                 id: "guideline_001",
                 trigger: "KOL discusses treatment guidelines",
-                kolQuestion: "The new NCCN guidelines just came out. Where does your drug fit in the treatment algorithm now?",
+                kolQuestion: "The {guidelines} were just updated. Where does {drugName} fit in the treatment algorithm for {shortIndication} now? I'm on the committee and want to hear your perspective.",
                 options: [
                     {
-                        text: "Accurately describe your drug's positioning in the current guidelines, noting the evidence that supports the recommendation level.",
+                        text: "Accurately describe {drugName}'s current positioning in the guidelines, citing the specific evidence ({pivotalTrial}) that supports the recommendation level.",
                         complianceStatus: "safe",
                         outcome: "positive",
                         relationshipChange: 10,
-                        feedback: "Good response. Discussing approved positioning in published guidelines is appropriate."
+                        feedback: "Good response. Discussing approved positioning in published guidelines with supporting evidence is appropriate."
                     },
                     {
-                        text: "Suggest the guidelines should have placed your drug higher and the committee got it wrong.",
+                        text: "Suggest the guidelines should have placed {drugName} higher and that the committee underweighted the {pivotalTrial} data.",
                         complianceStatus: "risk",
                         outcome: "neutral",
                         relationshipChange: -5,
-                        feedback: "Risky. Criticizing guideline committees or suggesting your drug deserves better positioning is promotional."
+                        feedback: "Risky. Criticizing guideline committees or suggesting {drugName} deserves better positioning is promotional behavior."
                     },
                     {
-                        text: "Ask about their involvement in guideline development and whether they have insights on future updates.",
+                        text: "Ask about their committee experience and whether they see evidence gaps that might inform future guideline updates. This is a rare opportunity to understand the guideline development process.",
                         complianceStatus: "safe",
                         outcome: "positive",
-                        relationshipChange: 10,
+                        relationshipChange: 15,
                         insightOpportunity: true,
                         insightType: "clinical",
-                        feedback: "Good approach. You gathered valuable insight about guideline development while showing interest in their expertise."
+                        feedback: "Outstanding approach. You gathered high-value strategic insight about guideline development from a committee member."
+                    },
+                    {
+                        text: "Present a comprehensive evidence landscape including {drugName}'s data alongside competitor data, letting the evidence speak for itself within the context of the guideline criteria.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 12,
+                        feedback: "Strong scientific approach. Presenting balanced evidence helps guideline committee members make informed assessments.",
+                        skillRequirement: { category: "scientific", skill: "Clinical Trial Interpretation", minLevel: 3 }
+                    },
+                    {
+                        text: "Lobby them to upgrade {drugName}'s positioning in the next guideline revision, offering to provide materials to support the case.",
+                        complianceStatus: "violation",
+                        outcome: "compliance_issue",
+                        complianceHit: 35,
+                        relationshipChange: -15,
+                        feedback: "Serious violation. Attempting to influence guideline committee members constitutes improper promotional activity."
                     }
                 ]
             }
@@ -809,10 +1120,10 @@ const GameData = {
             {
                 id: "access_001",
                 trigger: "KOL frustrated about access issues",
-                kolQuestion: "My patients keep getting denied coverage for your drug. What's going on?",
+                kolQuestion: "My patients keep getting denied coverage for {drugName}. The prior authorization process is a nightmare. What can you do to help?",
                 options: [
                     {
-                        text: "Acknowledge the frustration, explain you can connect them with your reimbursement support team, and ask about specific scenarios to understand the landscape.",
+                        text: "Acknowledge the frustration, explain you can connect them with the reimbursement support team, and ask about specific denial scenarios to understand the access landscape.",
                         complianceStatus: "safe",
                         outcome: "positive",
                         relationshipChange: 10,
@@ -821,7 +1132,7 @@ const GameData = {
                         feedback: "Appropriate response. You offered resources while gathering valuable access insights."
                     },
                     {
-                        text: "Coach them on specific coding strategies and what to write in prior authorization appeals.",
+                        text: "Coach them on specific ICD-10 coding strategies and what clinical language to use in prior authorization appeals for {drugName}.",
                         complianceStatus: "violation",
                         outcome: "compliance_issue",
                         complianceHit: 25,
@@ -829,61 +1140,202 @@ const GameData = {
                         feedback: "Violation. Providing specific reimbursement coding advice is outside the MSL role and may be seen as inducement."
                     },
                     {
-                        text: "Say access issues aren't your department and you can only discuss medical and scientific topics.",
+                        text: "Say access issues aren't your department and you can only discuss medical and scientific topics related to {drugName}.",
                         complianceStatus: "safe",
                         outcome: "negative",
                         relationshipChange: -10,
                         feedback: "Missed opportunity. While access isn't your primary focus, you should acknowledge concerns and connect them with appropriate resources."
+                    },
+                    {
+                        text: "Document the specific access barriers they're experiencing, connect them with the patient access team, and explain how their insights will be shared internally to help address systemic issues.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 15,
+                        insightOpportunity: true,
+                        insightType: "access",
+                        feedback: "Excellent. You showed empathy, took action, gathered insight, and demonstrated how field intelligence drives change.",
+                        skillRequirement: { category: "strategic", skill: "Cross-functional Collaboration", minLevel: 2 }
+                    },
+                    {
+                        text: "Offer to personally call the insurance companies on behalf of their patients to get {drugName} approved.",
+                        complianceStatus: "violation",
+                        outcome: "compliance_issue",
+                        complianceHit: 20,
+                        relationshipChange: 0,
+                        feedback: "Violation. MSLs should not directly intervene in individual patient coverage decisions. This crosses into promotional territory."
+                    }
+                ]
+            }
+        ],
+        realWorld: [
+            {
+                id: "realworld_001",
+                trigger: "KOL discusses real-world experience",
+                kolQuestion: "The clinical trial data for {drugName} is one thing, but I'm seeing different patterns in my clinic. My {shortIndication} patients are older, have more comorbidities, and the response doesn't seem as robust. What's your take?",
+                options: [
+                    {
+                        text: "Acknowledge that real-world populations often differ from trial populations. Ask specific questions about their patient demographics and outcomes to understand the gap between trial data and clinical practice.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 15,
+                        insightOpportunity: true,
+                        insightType: "clinical",
+                        feedback: "Excellent response. You validated their observation and gathered high-value real-world insight."
+                    },
+                    {
+                        text: "Insist that the {pivotalTrial} data should be generalizable and suggest they may not be selecting patients correctly.",
+                        complianceStatus: "risk",
+                        outcome: "neutral",
+                        relationshipChange: -15,
+                        feedback: "Poor approach. Questioning a physician's clinical judgment damages trust. Real-world-trial gaps are expected."
+                    },
+                    {
+                        text: "Share any published real-world evidence studies for {drugName} and discuss how their observations align or differ from what has been reported in the literature.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 12,
+                        feedback: "Good approach. Using published RWE data to contextualize their experience.",
+                        skillRequirement: { category: "scientific", skill: "Real-World Evidence", minLevel: 3 }
+                    },
+                    {
+                        text: "Suggest they should have used {drugName} at a higher dose than recommended in the label.",
+                        complianceStatus: "violation",
+                        outcome: "compliance_issue",
+                        complianceHit: 25,
+                        relationshipChange: -10,
+                        feedback: "Violation. Suggesting off-label dosing recommendations is a serious compliance breach."
+                    },
+                    {
+                        text: "Discuss the published subgroup analyses from {pivotalTrial} that are relevant to older or comorbid patients, staying within approved information.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 10,
+                        feedback: "Good use of available data to address their specific concern within approved information."
+                    }
+                ]
+            }
+        ],
+        biomarker: [
+            {
+                id: "biomarker_001",
+                trigger: "KOL asks about biomarker data",
+                kolQuestion: "I'm very interested in the biomarker data from {pivotalTrial}. Specifically, how does {biomarker1} predict response to {drugName}? And are there patients we should be testing differently?",
+                options: [
+                    {
+                        text: "Walk through the published biomarker analyses: how {biomarker1} was used in patient selection for {pivotalTrial}, the response rates by biomarker subgroup, and the testing methodology recommended.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 15,
+                        insightOpportunity: true,
+                        insightType: "clinical",
+                        feedback: "Excellent. Deep biomarker knowledge demonstrates scientific credibility and generated a valuable insight."
+                    },
+                    {
+                        text: "Suggest that all patients should be tested for {biomarker1} before starting {drugName}, even though this isn't in the approved label.",
+                        complianceStatus: "violation",
+                        outcome: "compliance_issue",
+                        complianceHit: 15,
+                        relationshipChange: -5,
+                        feedback: "Violation. Recommending testing beyond what the label requires is outside the MSL scope and potentially promotional."
+                    },
+                    {
+                        text: "Acknowledge the importance of biomarker-guided therapy and discuss what the current label says about patient selection. Ask what biomarker testing challenges they face in practice.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 12,
+                        insightOpportunity: true,
+                        insightType: "unmet-need",
+                        feedback: "Good approach. You stayed compliant while identifying practical barriers to optimal patient selection.",
+                        skillRequirement: { category: "scientific", skill: "Biomarker Knowledge", minLevel: 2 }
+                    },
+                    {
+                        text: "Share unpublished exploratory biomarker analyses that suggest additional predictive markers beyond those in the approved label.",
+                        complianceStatus: "violation",
+                        outcome: "compliance_issue",
+                        complianceHit: 20,
+                        relationshipChange: 0,
+                        feedback: "Violation. Sharing unpublished analyses proactively is off-label promotion, regardless of scientific interest."
+                    },
+                    {
+                        text: "Discuss the evolving landscape of biomarker testing in {shortIndication} using published literature, and how precision medicine approaches may shape future treatment decisions.",
+                        complianceStatus: "safe",
+                        outcome: "positive",
+                        relationshipChange: 10,
+                        feedback: "Good scientific discussion that contextualizes biomarker utility within the broader treatment landscape."
                     }
                 ]
             }
         ]
     },
 
-    // Skill tree
+    // Skill tree with bonuses that unlock dialogue options and gameplay effects
     skills: {
         scientific: {
             name: "Scientific Expertise",
+            icon: "🔬",
             description: "Deep knowledge of therapeutic area and clinical data",
             skills: [
-                { name: "Clinical Trial Interpretation", maxLevel: 5, description: "Ability to critically analyze and present clinical trial data" },
-                { name: "Mechanism of Action Mastery", maxLevel: 5, description: "Deep understanding of drug mechanisms and pharmacology" },
-                { name: "Real-World Evidence", maxLevel: 5, description: "Knowledge of RWE and its application in medical practice" },
-                { name: "Biomarker Knowledge", maxLevel: 5, description: "Understanding of predictive and prognostic biomarkers" },
-                { name: "Competitive Landscape", maxLevel: 5, description: "Comprehensive knowledge of competitive therapies" }
+                { name: "Clinical Trial Interpretation", maxLevel: 5, description: "Ability to critically analyze and present clinical trial data",
+                  bonuses: ["Lv2: Unlock trial design dialogue options", "Lv3: +5% relationship from efficacy discussions", "Lv5: Unlock expert-level debate responses"] },
+                { name: "Mechanism of Action Mastery", maxLevel: 5, description: "Deep understanding of drug mechanisms and pharmacology",
+                  bonuses: ["Lv2: Unlock MoA-based responses", "Lv3: +10% XP from scientific exchanges", "Lv5: Impress skeptical KOLs more easily"] },
+                { name: "Real-World Evidence", maxLevel: 5, description: "Knowledge of RWE and its application in medical practice",
+                  bonuses: ["Lv2: Unlock RWE discussion options", "Lv3: Better responses to trial-vs-practice gaps", "Lv5: +15% insight generation chance"] },
+                { name: "Biomarker Knowledge", maxLevel: 5, description: "Understanding of predictive and prognostic biomarkers",
+                  bonuses: ["Lv2: Unlock biomarker dialogue options", "Lv4: +10% relationship with academic KOLs", "Lv5: Unlock precision medicine discussions"] },
+                { name: "Competitive Landscape", maxLevel: 5, description: "Comprehensive knowledge of competitive therapies",
+                  bonuses: ["Lv2: Unlock balanced comparison options", "Lv3: Better handling of competitive challenges", "Lv5: Earn insights from competitor discussions"] }
             ]
         },
         communication: {
             name: "Communication Skills",
+            icon: "💬",
             description: "Ability to effectively engage with diverse stakeholders",
             skills: [
-                { name: "Scientific Storytelling", maxLevel: 5, description: "Presenting complex data in compelling narratives" },
-                { name: "Active Listening", maxLevel: 5, description: "Understanding unspoken needs and concerns" },
-                { name: "Objection Handling", maxLevel: 5, description: "Addressing concerns with balanced information" },
-                { name: "Presentation Skills", maxLevel: 5, description: "Delivering impactful presentations to diverse audiences" },
-                { name: "Written Communication", maxLevel: 5, description: "Clear, compliant written responses and documentation" }
+                { name: "Scientific Storytelling", maxLevel: 5, description: "Presenting complex data in compelling narratives",
+                  bonuses: ["Lv2: +5% relationship gain per interaction", "Lv3: Unlock narrative-based responses", "Lv5: +20% congress presentation XP"] },
+                { name: "Active Listening", maxLevel: 5, description: "Understanding unspoken needs and concerns",
+                  bonuses: ["Lv2: Unlock probing question options", "Lv3: +15% insight generation", "Lv5: Reveal hidden KOL preferences"] },
+                { name: "Objection Handling", maxLevel: 5, description: "Addressing concerns with balanced information",
+                  bonuses: ["Lv2: Better responses to hostile KOLs", "Lv3: Reduced relationship loss from tough scenarios", "Lv5: Turn objections into rapport-building"] },
+                { name: "Presentation Skills", maxLevel: 5, description: "Delivering impactful presentations to diverse audiences",
+                  bonuses: ["Lv2: +25% congress XP", "Lv3: Unlock advisory board lead options", "Lv5: +30% XP from presentations"] },
+                { name: "Written Communication", maxLevel: 5, description: "Clear, compliant written responses and documentation",
+                  bonuses: ["Lv2: +10% CRM quality score", "Lv3: Faster CRM documentation", "Lv5: CRM entries automatically rated higher"] }
             ]
         },
         strategic: {
             name: "Strategic Acumen",
+            icon: "🎯",
             description: "Ability to think strategically and drive medical objectives",
             skills: [
-                { name: "KOL Mapping", maxLevel: 5, description: "Identifying and prioritizing key stakeholders" },
-                { name: "Territory Planning", maxLevel: 5, description: "Efficient allocation of time and resources" },
-                { name: "Insight Synthesis", maxLevel: 5, description: "Connecting field observations to business strategy" },
-                { name: "Cross-functional Collaboration", maxLevel: 5, description: "Working effectively with internal teams" },
-                { name: "Conference Strategy", maxLevel: 5, description: "Maximizing impact at medical congresses" }
+                { name: "KOL Mapping", maxLevel: 5, description: "Identifying and prioritizing key stakeholders",
+                  bonuses: ["Lv2: See KOL influence scores", "Lv3: +1 AP per week", "Lv5: Unlock KOL network referrals"] },
+                { name: "Territory Planning", maxLevel: 5, description: "Efficient allocation of time and resources",
+                  bonuses: ["Lv2: -1 AP cost for same-state travel", "Lv4: Virtual calls cost 0 AP", "Lv5: +2 AP per week"] },
+                { name: "Insight Synthesis", maxLevel: 5, description: "Connecting field observations to business strategy",
+                  bonuses: ["Lv2: Unlock strategic dialogue options", "Lv3: Insights worth double XP", "Lv5: Auto-generate quarterly insight reports"] },
+                { name: "Cross-functional Collaboration", maxLevel: 5, description: "Working effectively with internal teams",
+                  bonuses: ["Lv2: Unlock collaboration options", "Lv3: +15% advisory board success", "Lv5: Access to medical affairs resources"] },
+                { name: "Conference Strategy", maxLevel: 5, description: "Maximizing impact at medical congresses",
+                  bonuses: ["Lv2: +25% congress XP", "Lv3: Extra congress activities", "Lv5: KOL meetings at congresses cost 0 AP"] }
             ]
         },
         compliance: {
             name: "Compliance Mastery",
+            icon: "🛡️",
             description: "Understanding and applying regulatory requirements",
             skills: [
-                { name: "Promotional vs Non-promotional", maxLevel: 5, description: "Distinguishing compliant scientific exchange" },
-                { name: "Off-label Boundaries", maxLevel: 5, description: "Properly handling off-label requests" },
-                { name: "Adverse Event Reporting", maxLevel: 5, description: "Correct identification and reporting of AEs" },
-                { name: "Documentation Excellence", maxLevel: 5, description: "Timely, accurate CRM documentation" },
-                { name: "Fair Balance", maxLevel: 5, description: "Presenting benefits and risks appropriately" }
+                { name: "Promotional vs Non-promotional", maxLevel: 5, description: "Distinguishing compliant scientific exchange",
+                  bonuses: ["Lv2: Warning before risky options", "Lv3: Reduced compliance hit from mistakes", "Lv5: Compliance never drops below 85%"] },
+                { name: "Off-label Boundaries", maxLevel: 5, description: "Properly handling off-label requests",
+                  bonuses: ["Lv2: Unlock nuanced off-label responses", "Lv3: +10% relationship from off-label handling", "Lv5: Turn off-label situations into IIS leads"] },
+                { name: "Adverse Event Reporting", maxLevel: 5, description: "Correct identification and reporting of AEs",
+                  bonuses: ["Lv2: Unlock thorough AE response options", "Lv3: AE reports never missed", "Lv5: +50 XP for each AE properly handled"] },
+                { name: "Documentation Excellence", maxLevel: 5, description: "Timely, accurate CRM documentation",
+                  bonuses: ["Lv2: +15% CRM quality", "Lv3: CRM deadline extended to 72 hours", "Lv5: Auto-complete CRM for routine interactions"] },
+                { name: "Fair Balance", maxLevel: 5, description: "Presenting benefits and risks appropriately",
+                  bonuses: ["Lv2: Unlock balanced safety discussion options", "Lv3: Skeptical KOLs more receptive", "Lv5: +10% relationship with all KOL types"] }
             ]
         }
     },
@@ -1083,7 +1535,7 @@ const GameData = {
         {
             id: "publication_release",
             name: "New Publication",
-            description: "A major peer-reviewed publication featuring your drug's data has been released.",
+            description: "A major peer-reviewed publication featuring new clinical data has been released.",
             type: "opportunity",
             probability: 0.12,
             effect: function(gameState) {
@@ -1152,7 +1604,7 @@ const GameData = {
             stages: [
                 {
                     id: "stage_1",
-                    kolDialogue: "I've been seeing some patients with [related but unapproved condition] who haven't responded to standard therapy. Has anyone looked at using your drug in this population? I'm wondering if there's any data out there.",
+                    kolDialogue: "I've been seeing some patients with {relatedCondition} who haven't responded to standard therapy. Has anyone looked at using {drugName} in that population? I'm wondering if there's any data out there.",
                     options: [
                         {
                             text: "That's an interesting clinical question. Before I respond, I want to clarify - is this an unsolicited request for information about off-label use?",
@@ -1183,7 +1635,7 @@ const GameData = {
                     kolDialogue: "Yes, this is coming from my own clinical curiosity. I have a specific patient in mind who has failed everything else. I'd really appreciate any published literature you could share.",
                     options: [
                         {
-                            text: "Thank you for confirming. Since this is an unsolicited request, I can provide published peer-reviewed literature. There is one small study published in [Journal]. I'll send you the reference, though I should note the drug isn't approved for this indication.",
+                            text: "Thank you for confirming. Since this is an unsolicited request, I can provide published peer-reviewed literature. There is one small study published in [Journal]. I'll send you the reference, though I should note {drugName} isn't approved for this indication.",
                             nextStage: "stage_3a_success",
                             relationshipChange: 15,
                             complianceStatus: "safe",
@@ -1325,7 +1777,7 @@ const GameData = {
             stages: [
                 {
                     id: "stage_1",
-                    kolDialogue: "I read the [Competitor] study that just came out. Their response rates are higher than yours, and frankly, I'm thinking of switching my next patients to their drug. Can you explain why I shouldn't?",
+                    kolDialogue: "I read the {competitorShort} study that just came out. Their response rates are higher than yours, and frankly, I'm thinking of switching my next patients to their product. Can you explain why I shouldn't?",
                     options: [
                         {
                             text: "I understand the interest in that data. Those are different trials with different patient populations and endpoints, so direct comparison is challenging. Would it help if we reviewed the trial designs side by side?",
@@ -1353,7 +1805,7 @@ const GameData = {
                 },
                 {
                     id: "stage_2a",
-                    kolDialogue: "Sure, walk me through it. But I've been in this field for 20 years - I know how to read a trial. Convince me your drug has a place in my practice.",
+                    kolDialogue: "Sure, walk me through it. But I've been in this field for 20 years - I know how to read a trial. Convince me {drugName} has a place in my practice.",
                     options: [
                         {
                             text: "Of course. Looking at patient selection: our trial enrolled more refractory patients with a higher median prior therapies. The competitor included more treatment-naive patients. So the populations aren't directly comparable.",
@@ -1423,7 +1875,7 @@ const GameData = {
                 },
                 {
                     id: "stage_3a_scientific",
-                    kolDialogue: "That's a fair point about the patient populations. What about the safety profile? I've heard some concerns about your drug's tolerability.",
+                    kolDialogue: "That's a fair point about the patient populations. What about the safety profile? I've heard some concerns about {drugName}'s tolerability.",
                     options: [
                         {
                             text: "Our safety data shows specific rates for common adverse events. The most frequent were [specific events] at [specific rates]. We also have management guidance in the label. Would you like to review the full safety section?",
@@ -1500,14 +1952,14 @@ const GameData = {
                 },
                 {
                     id: "end_positive",
-                    kolDialogue: "This has been a good scientific discussion. I appreciate you staying focused on the data. I'll keep your drug in consideration for appropriate patients.",
+                    kolDialogue: "This has been a good scientific discussion. I appreciate you staying focused on the data. I'll keep {drugName} in consideration for appropriate patients.",
                     isEnding: true,
                     outcome: "positive",
                     relationshipChange: 15
                 },
                 {
                     id: "end_neutral",
-                    kolDialogue: "Alright, I have a better sense of where your drug fits now. I'll review the data further on my own.",
+                    kolDialogue: "Alright, I have a better sense of where {drugName} fits now. I'll review the data further on my own.",
                     isEnding: true,
                     outcome: "neutral",
                     relationshipChange: 0
@@ -1720,7 +2172,7 @@ const GameData = {
             stages: [
                 {
                     id: "stage_1",
-                    kolDialogue: "Before we continue - I need to tell you about a patient. She started on your drug two weeks ago and was just hospitalized with severe hepatotoxicity. Her LFTs are 10 times the upper limit of normal. She's in the ICU.",
+                    kolDialogue: "Before we continue - I need to tell you about a patient. She started on {drugName} two weeks ago and was just hospitalized with severe hepatotoxicity. Her LFTs are 10 times the upper limit of normal. She's in the ICU.",
                     options: [
                         {
                             text: "I'm sorry to hear about your patient. This is important - as an MSL, I'm required to collect and report adverse events. Can I ask you some questions about this case to ensure proper documentation?",
@@ -1881,7 +2333,7 @@ const GameData = {
             stages: [
                 {
                     id: "stage_1",
-                    kolDialogue: "The new NCCN guidelines just came out and your drug is only listed as a Category 2B recommendation. The competitor got Category 1. Why should I use a drug with lower-level evidence?",
+                    kolDialogue: "The new NCCN guidelines just came out and {drugName} is only listed as a Category 2B recommendation. The competitor got Category 1. Why should I use a drug with lower-level evidence?",
                     options: [
                         {
                             text: "That's a great observation. The category difference reflects the type and level of evidence available at the time of the guideline update. Our pivotal trial published after the last review deadline. Are you familiar with the specific data that was considered?",
@@ -1908,7 +2360,7 @@ const GameData = {
                 },
                 {
                     id: "stage_2a",
-                    kolDialogue: "I know the recent trial data. But the fact remains that right now, the guidelines don't support using your drug first. How do you respond to that?",
+                    kolDialogue: "I know the recent trial data. But the fact remains that right now, the guidelines don't support using {drugName} first. How do you respond to that?",
                     options: [
                         {
                             text: "You're right - we need to work within the current guideline framework. For now, our drug is recommended in specific situations outlined in the guidelines. I expect the next update will incorporate the new data. In the meantime, I can share what the current labeling supports.",
@@ -2418,7 +2870,7 @@ const GameData = {
             stages: [
                 {
                     id: "stage_1",
-                    kolDialogue: "Before we continue, I need to mention something. One of my patients on your drug was hospitalized last week with severe liver enzyme elevations. I've reported it to the FDA, but I thought you should know too.",
+                    kolDialogue: "Before we continue, I need to mention something. One of my patients on {drugName} was hospitalized last week with severe liver enzyme elevations. I've reported it to the FDA, but I thought you should know too.",
                     options: [
                         {
                             text: "Thank you for sharing that - this is exactly the kind of information our safety team needs to hear. I need to document this as an adverse event. Can you provide some additional details about the patient and the event?",
@@ -2447,7 +2899,7 @@ const GameData = {
                 },
                 {
                     id: "stage_2a_proper",
-                    kolDialogue: "Sure. The patient is a 62-year-old male, had been on your drug for about 3 months. ALT and AST were 5 times the upper limit of normal. They stopped the drug and the enzymes are improving. I have the labs if you need them.",
+                    kolDialogue: "Sure. The patient is a 62-year-old male, had been on {drugName} for about 3 months. ALT and AST were 5 times the upper limit of normal. They stopped the drug and the enzymes are improving. I have the labs if you need them.",
                     options: [
                         {
                             text: "I appreciate the detail. I'll document this carefully and ensure it's reported through our pharmacovigilance system within 24 hours. Would you be willing to be contacted by our medical safety team for follow-up if they have additional questions?",
@@ -2488,7 +2940,7 @@ const GameData = {
                 },
                 {
                     id: "stage_2c_defensive",
-                    kolDialogue: "Look, I've been practicing for 30 years. I know what a drug-induced liver injury looks like. The timing and pattern fit perfectly. I'm not accusing your drug of anything, but this needs to be on record.",
+                    kolDialogue: "Look, I've been practicing for 30 years. I know what a drug-induced liver injury looks like. The timing and pattern fit perfectly. I'm not accusing {drugName} of anything, but this needs to be on record.",
                     options: [
                         {
                             text: "I apologize - I didn't mean to question your clinical judgment. You're right that this needs to be documented properly. Can you share the patient details so I can report this through our pharmacovigilance system?",
@@ -2557,7 +3009,7 @@ const GameData = {
             stages: [
                 {
                     id: "stage_1",
-                    kolDialogue: "I have a patient in the hospital right now who isn't responding to standard treatment. I've heard your drug might help in this situation, but it's not the approved indication. I need to make a decision today. Can you help me?",
+                    kolDialogue: "I have a patient in the hospital right now who isn't responding to standard treatment. I've heard {drugName} might help in this situation, but it's not the approved indication. I need to make a decision today. Can you help me?",
                     contextNote: "This is an urgent unsolicited medical information request. The physician is desperate to help their patient.",
                     options: [
                         {
@@ -2596,7 +3048,7 @@ const GameData = {
                     kolDialogue: "Thank you. Is there anything at all in the literature? Even case reports?",
                     options: [
                         {
-                            text: "I found two case reports and one small retrospective study. I'll send these to you now with the caveat that this represents limited evidence and the drug isn't approved for this use. The decision is yours as the treating physician.",
+                            text: "I found two case reports and one small retrospective study. I'll send these to you now with the caveat that this represents limited evidence and {drugName} isn't approved for this use. The decision is yours as the treating physician.",
                             nextStage: "end_positive",
                             relationshipChange: 20,
                             complianceStatus: "safe",
@@ -2746,7 +3198,7 @@ const GameData = {
                 },
                 {
                     id: "stage_2b_quidproquo",
-                    kolDialogue: "That's great to hear. So if I keep supporting your drug, you'll get me on the speaker list?",
+                    kolDialogue: "That's great to hear. So if I keep supporting {drugName}, you'll get me on the speaker list?",
                     options: [
                         {
                             text: "I apologize - I misspoke. There's no connection between prescribing or advocacy and speaker selection. Let me clarify that the selection process is based on scientific credentials and is completely independent of any commercial relationship.",
@@ -2826,7 +3278,7 @@ const GameData = {
             stages: [
                 {
                     id: "stage_1",
-                    kolDialogue: "I've had three patients fail on [Competitor Drug] this month. Terrible drug if you ask me. I bet you see this all the time - surely your drug is better for these patients, right?",
+                    kolDialogue: "I've had three patients fail on [Competitor Drug] this month. Terrible drug if you ask me. I bet you see this all the time - surely {drugName} is better for these patients, right?",
                     contextNote: "The KOL is inviting you to criticize a competitor and make comparative claims.",
                     options: [
                         {
@@ -2866,7 +3318,7 @@ const GameData = {
                 },
                 {
                     id: "stage_2a_redirect",
-                    kolDialogue: "They expected durable responses but progressed within three months. Do you see longer responses with your drug?",
+                    kolDialogue: "They expected durable responses but progressed within three months. Do you see longer responses with {drugName}?",
                     options: [
                         {
                             text: "Our pivotal trial showed specific duration of response data. The median DOR was X months in patients with [characteristics]. I can share that data with you, though every patient is different.",
@@ -2879,7 +3331,7 @@ const GameData = {
                 },
                 {
                     id: "stage_2b_agree",
-                    kolDialogue: "See, I knew it! What specifically makes your drug better?",
+                    kolDialogue: "See, I knew it! What specifically makes {drugName} better?",
                     options: [
                         {
                             text: "Let me step back - I shouldn't have characterized it that way. Without head-to-head data, I can't make comparative claims. Let me focus on what our data does show.",
