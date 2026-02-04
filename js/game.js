@@ -466,6 +466,9 @@ class MSLGame {
             status: 'pending'
         };
 
+        if (!this.state.adverseEvents) {
+            this.state.adverseEvents = { pending: [], reported: [], missed: [], totalDetected: 0, totalReported: 0, totalMissed: 0 };
+        }
         this.state.adverseEvents.pending.push(aeEntry);
         this.state.adverseEvents.totalDetected++;
 
@@ -621,6 +624,7 @@ class MSLGame {
     }
 
     checkOverdueAEs() {
+        if (!this.state.adverseEvents || !this.state.adverseEvents.pending) return;
         // Check for overdue AEs during week advancement
         const overdue = this.state.adverseEvents.pending.filter(
             ae => ae.deadline <= this.state.currentWeek
@@ -658,6 +662,7 @@ class MSLGame {
     }
 
     getPendingAECount() {
+        if (!this.state.adverseEvents || !this.state.adverseEvents.pending) return 0;
         return this.state.adverseEvents.pending.length;
     }
 
@@ -666,13 +671,18 @@ class MSLGame {
         const messageEl = document.getElementById('pending-ae-message');
         if (!alertEl) return;
 
+        // Ensure adverseEvents exists
+        if (!this.state.adverseEvents) {
+            this.state.adverseEvents = { pending: [], reported: [], missed: [], totalDetected: 0, totalReported: 0, totalMissed: 0 };
+        }
+
         const pendingCount = this.getPendingAECount();
 
         if (pendingCount > 0) {
             alertEl.style.display = 'flex';
 
             // Check for urgent AEs
-            const urgentAEs = this.state.adverseEvents.pending.filter(
+            const urgentAEs = (this.state.adverseEvents.pending || []).filter(
                 ae => ae.deadline - this.state.currentWeek <= 1
             );
 
@@ -947,7 +957,27 @@ class MSLGame {
             quarterlyReviews: [],
             warnings: 0,
             gameOver: false,
-            gameWon: false
+            gameWon: false,
+            // CRM Quality Tracking
+            crmQuality: {
+                totalEntries: 0,
+                averageScore: 0,
+                grades: { A: 0, 'B+': 0, B: 0, 'C+': 0, C: 0, D: 0 }
+            },
+            // Adverse Event Tracking
+            adverseEvents: {
+                pending: [],
+                reported: [],
+                missed: [],
+                totalDetected: 0,
+                totalReported: 0,
+                totalMissed: 0
+            },
+            // Weekly activity tracking
+            trainingCompletedThisWeek: [],
+            congressAttendedThisWeek: false,
+            congressActivitiesThisSession: [],
+            advisoryBoardThisWeek: false
         };
         this.initSkills();
     }
@@ -3823,6 +3853,9 @@ class MSLGame {
         this.state.metrics.crmCompliance = Math.min(100, this.state.metrics.crmCompliance + qualityBonus);
 
         // Track CRM quality grades
+        if (!this.state.crmQuality) {
+            this.state.crmQuality = { totalEntries: 0, averageScore: 0, grades: { A: 0, 'B+': 0, B: 0, 'C+': 0, C: 0, D: 0 } };
+        }
         this.state.crmQuality.totalEntries++;
         const gradeLetter = qualityResult.grade.letter;
         // Map B+ to B and C+ to C for simplified tracking, or track them separately
