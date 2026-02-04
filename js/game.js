@@ -1261,17 +1261,11 @@ class MSLGame {
             }, 100);
         }, 50);
 
-        // Show tutorial for new players
-        if (this.shouldShowTutorial()) {
-            setTimeout(() => {
-                this.showTutorial();
-            }, 600);
-        } else {
-            setTimeout(() => {
-                this.showNotification('Welcome to ' + territory.name + '!',
-                    `Your home base is ${territory.homeBase.city}, ${territory.homeBase.state}. Start by engaging with KOLs in your territory.`, 'info');
-            }, 200);
-        }
+        // Always show tutorial for new games
+        localStorage.removeItem('mslSimulatorTutorialCompleted');
+        setTimeout(() => {
+            this.showTutorial();
+        }, 600);
     }
 
     // KOL Generation
