@@ -244,9 +244,25 @@ class MSLGame {
         document.getElementById('advance-time')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Advance week clicked');
+            console.log('Advance day clicked');
+            this.advanceDay();
+        });
+        // Trip Planner
+        document.getElementById('action-trip-planner')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             this.closeActionMenu();
-            this.advanceWeek();
+            this.showTripPlanner();
+        });
+        document.getElementById('start-trip-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.startTrip();
+        });
+        document.getElementById('cancel-trip-btn')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.closeModal('trip-planner-modal');
         });
 
         // Interaction screen
@@ -926,6 +942,8 @@ class MSLGame {
             territory: null,
             kols: [],
             currentWeek: 1,
+            currentDay: 1,           // Day within week (1=Mon, 5=Fri)
+            totalDaysPlayed: 0,
             currentQuarter: 1,
             currentYear: 2024,
             // XP and Level System
@@ -933,16 +951,27 @@ class MSLGame {
             level: 1,
             xpToNextLevel: 100,
             totalXpEarned: 0,
-            // Action Points System
+            // Action Points System - daily budget
             actionPoints: {
-                current: 5,
-                max: 5
+                current: 3,
+                max: 3
             },
+            pendingAPCost: 0,
+            pendingAPReason: '',
             homeBase: null,
             // Time management
             weeklyTimeTotal: 40,
             weeklyTimeRemaining: 40,
+            dailyTimeTotal: 8,
+            dailyTimeRemaining: 8,
             lastVisitedLocation: null,
+            // Trip planner
+            tripPlanner: {
+                active: false,
+                selectedKOLs: [],
+                maxKOLs: 3,
+                apCost: 0
+            },
             metrics: {
                 kolEngagement: 0,
                 scientificExchange: 0,
@@ -1300,10 +1329,36 @@ class MSLGame {
             dominantPersonality: template.dominantPersonality || 'analytical',
             preferredInteraction: template.preferredInteraction,
             lastContact: null,
+            lastContactDay: 0,
             interactionCount: 0,
             insightsProvided: 0,
-            avatar: this.getRandomAvatar()
+            avatar: this.getRandomAvatar(),
+            // Virtual call preference based on tier
+            virtualPreference: this.generateVirtualPreference(tier)
         };
+    }
+
+    generateVirtualPreference(tier) {
+        const roll = Math.random();
+        if (tier === 1) {
+            // Tier 1: 30% in-person-only, 35% prefers-in-person, 25% no-preference, 10% prefers-virtual
+            if (roll < 0.30) return 'in-person-only';
+            if (roll < 0.65) return 'prefers-in-person';
+            if (roll < 0.90) return 'no-preference';
+            return 'prefers-virtual';
+        } else if (tier === 2) {
+            // Tier 2: 10% in-person-only, 25% prefers-in-person, 40% no-preference, 25% prefers-virtual
+            if (roll < 0.10) return 'in-person-only';
+            if (roll < 0.35) return 'prefers-in-person';
+            if (roll < 0.75) return 'no-preference';
+            return 'prefers-virtual';
+        } else {
+            // Tier 3: 5% in-person-only, 15% prefers-in-person, 40% no-preference, 40% prefers-virtual
+            if (roll < 0.05) return 'in-person-only';
+            if (roll < 0.20) return 'prefers-in-person';
+            if (roll < 0.60) return 'no-preference';
+            return 'prefers-virtual';
+        }
     }
 
     generateInstitutionName() {
@@ -1397,7 +1452,7 @@ class MSLGame {
         const current = this.state.actionPoints.current;
         this.showNotification(
             'Not Enough Action Points',
-            `This activity requires ${required} AP, but you only have ${current}. End the week to refresh your action points.`,
+            `This activity requires ${required} AP, but you only have ${current}. Advance to the next day to refresh your action points.`,
             'warning'
         );
     }
@@ -1409,9 +1464,18 @@ class MSLGame {
         document.getElementById('player-title').textContent = this.state.player.title;
         document.getElementById('player-ta').textContent = GameData.therapeuticAreas[this.state.player.therapeuticArea].name;
 
-        // Update date
+        // Update date with day
+        const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        const dayName = dayNames[(this.state.currentDay - 1) % 5] || 'Monday';
+        const weeksLeft = Math.max(0, 52 - Math.floor(this.state.totalDaysPlayed / 5));
         document.getElementById('current-date').textContent =
-            `Week ${this.state.currentWeek}, Q${this.state.currentQuarter} ${this.state.currentYear}`;
+            `${dayName}, Week ${this.state.currentWeek}, Q${this.state.currentQuarter} ${this.state.currentYear}`;
+
+        // Update weeks remaining display
+        const weeksRemainingEl = document.getElementById('weeks-remaining');
+        if (weeksRemainingEl) {
+            weeksRemainingEl.textContent = `${weeksLeft} weeks remaining`;
+        }
 
         // Update quick stats
         document.getElementById('kol-interactions').textContent = this.state.interactions.length;
@@ -1590,10 +1654,20 @@ class MSLGame {
                 const kolDot = document.createElement('div');
                 kolDot.className = `kol-dot ${kol.type}`;
                 if (kol.interactionCount > 0) kolDot.classList.add('visited');
+                kolDot.classList.add(`rel-${kol.relationship || 'new'}`);
 
                 const travelInfo = this.getTravelCostLabel(kol);
-                kolDot.innerHTML = `<span class="dot-avatar">${kol.avatar}</span>`;
-                kolDot.title = `${kol.name}\n${kol.institution}\n${kol.location.city}\nTier ${kol.tier} | ${this.capitalizeFirst(kol.relationship)}\n⚡${travelInfo.cost} AP`;
+                const relScore = kol.relationshipScore || 0;
+                const relPct = Math.min(100, relScore);
+                const virtualPref = kol.virtualPreference || 'no-preference';
+                const virtualIcon = virtualPref === 'prefers-virtual' ? ' 💻' : virtualPref === 'in-person-only' ? ' 🚫💻' : '';
+
+                kolDot.innerHTML = `
+                    <span class="dot-avatar">${kol.avatar}</span>
+                    <div class="dot-rel-bar"><div class="dot-rel-fill" style="width:${relPct}%"></div></div>
+                    ${kol.interactionCount > 0 ? '<span class="dot-check">✓</span>' : ''}
+                `;
+                kolDot.title = `${kol.name}\n${kol.institution}\n${kol.location.city}\nTier ${kol.tier} | ${this.capitalizeFirst(kol.relationship)} (${relScore}/100)\nMeetings: ${kol.interactionCount || 0}${virtualIcon}\n⚡${travelInfo.cost} AP`;
 
                 kolDot.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -1733,20 +1807,42 @@ class MSLGame {
                 enthusiastic: '✨'
             }[personality] || '👤';
 
+            const relScore = kol.relationshipScore || 0;
+            const relPct = Math.min(100, relScore);
+            const meetingCount = kol.interactionCount || 0;
+            const lastContactText = kol.lastContact ? `Week ${kol.lastContact.week}` : 'Never';
+            const virtualPref = kol.virtualPreference || 'no-preference';
+            const virtualPrefLabel = {
+                'prefers-virtual': '💻 Prefers Virtual',
+                'no-preference': '📞 Flexible',
+                'prefers-in-person': '👤 Prefers In-Person',
+                'in-person-only': '🚫💻 In-Person Only'
+            }[virtualPref];
+
             card.innerHTML = `
                 <div class="kol-card-header">
-                    <div class="kol-avatar">${kol.avatar}</div>
+                    <div class="kol-avatar-wrapper">
+                        <div class="kol-avatar">${kol.avatar}</div>
+                        ${meetingCount > 0 ? `<span class="kol-meeting-count">${meetingCount}</span>` : ''}
+                    </div>
                     <div class="kol-card-info">
                         <h4>${kol.name}</h4>
                         <p>${kol.title}</p>
                         <p>${kol.institution}</p>
                         <p class="kol-location">📍 ${locationText}</p>
+                        <p class="kol-last-contact">Last contact: ${lastContactText}</p>
                     </div>
+                </div>
+                <div class="kol-relationship-bar-container">
+                    <div class="kol-rel-bar">
+                        <div class="kol-rel-fill rel-${kol.relationship}" style="width:${relPct}%"></div>
+                    </div>
+                    <span class="kol-rel-label">${this.capitalizeFirst(kol.relationship)} (${relScore}/100)</span>
                 </div>
                 <div class="kol-card-stats">
                     <span class="kol-tier tier-${kol.tier}">Tier ${kol.tier}</span>
-                    <span class="kol-relationship ${kol.relationship}">${this.capitalizeFirst(kol.relationship)}</span>
-                    <span class="kol-personality ${personality}">${personalityIcon} ${personalityData?.name || 'Unknown'}</span>
+                    <span class="kol-personality ${personality}" data-tooltip="${personalityData?.description || ''}\n\nTraits:\n${(personalityData?.traits || []).join('\n')}\n\nTips:\n${(personalityData?.tips || []).join('\n')}">${personalityIcon} ${personalityData?.name || 'Unknown'}</span>
+                    <span class="kol-virtual-pref ${virtualPref}">${virtualPrefLabel}</span>
                     <span class="kol-travel-cost ${travelInfo.class}">⚡${travelInfo.cost} AP</span>
                 </div>
             `;
@@ -2387,6 +2483,204 @@ class MSLGame {
         }
     }
 
+    // ==========================================
+    // MULTI-VISIT TRIP PLANNER
+    // ==========================================
+    showTripPlanner() {
+        // Group KOLs by state for easy selection
+        const territory = GameData.territories[this.state.territory];
+        if (!territory) return;
+
+        const modal = document.getElementById('trip-planner-modal');
+        if (!modal) return;
+
+        const kolsByState = {};
+        territory.states.forEach(state => {
+            const stateKols = this.state.kols.filter(
+                kol => kol.location && kol.location.stateAbbrev === state.abbrev
+            );
+            if (stateKols.length > 0) {
+                kolsByState[state.abbrev] = { name: state.name, kols: stateKols };
+            }
+        });
+
+        const container = document.getElementById('trip-kol-selection');
+        container.innerHTML = '';
+
+        Object.entries(kolsByState).forEach(([abbrev, stateData]) => {
+            const stateSection = document.createElement('div');
+            stateSection.className = 'trip-state-section';
+            stateSection.innerHTML = `<h5>${stateData.name} (${abbrev})</h5>`;
+
+            stateData.kols.forEach(kol => {
+                const travelInfo = this.getTravelCostLabel(kol);
+                const kolRow = document.createElement('div');
+                kolRow.className = 'trip-kol-row';
+                kolRow.innerHTML = `
+                    <label class="trip-kol-label">
+                        <input type="checkbox" class="trip-kol-checkbox"
+                            data-kol-id="${kol.id}" data-ap-cost="${travelInfo.cost}"
+                            data-state="${abbrev}">
+                        <span class="trip-kol-avatar">${kol.avatar}</span>
+                        <span class="trip-kol-name">${kol.name}</span>
+                        <span class="trip-kol-tier">Tier ${kol.tier}</span>
+                        <span class="trip-kol-rel ${kol.relationship}">${this.capitalizeFirst(kol.relationship)}</span>
+                        <span class="trip-kol-ap">⚡${travelInfo.cost} AP</span>
+                    </label>
+                `;
+                stateSection.appendChild(kolRow);
+            });
+
+            container.appendChild(stateSection);
+        });
+
+        // Reset trip planner state
+        this.state.tripPlanner = { active: false, selectedKOLs: [], maxKOLs: 3, apCost: 0 };
+        this.updateTripPlannerSummary();
+
+        // Bind checkbox events
+        container.querySelectorAll('.trip-kol-checkbox').forEach(cb => {
+            cb.addEventListener('change', () => this.updateTripSelection());
+        });
+
+        modal.classList.add('active');
+    }
+
+    updateTripSelection() {
+        const checked = document.querySelectorAll('.trip-kol-checkbox:checked');
+        const unchecked = document.querySelectorAll('.trip-kol-checkbox:not(:checked)');
+
+        // Enforce max 3 and same-area constraint
+        if (checked.length > 0) {
+            const firstState = checked[0].dataset.state;
+            // Disable KOLs from other states
+            unchecked.forEach(cb => {
+                if (cb.dataset.state !== firstState) {
+                    cb.disabled = true;
+                    cb.closest('.trip-kol-row').classList.add('disabled');
+                } else if (checked.length >= 3) {
+                    cb.disabled = true;
+                    cb.closest('.trip-kol-row').classList.add('disabled');
+                } else {
+                    cb.disabled = false;
+                    cb.closest('.trip-kol-row').classList.remove('disabled');
+                }
+            });
+        } else {
+            // All unchecked - re-enable everything
+            unchecked.forEach(cb => {
+                cb.disabled = false;
+                cb.closest('.trip-kol-row').classList.remove('disabled');
+            });
+        }
+
+        // Calculate AP cost: max of all selected KOLs' travel costs
+        let maxAP = 0;
+        const selectedIds = [];
+        checked.forEach(cb => {
+            const cost = parseInt(cb.dataset.apCost);
+            if (cost > maxAP) maxAP = cost;
+            selectedIds.push(cb.dataset.kolId);
+        });
+
+        this.state.tripPlanner.selectedKOLs = selectedIds;
+        this.state.tripPlanner.apCost = maxAP;
+        this.updateTripPlannerSummary();
+    }
+
+    updateTripPlannerSummary() {
+        const summary = document.getElementById('trip-summary');
+        if (!summary) return;
+
+        const count = this.state.tripPlanner.selectedKOLs.length;
+        const cost = this.state.tripPlanner.apCost;
+
+        summary.innerHTML = `
+            <div class="trip-summary-line">
+                <span>KOLs Selected:</span> <strong>${count} / 3</strong>
+            </div>
+            <div class="trip-summary-line">
+                <span>Total AP Cost:</span> <strong>⚡${cost} AP</strong>
+                ${count > 1 ? `<span class="trip-savings">(Saved ${count - 1} trip${count > 2 ? 's' : ''}!)</span>` : ''}
+            </div>
+            <div class="trip-summary-line">
+                <span>Your AP:</span> <strong>${this.state.actionPoints.current} / ${this.state.actionPoints.max}</strong>
+            </div>
+        `;
+    }
+
+    startTrip() {
+        const selectedKOLs = this.state.tripPlanner.selectedKOLs;
+        if (selectedKOLs.length === 0) {
+            this.showNotification('No KOLs Selected', 'Please select at least one KOL for your trip.', 'warning');
+            return;
+        }
+
+        const apCost = this.state.tripPlanner.apCost;
+        if (!this.canAffordActionPoints(apCost)) {
+            this.showInsufficientAPMessage(apCost);
+            return;
+        }
+
+        // Calculate time for the full trip
+        const totalTimeCost = selectedKOLs.reduce((total, kolId) => {
+            const kol = this.state.kols.find(k => k.id === kolId);
+            return total + (kol ? this.getActivityTimeCost('kol-visit', kol) : 2);
+        }, 0);
+
+        if (!this.canAffordTime(totalTimeCost)) {
+            this.showTimeWarning(totalTimeCost);
+            return;
+        }
+
+        // Charge AP once for the whole trip
+        this.spendActionPoints(apCost, `Multi-visit trip (${selectedKOLs.length} KOLs)`);
+
+        // Close trip planner
+        this.closeModal('trip-planner-modal');
+
+        // Store the trip queue and start first interaction
+        this.state.tripPlanner.active = true;
+        this.state.tripPlanner.queue = [...selectedKOLs];
+        this.state.pendingAPCost = 0; // Already charged
+
+        // Start first KOL in trip
+        this.startNextTripVisit();
+    }
+
+    startNextTripVisit() {
+        if (!this.state.tripPlanner.queue || this.state.tripPlanner.queue.length === 0) {
+            // Trip complete
+            this.state.tripPlanner.active = false;
+            this.showNotification('Trip Complete', 'You have completed all scheduled visits.', 'success');
+            return;
+        }
+
+        const nextKolId = this.state.tripPlanner.queue.shift();
+        const kol = this.state.kols.find(k => k.id === nextKolId);
+        if (!kol) {
+            this.startNextTripVisit(); // Skip missing KOL
+            return;
+        }
+
+        const remaining = this.state.tripPlanner.queue.length;
+        if (remaining > 0) {
+            this.showNotification('Trip Visit', `Starting visit with ${kol.name}. ${remaining} more visit${remaining > 1 ? 's' : ''} after this.`, 'info');
+        }
+
+        this.state.currentMeetingMode = 'in-person';
+        this.state.currentKOL = kol;
+        this.state.currentMeetingTimeCost = this.getActivityTimeCost('kol-visit', kol);
+        this.state.dialogueHistory = [];
+        this.state.meetingObjectives = [];
+        this.state.meetingMaterials = [];
+        this.state.objectiveProgress = {};
+        this.state.pendingAPCost = 0;
+        this.state.pendingAPReason = '';
+
+        this.showPreCallPlanning(kol);
+    }
+
     openActionMenu() {
         const container = document.getElementById('action-menu-container');
         if (container) {
@@ -2404,6 +2698,30 @@ class MSLGame {
         if (!kol) return;
 
         const isVirtual = this.state.visitMode === 'virtual';
+
+        // Check virtual call rejection based on KOL preference
+        if (isVirtual) {
+            const pref = kol.virtualPreference || 'no-preference';
+            if (pref === 'in-person-only') {
+                this.showNotification('Virtual Call Declined',
+                    `${kol.name} only accepts in-person meetings. They are known to prefer face-to-face scientific exchange.`, 'warning');
+                return;
+            }
+            let rejectionChance = 0;
+            if (pref === 'prefers-in-person') rejectionChance = 0.4;
+            else if (pref === 'no-preference') rejectionChance = 0.1;
+            else if (pref === 'prefers-virtual') rejectionChance = 0;
+
+            // Higher relationship reduces rejection chance
+            if (kol.relationship === 'established') rejectionChance *= 0.5;
+            else if (kol.relationship === 'advocate') rejectionChance *= 0.2;
+
+            if (Math.random() < rejectionChance) {
+                this.showNotification('Virtual Call Declined',
+                    `${kol.name} declined your virtual call request. They may prefer meeting in person. Try again later or visit in person.`, 'warning');
+                return;
+            }
+        }
 
         // Virtual calls always cost 1 AP (or 0 with Territory Planning Lv4)
         let apCost;
@@ -2432,11 +2750,10 @@ class MSLGame {
             return;
         }
 
-        // Spend action points
+        // Store AP cost as pending - will be charged when meeting is confirmed
         const meetingType = isVirtual ? 'Virtual call' : 'Meeting';
-        if (apCost > 0) {
-            this.spendActionPoints(apCost, `${meetingType} with ${kol.name}`);
-        }
+        this.state.pendingAPCost = apCost;
+        this.state.pendingAPReason = `${meetingType} with ${kol.name}`;
 
         // Track meeting mode for relationship calculations
         this.state.currentMeetingMode = isVirtual ? 'virtual' : 'in-person';
@@ -2687,6 +3004,13 @@ class MSLGame {
         const kol = this.state.currentKOL;
         const timeCost = this.state.currentMeetingTimeCost;
 
+        // NOW charge the AP (deferred from startInteraction)
+        if (this.state.pendingAPCost > 0) {
+            this.spendActionPoints(this.state.pendingAPCost, this.state.pendingAPReason);
+        }
+        this.state.pendingAPCost = 0;
+        this.state.pendingAPReason = '';
+
         // Spend time for this meeting
         this.spendTime(timeCost, 'kol-visit', kol);
 
@@ -2797,6 +3121,9 @@ class MSLGame {
 
     cancelPlanning() {
         this.closeModal('precall-modal');
+        // Clear pending AP - no charge since meeting was cancelled
+        this.state.pendingAPCost = 0;
+        this.state.pendingAPReason = '';
         this.state.currentKOL = null;
     }
 
@@ -3758,6 +4085,7 @@ class MSLGame {
         const kol = this.state.currentKOL;
         kol.interactionCount++;
         kol.lastContact = { week: this.state.currentWeek, quarter: this.state.currentQuarter };
+        kol.lastContactDay = this.state.totalDaysPlayed;
 
         // Save immediately to persist the interaction count
         this.saveGame();
@@ -4039,8 +4367,6 @@ class MSLGame {
         this.updateCRMCompliance();
 
         this.closeModal('crm-modal');
-        this.showScreen('dashboard-screen');
-        this.updateDashboard();
 
         // Different notifications based on quality with grade
         const grade = qualityResult.grade.letter;
@@ -4055,10 +4381,27 @@ class MSLGame {
         }
 
         this.saveGame();
+
+        // Check if there's an ongoing multi-visit trip
+        if (this.state.tripPlanner.active && this.state.tripPlanner.queue && this.state.tripPlanner.queue.length > 0) {
+            setTimeout(() => this.startNextTripVisit(), 500);
+            return;
+        }
+
+        this.showScreen('dashboard-screen');
+        this.updateDashboard();
     }
 
     saveCRMDraft() {
         this.closeModal('crm-modal');
+
+        // Check if there's an ongoing multi-visit trip
+        if (this.state.tripPlanner.active && this.state.tripPlanner.queue && this.state.tripPlanner.queue.length > 0) {
+            this.showNotification('Draft Saved', 'CRM draft saved. Moving to next visit.', 'info');
+            setTimeout(() => this.startNextTripVisit(), 500);
+            return;
+        }
+
         this.showScreen('dashboard-screen');
         this.updateDashboard();
         this.showNotification('Draft Saved', 'Remember to complete documentation within 48 hours.', 'info');
@@ -4647,53 +4990,233 @@ class MSLGame {
         this.saveGame();
     }
 
-    // Time Advancement
-    advanceWeek() {
-        console.log('advanceWeek called');
+    // Time Advancement - Daily System
+    advanceDay() {
+        console.log('advanceDay called');
 
-        this.state.currentWeek++;
+        const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        this.state.totalDaysPlayed++;
+        this.state.currentDay++;
 
-        // Reset weekly time budget
-        this.state.weeklyTimeRemaining = this.state.weeklyTimeTotal;
-        this.state.lastVisitedLocation = null;
-
-        // Reset action points
+        // Reset daily AP
         this.resetActionPoints();
 
-        // Reset weekly activity tracking
-        this.state.trainingCompletedThisWeek = [];
-        this.state.congressAttendedThisWeek = false;
-        this.state.congressActivitiesThisSession = [];
-        this.state.advisoryBoardThisWeek = false;
+        // Reset daily time
+        this.state.dailyTimeRemaining = this.state.dailyTimeTotal;
 
-        // Check for overdue CRM entries
-        this.state.pendingCRM.forEach(entry => {
-            if (this.state.currentWeek - entry.week > 0) {
-                entry.status = 'overdue';
+        // End of work week (Friday)
+        if (this.state.currentDay > 5) {
+            this.state.currentDay = 1;
+            this.state.currentWeek++;
+
+            // Reset weekly time budget
+            this.state.weeklyTimeRemaining = this.state.weeklyTimeTotal;
+            this.state.lastVisitedLocation = null;
+
+            // Reset weekly activity tracking
+            this.state.trainingCompletedThisWeek = [];
+            this.state.congressAttendedThisWeek = false;
+            this.state.congressActivitiesThisSession = [];
+            this.state.advisoryBoardThisWeek = false;
+
+            // Check for overdue CRM entries
+            this.state.pendingCRM.forEach(entry => {
+                if (this.state.currentWeek - entry.week > 0) {
+                    entry.status = 'overdue';
+                }
+            });
+
+            // Check for overdue AE reports
+            this.checkOverdueAEs();
+
+            // Update CRM compliance
+            this.updateCRMCompliance();
+
+            // Random events (weekly)
+            this.checkRandomEvents();
+
+            // Relationship decay (weekly)
+            this.applyRelationshipDecay();
+
+            // Quarter end check (every 13 weeks)
+            if (this.state.currentWeek > 13) {
+                this.state.currentWeek = 1;
+                this.triggerQuarterlyReview();
             }
-        });
 
-        // Check for overdue AE reports
-        this.checkOverdueAEs();
-
-        // Update CRM compliance
-        this.updateCRMCompliance();
-
-        // Random events
-        this.checkRandomEvents();
-
-        // Quarter end check
-        if (this.state.currentWeek > 12) {
-            this.state.currentWeek = 1;
-            this.triggerQuarterlyReview();
+            // 1-year game cap check (52 weeks)
+            if (this.state.totalDaysPlayed >= 260) {
+                this.triggerYearEndReview();
+                return;
+            }
         }
 
         this.updateDashboard();
         this.updateTimeBudgetDisplay();
         this.saveGame();
 
-        this.showNotification('Week Advanced',
-            `Now in Week ${this.state.currentWeek}, Q${this.state.currentQuarter} ${this.state.currentYear}. Time budget reset to ${this.state.weeklyTimeTotal} hours.`, 'info');
+        const dayName = dayNames[(this.state.currentDay - 1) % 5];
+        this.showNotification('Day Advanced',
+            `${dayName}, Week ${this.state.currentWeek}, Q${this.state.currentQuarter} ${this.state.currentYear}. You have ${this.state.actionPoints.current} AP today.`, 'info');
+    }
+
+    // Legacy support - redirect to advanceDay
+    advanceWeek() {
+        this.advanceDay();
+    }
+
+    // Relationship Decay System
+    applyRelationshipDecay() {
+        const currentTotalDays = this.state.totalDaysPlayed;
+
+        this.state.kols.forEach(kol => {
+            if (kol.relationship === 'new' || kol.relationshipScore <= 0) return;
+
+            const lastContactDay = kol.lastContactDay || 0;
+            const daysSinceContact = currentTotalDays - lastContactDay;
+
+            // Grace period: 10 working days (2 weeks) before decay starts
+            if (daysSinceContact <= 10) return;
+
+            // Decay rate depends on relationship level
+            let decayRate = 0;
+            if (daysSinceContact > 30) {
+                // Over 6 weeks: aggressive decay
+                decayRate = 3;
+            } else if (daysSinceContact > 20) {
+                // Over 4 weeks: moderate decay
+                decayRate = 2;
+            } else {
+                // Over 2 weeks: light decay
+                decayRate = 1;
+            }
+
+            // Higher relationships decay slower
+            if (kol.relationship === 'advocate') decayRate = Math.ceil(decayRate * 0.5);
+            else if (kol.relationship === 'established') decayRate = Math.ceil(decayRate * 0.7);
+
+            kol.relationshipScore = Math.max(0, kol.relationshipScore - decayRate);
+
+            // Update relationship level based on new score
+            this.updateRelationshipLevel(kol);
+        });
+    }
+
+    updateRelationshipLevel(kol) {
+        const score = kol.relationshipScore;
+        let newLevel;
+        if (score >= 80) newLevel = 'advocate';
+        else if (score >= 50) newLevel = 'established';
+        else if (score >= 20) newLevel = 'developing';
+        else newLevel = 'new';
+
+        if (newLevel !== kol.relationship && kol.relationship !== 'new') {
+            const oldLevel = kol.relationship;
+            kol.relationship = newLevel;
+            // Only notify on downgrade
+            if (['advocate', 'established', 'developing'].indexOf(oldLevel) <
+                ['advocate', 'established', 'developing'].indexOf(newLevel)) {
+                // This is actually an upgrade, don't notify here
+            } else if (oldLevel !== newLevel) {
+                this.showNotification('Relationship Declined',
+                    `Your relationship with ${kol.name} has dropped to "${this.capitalizeFirst(newLevel)}" due to lack of contact.`, 'warning');
+            }
+        }
+        kol.relationship = newLevel;
+    }
+
+    // 1-Year Game End Review
+    triggerYearEndReview() {
+        const metrics = this.state.metrics;
+        const overallScore = (
+            metrics.kolEngagement * 0.25 +
+            metrics.scientificExchange * 0.20 +
+            metrics.insightGeneration * 0.15 +
+            metrics.crmCompliance * 0.15 +
+            metrics.regulatoryCompliance * 0.20 +
+            metrics.internalCollaboration * 0.05
+        );
+
+        // Count KOLs at each relationship level
+        const kolStats = {
+            advocates: this.state.kols.filter(k => k.relationship === 'advocate').length,
+            established: this.state.kols.filter(k => k.relationship === 'established').length,
+            developing: this.state.kols.filter(k => k.relationship === 'developing').length,
+            newOnly: this.state.kols.filter(k => k.relationship === 'new').length
+        };
+
+        let outcome, title, icon, message;
+
+        if (overallScore >= 75 && kolStats.advocates >= 3 && metrics.regulatoryCompliance >= 85) {
+            outcome = 'promoted';
+            title = 'Promoted to Senior MSL!';
+            icon = '🎉';
+            message = `Outstanding first year! Your excellent KPI scores (${Math.round(overallScore)}%), strong KOL relationships (${kolStats.advocates} advocates), and exemplary compliance record have earned you a promotion to Senior MSL. You've demonstrated the scientific acumen and strategic thinking needed for the next level.`;
+        } else if (overallScore < 45 || metrics.regulatoryCompliance < 60 || (this.state.warnings >= 3)) {
+            outcome = 'fired';
+            title = 'Employment Terminated';
+            icon = '📉';
+            message = `Unfortunately, your performance this year did not meet expectations. ${overallScore < 45 ? 'Your overall KPI score of ' + Math.round(overallScore) + '% was well below target.' : ''} ${metrics.regulatoryCompliance < 60 ? 'Critical compliance failures were identified.' : ''} ${this.state.warnings >= 3 ? 'Multiple performance warnings were issued.' : ''} Your position has been terminated.`;
+        } else {
+            outcome = 'stay';
+            title = 'Annual Review: MSL';
+            icon = '📋';
+            message = `You\'ve completed your first year as an MSL with a solid performance score of ${Math.round(overallScore)}%. While not yet ready for promotion, you\'ve shown competence in the role. Continue building KOL relationships and improving your metrics. You have ${kolStats.advocates} advocate(s) and ${kolStats.established} established relationship(s).`;
+        }
+
+        this.showYearEndScreen(outcome, title, icon, message, overallScore, kolStats);
+    }
+
+    showYearEndScreen(outcome, title, icon, message, overallScore, kolStats) {
+        this.state.gameOver = true;
+
+        // Reuse gameover screen with enhanced content
+        document.getElementById('gameover-title').textContent = title;
+        document.getElementById('gameover-icon').textContent = icon;
+        document.getElementById('gameover-message').textContent = message;
+
+        const stats = document.getElementById('gameover-stats');
+        stats.innerHTML = `
+            <div class="gameover-stat">
+                <span>Overall KPI Score</span>
+                <span>${Math.round(overallScore)}%</span>
+            </div>
+            <div class="gameover-stat">
+                <span>Total Interactions</span>
+                <span>${this.state.interactions.length}</span>
+            </div>
+            <div class="gameover-stat">
+                <span>Insights Gathered</span>
+                <span>${this.state.insights.length}</span>
+            </div>
+            <div class="gameover-stat">
+                <span>KOL Advocates</span>
+                <span>${kolStats.advocates}</span>
+            </div>
+            <div class="gameover-stat">
+                <span>Established Relationships</span>
+                <span>${kolStats.established}</span>
+            </div>
+            <div class="gameover-stat">
+                <span>Final Title</span>
+                <span>${outcome === 'promoted' ? 'Senior MSL' : this.state.player.title}</span>
+            </div>
+            <div class="gameover-stat">
+                <span>Weeks Completed</span>
+                <span>${Math.floor(this.state.totalDaysPlayed / 5)}</span>
+            </div>
+            <div class="gameover-stat">
+                <span>Compliance</span>
+                <span>${Math.round(this.state.metrics.regulatoryCompliance)}%</span>
+            </div>
+            <div class="year-end-outcome ${outcome}">
+                ${outcome === 'promoted' ? '🌟 Congratulations on your promotion!' :
+                  outcome === 'fired' ? '⚠️ Better luck next time.' :
+                  '📊 Room to grow - keep pushing!'}
+            </div>
+        `;
+
+        this.showScreen('gameover-screen');
     }
 
     checkRandomEvents() {

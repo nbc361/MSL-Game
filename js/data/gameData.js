@@ -1394,7 +1394,7 @@ const GameData = {
 
     // Action Points configuration
     actionPoints: {
-        maxPerWeek: 5,
+        maxPerDay: 3,
         costs: {
             sameCity: 1,      // KOL in same city as home base
             sameState: 2,     // KOL in same state but different city

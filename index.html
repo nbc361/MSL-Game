@@ -215,6 +215,7 @@
                     <div class="time-budget-header">
                         <span class="time-icon">⏱️</span>
                         <span class="time-label">Weekly Time Budget</span>
+                        <span class="weeks-remaining" id="weeks-remaining">52 weeks remaining</span>
                     </div>
                     <div class="time-budget-bar">
                         <div class="time-budget-fill" id="time-budget-fill"></div>
@@ -222,6 +223,10 @@
                     <div class="time-budget-text">
                         <span id="time-remaining">40</span> / <span id="time-total">40</span> hours
                     </div>
+                    <button id="advance-time" class="advance-day-btn">
+                        <span class="advance-icon">⏭️</span>
+                        <span>Advance Day</span>
+                    </button>
                 </div>
             </div>
 
@@ -472,11 +477,13 @@
                             </div>
                             <span class="action-cost">1 AP</span>
                         </button>
-                    </div>
-                    <div class="action-menu-footer">
-                        <button id="advance-time" class="advance-week-btn">
-                            <span class="action-icon">⏭️</span>
-                            <span>Advance Week</span>
+                        <button id="action-trip-planner" class="action-menu-btn" title="Plan a multi-visit trip to see up to 3 KOLs in the same area for the cost of one trip.">
+                            <span class="action-icon">🗺️</span>
+                            <div class="action-info">
+                                <span class="action-name">Plan Trip</span>
+                                <span class="action-desc">Multi-KOL visit (up to 3)</span>
+                            </div>
+                            <span class="action-cost">Max AP</span>
                         </button>
                     </div>
                 </div>
@@ -1212,6 +1219,24 @@
                 <div class="gameover-actions">
                     <button id="try-again" class="action-btn primary">Try Again</button>
                     <button id="main-menu" class="action-btn">Main Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trip Planner Modal -->
+        <div id="trip-planner-modal" class="modal">
+            <div class="modal-content trip-planner-content">
+                <h2>Plan Multi-Visit Trip</h2>
+                <p class="trip-instructions">Select up to 3 KOLs in the same area. You'll pay only the highest single AP cost for the entire trip.</p>
+                <div id="trip-kol-selection" class="trip-kol-selection">
+                    <!-- KOL selection rows populated by JS -->
+                </div>
+                <div id="trip-summary" class="trip-summary">
+                    <!-- Trip summary populated by JS -->
+                </div>
+                <div class="trip-actions">
+                    <button id="start-trip-btn" class="action-btn primary">Start Trip</button>
+                    <button id="cancel-trip-btn" class="action-btn">Cancel</button>
                 </div>
             </div>
         </div>

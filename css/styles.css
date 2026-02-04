@@ -5338,3 +5338,348 @@ body {
 .warning-shake {
     animation: warning-shake 0.3s ease-in-out;
 }
+
+/* ==========================================
+   RELATIONSHIP STATUS VISUALS ON MAP
+   ========================================== */
+.kol-dot {
+    position: relative;
+}
+
+.kol-dot .dot-rel-bar {
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 3px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.kol-dot .dot-rel-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.kol-dot.rel-new .dot-rel-fill { background: #6b7280; }
+.kol-dot.rel-developing .dot-rel-fill { background: #3b82f6; }
+.kol-dot.rel-established .dot-rel-fill { background: #10b981; }
+.kol-dot.rel-advocate .dot-rel-fill { background: #f59e0b; }
+
+.kol-dot.rel-new { border: 2px solid #6b7280; }
+.kol-dot.rel-developing { border: 2px solid #3b82f6; }
+.kol-dot.rel-established { border: 2px solid #10b981; }
+.kol-dot.rel-advocate { border: 2px solid #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.4); }
+
+.kol-dot .dot-check {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 10px;
+    background: #10b981;
+    color: white;
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* ==========================================
+   KOL DATABASE RELATIONSHIP BAR
+   ========================================== */
+.kol-relationship-bar-container {
+    padding: 4px 12px 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.kol-rel-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-tertiary, #1e293b);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.kol-rel-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.kol-rel-fill.rel-new { background: #6b7280; }
+.kol-rel-fill.rel-developing { background: #3b82f6; }
+.kol-rel-fill.rel-established { background: #10b981; }
+.kol-rel-fill.rel-advocate { background: #f59e0b; }
+
+.kol-rel-label {
+    font-size: 11px;
+    color: var(--text-muted, #94a3b8);
+    white-space: nowrap;
+}
+
+.kol-avatar-wrapper {
+    position: relative;
+}
+
+.kol-meeting-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--primary, #6366f1);
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kol-last-contact {
+    font-size: 11px;
+    color: var(--text-muted, #94a3b8);
+    margin-top: 2px;
+}
+
+/* ==========================================
+   PERSONALITY TOOLTIP
+   ========================================== */
+.kol-personality {
+    position: relative;
+    cursor: help;
+}
+
+.kol-personality[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--bg-primary, #0f172a);
+    color: var(--text-primary, #e2e8f0);
+    border: 1px solid var(--border, #334155);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    max-width: 280px;
+    min-width: 220px;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    pointer-events: none;
+}
+
+/* ==========================================
+   VIRTUAL PREFERENCE BADGE
+   ========================================== */
+.kol-virtual-pref {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+}
+
+.kol-virtual-pref.prefers-virtual { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+.kol-virtual-pref.no-preference { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+.kol-virtual-pref.prefers-in-person { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.kol-virtual-pref.in-person-only { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+/* ==========================================
+   ADVANCE DAY BUTTON (main screen)
+   ========================================== */
+.advance-day-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    margin-top: 8px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.advance-day-btn:hover {
+    background: linear-gradient(135deg, #4f46e5, #7c3aed);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.advance-day-btn:active {
+    transform: translateY(0);
+}
+
+.advance-icon {
+    font-size: 16px;
+}
+
+.weeks-remaining {
+    font-size: 11px;
+    color: var(--text-muted, #94a3b8);
+    margin-left: auto;
+}
+
+/* ==========================================
+   TRIP PLANNER MODAL
+   ========================================== */
+.trip-planner-content {
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.trip-instructions {
+    color: var(--text-muted, #94a3b8);
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.trip-state-section {
+    margin-bottom: 16px;
+}
+
+.trip-state-section h5 {
+    font-size: 13px;
+    color: var(--text-secondary, #cbd5e1);
+    border-bottom: 1px solid var(--border, #334155);
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+}
+
+.trip-kol-row {
+    padding: 4px 0;
+}
+
+.trip-kol-row.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.trip-kol-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.trip-kol-label:hover {
+    background: var(--bg-tertiary, #1e293b);
+}
+
+.trip-kol-checkbox {
+    accent-color: var(--primary, #6366f1);
+}
+
+.trip-kol-avatar {
+    font-size: 20px;
+}
+
+.trip-kol-name {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text-primary, #e2e8f0);
+}
+
+.trip-kol-tier {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg-tertiary, #1e293b);
+    color: var(--text-muted, #94a3b8);
+}
+
+.trip-kol-rel {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.trip-kol-rel.new { background: rgba(107,114,128,0.2); color: #9ca3af; }
+.trip-kol-rel.developing { background: rgba(59,130,246,0.2); color: #60a5fa; }
+.trip-kol-rel.established { background: rgba(16,185,129,0.2); color: #34d399; }
+.trip-kol-rel.advocate { background: rgba(245,158,11,0.2); color: #fbbf24; }
+
+.trip-kol-ap {
+    font-size: 12px;
+    font-weight: 600;
+    color: #f59e0b;
+}
+
+.trip-summary {
+    background: var(--bg-tertiary, #1e293b);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 16px 0;
+}
+
+.trip-summary-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+    color: var(--text-secondary, #cbd5e1);
+}
+
+.trip-savings {
+    color: #10b981;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.trip-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 16px;
+}
+
+/* ==========================================
+   YEAR END OUTCOME BADGE
+   ========================================== */
+.year-end-outcome {
+    padding: 12px 16px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 600;
+    margin-top: 12px;
+    font-size: 14px;
+}
+
+.year-end-outcome.promoted {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.year-end-outcome.fired {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.year-end-outcome.stay {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
