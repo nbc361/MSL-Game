@@ -412,36 +412,66 @@
                 </button>
             </div>
 
-            <div class="dashboard-actions">
-                <button id="action-visit-kol" class="action-btn" title="Visit a Key Opinion Leader for scientific exchange. Costs 1-3 Action Points depending on travel distance.">
-                    <span class="action-icon">👤</span>
-                    <span>Visit KOL</span>
-                    <span class="action-time-cost" id="visit-time-cost">~3-4 hrs</span>
+            <!-- Collapsible Action Menu -->
+            <div class="action-menu-container" id="action-menu-container">
+                <button class="action-menu-toggle" id="action-menu-toggle" title="Toggle Actions Menu">
+                    <span class="toggle-icon">▶</span>
+                    <span class="toggle-label">Actions</span>
                 </button>
-                <button id="action-congress" class="action-btn" title="Attend a medical congress to network with multiple KOLs and learn about the latest research.">
-                    <span class="action-icon">🏛️</span>
-                    <span>Congress</span>
-                    <span class="action-time-cost">8 hrs</span>
-                </button>
-                <button id="action-advisory" class="action-btn" title="Organize or participate in advisory board meetings with expert KOLs. Builds strong relationships.">
-                    <span class="action-icon">📋</span>
-                    <span>Advisory Board</span>
-                    <span class="action-time-cost">6 hrs</span>
-                </button>
-                <button id="action-training" class="action-btn" title="Conduct internal training sessions to share field insights with your colleagues.">
-                    <span class="action-icon">📚</span>
-                    <span>Internal Training</span>
-                    <span class="action-time-cost">3 hrs</span>
-                </button>
-                <button id="action-iis" class="action-btn" title="Support Investigator-Initiated Studies by helping KOLs with research proposals.">
-                    <span class="action-icon">🔬</span>
-                    <span>IIS Support</span>
-                    <span class="action-time-cost">2 hrs</span>
-                </button>
-                <button id="advance-time" class="action-btn primary">
-                    <span class="action-icon">⏭️</span>
-                    <span>Advance Week</span>
-                </button>
+                <div class="action-menu" id="action-menu">
+                    <div class="action-menu-header">
+                        <h4>MSL Activities</h4>
+                        <button class="close-menu-btn" id="close-action-menu">×</button>
+                    </div>
+                    <div class="action-menu-items">
+                        <button id="action-visit-kol" class="action-menu-btn" title="Visit a Key Opinion Leader for scientific exchange. Costs 1-3 Action Points depending on travel distance.">
+                            <span class="action-icon">👤</span>
+                            <div class="action-info">
+                                <span class="action-name">Visit KOL</span>
+                                <span class="action-desc">Scientific exchange meeting</span>
+                            </div>
+                            <span class="action-cost">1-3 AP</span>
+                        </button>
+                        <button id="action-congress" class="action-menu-btn" title="Attend a medical congress to network with multiple KOLs and learn about the latest research.">
+                            <span class="action-icon">🏛️</span>
+                            <div class="action-info">
+                                <span class="action-name">Congress</span>
+                                <span class="action-desc">Medical conference attendance</span>
+                            </div>
+                            <span class="action-cost">3 AP</span>
+                        </button>
+                        <button id="action-advisory" class="action-menu-btn" title="Organize or participate in advisory board meetings with expert KOLs. Builds strong relationships.">
+                            <span class="action-icon">📋</span>
+                            <div class="action-info">
+                                <span class="action-name">Advisory Board</span>
+                                <span class="action-desc">Expert panel meetings</span>
+                            </div>
+                            <span class="action-cost">2 AP</span>
+                        </button>
+                        <button id="action-training" class="action-menu-btn" title="Conduct internal training sessions to share field insights with your colleagues.">
+                            <span class="action-icon">📚</span>
+                            <div class="action-info">
+                                <span class="action-name">Internal Training</span>
+                                <span class="action-desc">Share field insights</span>
+                            </div>
+                            <span class="action-cost">1 AP</span>
+                        </button>
+                        <button id="action-iis" class="action-menu-btn" title="Support Investigator-Initiated Studies by helping KOLs with research proposals.">
+                            <span class="action-icon">🔬</span>
+                            <div class="action-info">
+                                <span class="action-name">IIS Support</span>
+                                <span class="action-desc">Research collaboration</span>
+                            </div>
+                            <span class="action-cost">1 AP</span>
+                        </button>
+                    </div>
+                    <div class="action-menu-footer">
+                        <button id="advance-time" class="advance-week-btn">
+                            <span class="action-icon">⏭️</span>
+                            <span>Advance Week</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 

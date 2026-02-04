@@ -184,41 +184,59 @@ class MSLGame {
             });
         });
 
+        // Action Menu Toggle
+        document.getElementById('action-menu-toggle')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.toggleActionMenu();
+        });
+        document.getElementById('close-action-menu')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.closeActionMenu();
+        });
+
         // Dashboard actions
         document.getElementById('action-visit-kol')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             console.log('Visit KOL clicked');
+            this.closeActionMenu();
             this.showKOLSelection();
         });
         document.getElementById('action-congress')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             console.log('Congress clicked');
+            this.closeActionMenu();
             this.showCongressScreen();
         });
         document.getElementById('action-advisory')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             console.log('Advisory clicked');
+            this.closeActionMenu();
             this.showAdvisoryScreen();
         });
         document.getElementById('action-training')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             console.log('Training clicked');
+            this.closeActionMenu();
             this.showTrainingScreen();
         });
         document.getElementById('action-iis')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             console.log('IIS clicked');
+            this.closeActionMenu();
             this.showIISScreen();
         });
         document.getElementById('advance-time')?.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             console.log('Advance week clicked');
+            this.closeActionMenu();
             this.advanceWeek();
         });
 
@@ -1120,16 +1138,28 @@ class MSLGame {
         this.generateKOLs();
         this.generateIISProjects();
         this.showScreen('dashboard-screen');
-        this.updateDashboard();
+
+        // Use setTimeout to ensure DOM is fully rendered before updating
+        setTimeout(() => {
+            this.updateDashboard();
+
+            // Force refresh of KOL list and map after initial render
+            setTimeout(() => {
+                this.updateMap();
+                this.updateKOLList();
+            }, 100);
+        }, 50);
 
         // Show tutorial for new players
         if (this.shouldShowTutorial()) {
             setTimeout(() => {
                 this.showTutorial();
-            }, 500);
+            }, 600);
         } else {
-            this.showNotification('Welcome to ' + territory.name + '!',
-                `Your home base is ${territory.homeBase.city}, ${territory.homeBase.state}. Start by engaging with KOLs in your territory.`, 'info');
+            setTimeout(() => {
+                this.showNotification('Welcome to ' + territory.name + '!',
+                    `Your home base is ${territory.homeBase.city}, ${territory.homeBase.state}. Start by engaging with KOLs in your territory.`, 'info');
+            }, 200);
         }
     }
 
@@ -1379,107 +1409,115 @@ class MSLGame {
         const container = document.getElementById('map-container');
         container.innerHTML = '';
 
-        // Create US map SVG background
-        const mapSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        mapSvg.setAttribute('class', 'us-map-svg');
-        mapSvg.setAttribute('viewBox', '0 0 100 60');
-        mapSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+        const territory = GameData.territories[this.state.territory];
+        if (!territory) return;
 
-        // Simplified US outline
-        const usOutline = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        usOutline.setAttribute('class', 'us-outline');
-        usOutline.setAttribute('d', 'M5,45 L3,35 L5,25 L10,18 L18,15 L25,12 L35,10 L45,8 L55,7 L65,8 L75,10 L82,14 L88,20 L92,28 L94,38 L92,48 L85,54 L75,56 L65,55 L55,53 L45,52 L35,53 L25,55 L15,54 L8,50 L5,45 Z');
-        mapSvg.appendChild(usOutline);
+        // Create territory-focused map showing only the states in this territory
+        const mapWrapper = document.createElement('div');
+        mapWrapper.className = 'territory-map-wrapper';
 
-        // Territory region definitions (percentages of container)
-        const territoryRegions = {
-            northeast: { x: 72, y: 8, width: 22, height: 28, label: 'Northeast', cities: ['Boston', 'NYC', 'Philadelphia'] },
-            midwest: { x: 45, y: 12, width: 26, height: 32, label: 'Midwest', cities: ['Chicago', 'Detroit', 'Minneapolis'] },
-            southeast: { x: 58, y: 42, width: 28, height: 30, label: 'Southeast', cities: ['Atlanta', 'Miami', 'Nashville'] },
-            southwest: { x: 28, y: 45, width: 28, height: 30, label: 'Texas', cities: ['Houston', 'Dallas', 'San Antonio'] },
-            westcoast: { x: 3, y: 10, width: 18, height: 50, label: 'West Coast', cities: ['Seattle', 'SF', 'LA'] },
-            mountain: { x: 18, y: 18, width: 22, height: 38, label: 'Mountain', cities: ['Denver', 'Phoenix', 'SLC'] }
-        };
+        // Create header with territory name and home base info
+        const mapHeader = document.createElement('div');
+        mapHeader.className = 'map-header';
+        mapHeader.innerHTML = `
+            <div class="map-title">
+                <h4>${territory.name}</h4>
+                <span class="home-base-badge">
+                    <span class="home-icon">🏠</span>
+                    Home: ${this.state.homeBase?.city || territory.homeBase.city}, ${this.state.homeBase?.state || territory.homeBase.state}
+                </span>
+            </div>
+        `;
+        mapWrapper.appendChild(mapHeader);
 
-        // Draw all regions (dimmed)
-        Object.entries(territoryRegions).forEach(([key, region]) => {
-            const regionRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            regionRect.setAttribute('class', `territory-region ${key === this.state.territory ? 'active' : 'inactive'}`);
-            regionRect.setAttribute('x', region.x);
-            regionRect.setAttribute('y', region.y);
-            regionRect.setAttribute('width', region.width);
-            regionRect.setAttribute('height', region.height);
-            regionRect.setAttribute('rx', '2');
-            mapSvg.appendChild(regionRect);
+        // Create states container - a grid of state boxes
+        const statesGrid = document.createElement('div');
+        statesGrid.className = 'states-grid';
 
-            // Add region label
-            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            label.setAttribute('class', `region-label ${key === this.state.territory ? 'active' : ''}`);
-            label.setAttribute('x', region.x + region.width / 2);
-            label.setAttribute('y', region.y + region.height + 4);
-            label.setAttribute('text-anchor', 'middle');
-            label.textContent = region.label;
-            mapSvg.appendChild(label);
+        // Group KOLs by state
+        const kolsByState = {};
+        territory.states.forEach(state => {
+            kolsByState[state.abbrev] = this.state.kols.filter(
+                kol => kol.location && kol.location.stateAbbrev === state.abbrev
+            );
         });
 
-        container.appendChild(mapSvg);
+        // Create a card for each state in the territory
+        territory.states.forEach(state => {
+            const stateCard = document.createElement('div');
+            stateCard.className = 'state-card';
 
-        // Position KOLs within the selected territory region
-        const region = territoryRegions[this.state.territory] || territoryRegions.midwest;
-
-        this.state.kols.forEach((kol, index) => {
-            const location = document.createElement('div');
-            location.className = `map-location ${kol.type}`;
-
-            // Calculate grid position within the territory region
-            const cols = Math.ceil(Math.sqrt(this.state.kols.length * 1.5));
-            const rows = Math.ceil(this.state.kols.length / cols);
-
-            const col = index % cols;
-            const row = Math.floor(index / cols);
-
-            // Calculate position with padding inside the region
-            const padding = 3;
-            const availableWidth = region.width - padding * 2;
-            const availableHeight = region.height - padding * 2;
-            const cellWidth = availableWidth / Math.max(cols, 1);
-            const cellHeight = availableHeight / Math.max(rows, 1);
-
-            // Add small random offset for natural look
-            const randomX = (Math.random() - 0.5) * cellWidth * 0.4;
-            const randomY = (Math.random() - 0.5) * cellHeight * 0.4;
-
-            let xPos = region.x + padding + col * cellWidth + cellWidth / 2 + randomX;
-            let yPos = region.y + padding + row * cellHeight + cellHeight / 2 + randomY;
-
-            // Clamp to stay within region bounds (with margin for icon size)
-            xPos = Math.max(region.x + 2, Math.min(region.x + region.width - 4, xPos));
-            yPos = Math.max(region.y + 2, Math.min(region.y + region.height - 4, yPos));
-
-            location.style.left = `${xPos}%`;
-            location.style.top = `${yPos}%`;
-
-            // Add relationship indicator
-            if (kol.interactionCount > 0) {
-                location.classList.add('visited');
+            const isHomeState = (this.state.homeBase?.state || territory.homeBase.state) === state.abbrev;
+            if (isHomeState) {
+                stateCard.classList.add('home-state');
             }
 
-            location.innerHTML = kol.avatar;
-            location.title = `${kol.name}\n${kol.institution}\nTier ${kol.tier} | ${this.capitalizeFirst(kol.relationship)}`;
+            const stateKols = kolsByState[state.abbrev] || [];
+            const kolCount = stateKols.length;
 
-            // Prevent double-clicks
-            let isProcessing = false;
-            location.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (isProcessing) return;
-                isProcessing = true;
-                this.startInteraction(kol.id);
-                setTimeout(() => { isProcessing = false; }, 500);
+            // State header
+            const stateHeader = document.createElement('div');
+            stateHeader.className = 'state-header';
+            stateHeader.innerHTML = `
+                <span class="state-name">${state.abbrev}</span>
+                <span class="state-full-name">${state.name}</span>
+                ${isHomeState ? '<span class="home-marker">🏠</span>' : ''}
+            `;
+            stateCard.appendChild(stateHeader);
+
+            // State stats
+            const stateStats = document.createElement('div');
+            stateStats.className = 'state-stats';
+            stateStats.innerHTML = `
+                <span class="kol-count">${kolCount} KOLs</span>
+                <span class="city-list">${state.cities.slice(0, 2).join(', ')}${state.cities.length > 2 ? '...' : ''}</span>
+            `;
+            stateCard.appendChild(stateStats);
+
+            // KOL dots container
+            const kolContainer = document.createElement('div');
+            kolContainer.className = 'state-kols';
+
+            stateKols.forEach(kol => {
+                const kolDot = document.createElement('div');
+                kolDot.className = `kol-dot ${kol.type}`;
+                if (kol.interactionCount > 0) kolDot.classList.add('visited');
+
+                const travelInfo = this.getTravelCostLabel(kol);
+                kolDot.innerHTML = `<span class="dot-avatar">${kol.avatar}</span>`;
+                kolDot.title = `${kol.name}\n${kol.institution}\n${kol.location.city}\nTier ${kol.tier} | ${this.capitalizeFirst(kol.relationship)}\n⚡${travelInfo.cost} AP`;
+
+                kolDot.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.preventDoubleClick(`map-kol-${kol.id}`, () => this.startInteraction(kol.id));
+                });
+
+                kolContainer.appendChild(kolDot);
             });
 
-            container.appendChild(location);
+            stateCard.appendChild(kolContainer);
+            statesGrid.appendChild(stateCard);
         });
+
+        mapWrapper.appendChild(statesGrid);
+        container.appendChild(mapWrapper);
+
+        // Update the legend to show state-specific info
+        this.updateMapLegend();
+    }
+
+    updateMapLegend() {
+        const legendContainer = document.querySelector('.map-legend');
+        if (!legendContainer) return;
+
+        legendContainer.innerHTML = `
+            <div class="legend-item"><span class="dot academic"></span> Academic Medical Center</div>
+            <div class="legend-item"><span class="dot community"></span> Community Hospital</div>
+            <div class="legend-item"><span class="dot practice"></span> Private Practice</div>
+            <div class="legend-item"><span class="dot visited-indicator"></span> Visited</div>
+            <div class="legend-item"><span class="home-icon-legend">🏠</span> Home State</div>
+        `;
     }
 
     updateCalendar() {
@@ -1959,73 +1997,104 @@ class MSLGame {
                     'MSLs are scientific experts who engage with healthcare professionals',
                     'Your goal is to build relationships, gather insights, and maintain compliance',
                     'Performance reviews determine career advancement'
-                ]
+                ],
+                highlight: null
+            },
+            {
+                icon: '🗺️',
+                title: 'Territory Map',
+                content: 'The Territory Map shows your assigned region with KOLs organized by state. Each colored dot represents a KOL you can visit. Your home state is highlighted.',
+                tips: [
+                    'Blue dots = Academic Medical Centers (usually Tier 1-2)',
+                    'Green dots = Community Hospitals',
+                    'Orange dots = Private Practices',
+                    'Click any KOL dot to start an interaction'
+                ],
+                highlight: 'territory-map'
             },
             {
                 icon: '👥',
-                title: 'Engaging with KOLs',
-                content: 'Key Opinion Leaders (KOLs) are the physicians you\'ll interact with. Each has unique interests, personalities, and value to your company.',
+                title: 'KOL Database',
+                content: 'The KOL Database lists all Key Opinion Leaders in your territory. Filter by tier or relationship status. Each KOL has a unique personality and interests.',
                 tips: [
                     'Tier 1 KOLs are national experts - high value but demanding',
-                    'Plan your meetings with specific objectives in mind',
-                    'Build relationships gradually - trust takes time',
-                    'Listen carefully to identify insights and unmet needs'
-                ]
+                    'Check personality types to tailor your approach',
+                    'AP cost shows travel time needed (1 = local, 3 = different state)',
+                    'Build relationships gradually - trust takes time'
+                ],
+                highlight: 'kol-database'
+            },
+            {
+                icon: '⚡',
+                title: 'Action Points (AP)',
+                content: 'You have 5 Action Points per week. Every activity costs AP based on travel distance. Local visits cost 1 AP, same-state 2 AP, different state 3 AP.',
+                tips: [
+                    'Plan your week to maximize KOL interactions',
+                    'Cluster visits in the same state to save AP',
+                    'AP resets when you advance to the next week',
+                    'Running out of AP? Advance the week!'
+                ],
+                highlight: 'action-points-display'
+            },
+            {
+                icon: '▶️',
+                title: 'Actions Menu',
+                content: 'Click the Actions tab on the right side to open the activities menu. Here you can visit KOLs, attend congresses, run advisory boards, and more.',
+                tips: [
+                    'Visit KOL - Start a scientific exchange meeting',
+                    'Congress - Attend medical conferences for networking',
+                    'Advisory Board - Organize expert panels',
+                    'Advance Week - Move to next week and reset AP'
+                ],
+                highlight: 'action-menu-toggle'
             },
             {
                 icon: '💬',
-                title: 'Scientific Exchange',
-                content: 'During conversations, you\'ll face realistic scenarios that test your scientific knowledge and compliance awareness. Choose your responses carefully.',
+                title: 'KOL Conversations',
+                content: 'When meeting a KOL, you\'ll engage in realistic dialogue scenarios. Your responses affect relationship building, compliance score, and insight gathering.',
                 tips: [
                     'Always stay within approved labeling when proactive',
                     'You CAN respond to unsolicited off-label questions',
-                    'Never make comparative claims without head-to-head data',
-                    'Report adverse events immediately - this is non-negotiable'
-                ]
+                    'Never make comparative claims without data',
+                    'Report adverse events immediately - this is mandatory'
+                ],
+                highlight: null
             },
             {
-                icon: '⚖️',
-                title: 'Compliance is Critical',
-                content: 'The pharmaceutical industry is heavily regulated. Compliance violations can end your career. Your compliance score must stay above 60% to avoid termination.',
+                icon: '📝',
+                title: 'CRM Documentation',
+                content: 'After each KOL interaction, document it in the CRM within 48 hours. Quality documentation improves your metrics and compliance score.',
                 tips: [
-                    'Promotional activity is prohibited for MSLs',
-                    'Document all interactions in CRM within 48 hours',
-                    'Fair balance: always present risks alongside benefits',
-                    'When in doubt, escalate to medical information'
-                ]
+                    'Complete all required fields for best grades',
+                    'Record any insights gathered from the conversation',
+                    'Flag off-label discussions and adverse events',
+                    'Late documentation hurts your CRM compliance score'
+                ],
+                highlight: 'crm'
             },
             {
-                icon: '💡',
-                title: 'Gathering Insights',
-                content: 'A major part of your value is gathering medical insights from the field - information about clinical practice, unmet needs, and competitive intelligence.',
+                icon: '📅',
+                title: 'Calendar & Time',
+                content: 'The Calendar shows your weekly schedule. Each quarter has 12 weeks, and you\'ll have a performance review at the end of each quarter.',
                 tips: [
-                    'Ask open-ended questions during conversations',
-                    'Document insights thoroughly in your CRM notes',
-                    'Quality insights boost your metrics significantly',
-                    'Different insight categories have different strategic value'
-                ]
+                    'Plan ahead for upcoming congresses and events',
+                    'Track your scheduled meetings and activities',
+                    'Performance reviews determine promotions or warnings',
+                    'Reach Level 10 to win the game!'
+                ],
+                highlight: 'calendar'
             },
             {
-                icon: '⏱️',
-                title: 'Time Management',
-                content: 'You have a limited time budget each week. Plan your activities wisely - travel time, meeting duration, and other activities all consume your hours.',
+                icon: '🎯',
+                title: 'Your Goal',
+                content: 'Build relationships with KOLs, gather valuable insights, maintain compliance, and advance your career from MSL I to Senior Director. Good luck!',
                 tips: [
-                    'KOL visits typically take 2-4 hours including travel',
-                    'Cluster visits in the same area to reduce travel time',
-                    'Balance KOL engagement with administrative tasks',
-                    'Advance to the next week to reset your time budget'
-                ]
-            },
-            {
-                icon: '📈',
-                title: 'Career Advancement',
-                content: 'Your performance is reviewed each quarter. Strong metrics lead to promotion; poor performance leads to warnings or termination. Good luck!',
-                tips: [
-                    'KOL Engagement: interact with a breadth of KOLs',
-                    'Scientific Exchange: positive outcomes in conversations',
-                    'CRM Compliance: timely, quality documentation',
-                    'Regulatory Compliance: avoid violations at all costs'
-                ]
+                    'Focus on Tier 1-2 KOLs for faster XP gains',
+                    'Keep compliance above 70% to avoid termination',
+                    'Document interactions promptly for CRM compliance',
+                    'Earn XP through successful KOL interactions'
+                ],
+                highlight: 'level-display'
             }
         ];
 
@@ -2088,6 +2157,47 @@ class MSLGame {
         } else {
             nextBtn.textContent = 'Next';
         }
+
+        // Handle UI element highlighting
+        this.clearTutorialHighlights();
+        if (step.highlight) {
+            this.highlightElement(step.highlight);
+        }
+    }
+
+    clearTutorialHighlights() {
+        document.querySelectorAll('.tutorial-highlight').forEach(el => {
+            el.classList.remove('tutorial-highlight');
+        });
+        // Remove any highlight overlays
+        document.querySelectorAll('.tutorial-highlight-overlay').forEach(el => {
+            el.remove();
+        });
+    }
+
+    highlightElement(elementId) {
+        // Try to find the element - could be an ID or a nav button panel
+        let element = document.getElementById(elementId);
+
+        // If it's a panel, we might need to switch to it first
+        const panelNames = ['territory-map', 'calendar', 'kol-database', 'crm', 'skills', 'insights-panel', 'performance'];
+        if (panelNames.includes(elementId)) {
+            this.switchPanel(elementId);
+            element = document.getElementById(elementId);
+        }
+
+        // Special handling for action menu
+        if (elementId === 'action-menu-toggle') {
+            this.openActionMenu();
+            element = document.getElementById('action-menu-container');
+        }
+
+        if (element) {
+            element.classList.add('tutorial-highlight');
+
+            // Scroll element into view if needed
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
 
     nextTutorialStep() {
@@ -2107,12 +2217,21 @@ class MSLGame {
     }
 
     endTutorial() {
+        // Clear any highlights
+        this.clearTutorialHighlights();
+
+        // Close action menu if open
+        this.closeActionMenu();
+
+        // Switch to default panel
+        this.switchPanel('territory-map');
+
         document.getElementById('tutorial-overlay').classList.remove('active');
 
         // Mark tutorial as completed
         localStorage.setItem('mslSimulatorTutorialCompleted', 'true');
 
-        this.showNotification('Tutorial Complete', 'You\'re ready to start your MSL career! Good luck!', 'success');
+        this.showNotification('Tutorial Complete', 'You\'re ready to start your MSL career! Click the Actions tab on the right to visit KOLs.', 'success');
     }
 
     shouldShowTutorial() {
@@ -2125,6 +2244,28 @@ class MSLGame {
 
         document.querySelectorAll('.panel').forEach(panel => panel.classList.remove('active'));
         document.getElementById(panelId)?.classList.add('active');
+    }
+
+    // Action Menu Controls
+    toggleActionMenu() {
+        const container = document.getElementById('action-menu-container');
+        if (container) {
+            container.classList.toggle('open');
+        }
+    }
+
+    closeActionMenu() {
+        const container = document.getElementById('action-menu-container');
+        if (container) {
+            container.classList.remove('open');
+        }
+    }
+
+    openActionMenu() {
+        const container = document.getElementById('action-menu-container');
+        if (container) {
+            container.classList.add('open');
+        }
     }
 
     // KOL Interaction
