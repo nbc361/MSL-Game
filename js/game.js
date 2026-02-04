@@ -847,9 +847,38 @@ class MSLGame {
     continueGame() {
         const saved = localStorage.getItem('mslSimulatorSave');
         if (saved) {
-            this.state = JSON.parse(saved);
-            this.showScreen('dashboard-screen');
-            this.updateDashboard();
+            try {
+                this.state = JSON.parse(saved);
+
+                // Validate saved game has required data
+                if (!this.state.territory || !GameData.territories[this.state.territory]) {
+                    console.error('Invalid saved game - missing territory');
+                    this.showNotification('Save Error', 'Your saved game is corrupted. Starting a new game.', 'warning');
+                    this.startNewGame();
+                    return;
+                }
+
+                // Regenerate KOLs if missing (for old saves)
+                if (!this.state.kols || this.state.kols.length === 0) {
+                    console.log('Regenerating KOLs for saved game');
+                    this.generateKOLs();
+                }
+
+                // Set home base if missing
+                if (!this.state.homeBase) {
+                    const territory = GameData.territories[this.state.territory];
+                    this.state.homeBase = territory.homeBase;
+                }
+
+                this.showScreen('dashboard-screen');
+                setTimeout(() => {
+                    this.updateDashboard();
+                }, 50);
+            } catch (e) {
+                console.error('Error loading saved game:', e);
+                this.showNotification('Save Error', 'Could not load saved game. Starting a new game.', 'warning');
+                this.startNewGame();
+            }
         }
     }
 
@@ -1407,10 +1436,34 @@ class MSLGame {
 
     updateMap() {
         const container = document.getElementById('map-container');
+        if (!container) {
+            console.error('Map container not found');
+            return;
+        }
         container.innerHTML = '';
 
+        console.log('updateMap called, territory:', this.state.territory);
+        console.log('KOLs count:', this.state.kols?.length);
+
         const territory = GameData.territories[this.state.territory];
-        if (!territory) return;
+        if (!territory) {
+            console.error('Territory not found:', this.state.territory);
+            container.innerHTML = `
+                <div class="map-error-state">
+                    <div class="error-icon">🗺️</div>
+                    <h4>No Territory Selected</h4>
+                    <p>Please start a new game to select your territory.</p>
+                    <button class="menu-btn primary" onclick="game.startNewGame()">Start New Game</button>
+                </div>
+            `;
+            return;
+        }
+
+        // Regenerate KOLs if missing
+        if (!this.state.kols || this.state.kols.length === 0) {
+            console.warn('No KOLs generated, regenerating...');
+            this.generateKOLs();
+        }
 
         // Create territory-focused map showing only the states in this territory
         const mapWrapper = document.createElement('div');

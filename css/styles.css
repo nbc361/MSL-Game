@@ -1125,6 +1125,33 @@ body {
     font-size: 0.9rem;
 }
 
+/* Map Error State */
+.map-error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    min-height: 300px;
+}
+
+.map-error-state .error-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.map-error-state h4 {
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.map-error-state p {
+    color: var(--text-muted);
+    margin-bottom: 20px;
+}
+
 /* Calendar Panel */
 .calendar-grid {
     display: grid;
