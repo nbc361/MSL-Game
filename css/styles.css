@@ -518,65 +518,95 @@ body {
     height: 100vh;
 }
 
+/* Dashboard Header - Clean 2-row layout */
 .dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 25px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 8px 20px;
+    padding: 12px 20px;
     background: var(--bg-card);
     border-bottom: 1px solid var(--border-color);
 }
 
+/* Row 1 left: player info + date */
 .player-info {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 10px;
+    grid-column: 1;
+    grid-row: 1;
+    flex-wrap: wrap;
 }
 
 #player-display-name {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: bold;
 }
 
 .player-title {
     background: var(--primary-color);
-    padding: 4px 12px;
+    padding: 3px 10px;
     border-radius: 20px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
 }
 
 .player-ta {
     background: var(--secondary-color);
-    padding: 4px 12px;
+    padding: 3px 10px;
     border-radius: 20px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
 }
 
 .game-date {
-    font-size: 1.1rem;
-    color: var(--text-secondary);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-left: auto;
+    padding-left: 8px;
 }
 
-.quick-stats {
+/* Row 1 right: time budget + advance day */
+.time-budget-display {
+    grid-column: 2;
+    grid-row: 1 / 3;
     display: flex;
-    gap: 20px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 3px;
+    padding: 8px 14px;
+    background: var(--bg-darker);
+    border-radius: 10px;
+    min-width: 220px;
+    max-width: 260px;
+    align-self: center;
+}
+
+/* Row 2: stats bar spanning full width */
+.quick-stats {
+    grid-column: 1;
+    grid-row: 2;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
 }
 
 .quick-stat {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 5px;
     background: var(--bg-darker);
-    padding: 8px 15px;
+    padding: 4px 10px;
     border-radius: 8px;
+    font-size: 0.8rem;
 }
 
 .quick-stat .stat-icon {
-    font-size: 1.2rem;
+    font-size: 1rem;
 }
 
 .quick-stat .stat-label {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--text-muted);
 }
 
@@ -584,12 +614,15 @@ body {
     border: 2px solid var(--success-color);
 }
 
-/* Level Display */
+/* Level Display - inside quick-stats */
 .level-display {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    min-width: 180px;
+    gap: 3px;
+    min-width: 140px;
+    background: var(--bg-darker);
+    padding: 6px 12px;
+    border-radius: 8px;
 }
 
 .level-info {
@@ -3022,13 +3055,21 @@ body {
 
 @media (max-width: 768px) {
     .dashboard-header {
-        flex-direction: column;
-        gap: 15px;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 8px;
         text-align: center;
+    }
+
+    .time-budget-display {
+        grid-column: 1;
+        grid-row: 3;
+        max-width: 100%;
     }
 
     .player-info {
         flex-direction: column;
+        justify-content: center;
     }
 
     .quick-stats {
@@ -4480,16 +4521,16 @@ body {
     }
 }
 
-/* Next Action Prompt - Compact Design */
+/* Next Action Prompt - Fixed Bottom Bar */
 .next-action-prompt {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
-    border: 1px solid var(--primary-color);
-    border-radius: 8px;
-    padding: 10px 14px;
-    margin-bottom: 16px;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.15) 0%, rgba(124, 58, 237, 0.15) 100%);
+    border-top: 1px solid var(--primary-color);
+    padding: 8px 20px;
+    flex-shrink: 0;
+    z-index: 10;
 }
 
 .prompt-icon {
@@ -4606,32 +4647,29 @@ body {
     }
 }
 
-/* Time Budget Display */
-.time-budget-display {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 5px;
-    padding: 10px 15px;
-    background: var(--bg-card);
-    border-radius: 10px;
-    margin-left: 20px;
-}
-
+/* Time Budget child styles */
 .time-budget-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--text-secondary);
+    width: 100%;
+    justify-content: space-between;
 }
 
 .time-icon {
-    font-size: 1.1rem;
+    font-size: 1rem;
+}
+
+.weeks-remaining {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-left: auto;
 }
 
 .time-budget-bar {
-    width: 150px;
+    width: 100%;
     height: 8px;
     background: var(--bg-dark);
     border-radius: 4px;
@@ -4655,8 +4693,9 @@ body {
 }
 
 .time-budget-text {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-primary);
+    text-align: right;
 }
 
 .time-budget-text.low {
@@ -5502,15 +5541,15 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
-    padding: 10px 16px;
-    margin-top: 8px;
+    padding: 6px 12px;
+    margin-top: 4px;
     background: linear-gradient(135deg, #6366f1, #8b5cf6);
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 14px;
+    border-radius: 6px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -5528,12 +5567,6 @@ body {
 
 .advance-icon {
     font-size: 16px;
-}
-
-.weeks-remaining {
-    font-size: 11px;
-    color: var(--text-muted, #94a3b8);
-    margin-left: auto;
 }
 
 /* ==========================================

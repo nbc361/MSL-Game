@@ -1341,54 +1341,119 @@ const GameData = {
     },
 
     // Congress/Conference events
+    // Congresses with specific scheduled weeks (1 every ~2 months)
+    // Week numbers are within the 52-week year
     congresses: {
         asco: {
             name: "ASCO Annual Meeting",
             type: "Major International",
             therapeuticArea: "oncology",
+            scheduledWeek: 5,
             duration: 5,
             kolAttendance: "Very High",
-            activities: ["booth", "poster", "symposium", "networking", "competitive"]
+            activities: ["booth", "poster", "symposium", "networking", "competitive"],
+            activityAPCosts: { booth: 1, poster: 1, symposium: 1, networking: 2, competitive: 1 }
         },
         ash: {
             name: "ASH Annual Meeting",
             type: "Major International",
             therapeuticArea: "oncology",
+            scheduledWeek: 49,
             duration: 4,
             kolAttendance: "High",
-            activities: ["booth", "poster", "symposium", "networking", "competitive"]
+            activities: ["booth", "poster", "symposium", "networking", "competitive"],
+            activityAPCosts: { booth: 1, poster: 1, symposium: 1, networking: 2, competitive: 1 }
         },
         acr: {
             name: "ACR Convergence",
             type: "Major International",
             therapeuticArea: "immunology",
+            scheduledWeek: 11,
             duration: 5,
             kolAttendance: "High",
-            activities: ["booth", "poster", "symposium", "networking", "competitive"]
+            activities: ["booth", "poster", "symposium", "networking", "competitive"],
+            activityAPCosts: { booth: 1, poster: 1, symposium: 1, networking: 2, competitive: 1 }
+        },
+        eular: {
+            name: "EULAR Congress",
+            type: "Major International",
+            therapeuticArea: "immunology",
+            scheduledWeek: 24,
+            duration: 4,
+            kolAttendance: "High",
+            activities: ["booth", "poster", "symposium", "networking", "competitive"],
+            activityAPCosts: { booth: 1, poster: 1, symposium: 1, networking: 2, competitive: 1 }
         },
         aan: {
             name: "AAN Annual Meeting",
             type: "Major International",
             therapeuticArea: "neurology",
+            scheduledWeek: 16,
             duration: 5,
             kolAttendance: "High",
-            activities: ["booth", "poster", "symposium", "networking", "competitive"]
+            activities: ["booth", "poster", "symposium", "networking", "competitive"],
+            activityAPCosts: { booth: 1, poster: 1, symposium: 1, networking: 2, competitive: 1 }
         },
         acc: {
             name: "ACC Scientific Session",
             type: "Major International",
             therapeuticArea: "cardiology",
+            scheduledWeek: 9,
             duration: 4,
             kolAttendance: "Very High",
-            activities: ["booth", "poster", "symposium", "networking", "competitive"]
+            activities: ["booth", "poster", "symposium", "networking", "competitive"],
+            activityAPCosts: { booth: 1, poster: 1, symposium: 1, networking: 2, competitive: 1 }
+        },
+        aha: {
+            name: "AHA Scientific Sessions",
+            type: "Major International",
+            therapeuticArea: "cardiology",
+            scheduledWeek: 45,
+            duration: 4,
+            kolAttendance: "Very High",
+            activities: ["booth", "poster", "symposium", "networking", "competitive"],
+            activityAPCosts: { booth: 1, poster: 1, symposium: 1, networking: 2, competitive: 1 }
         },
         nord: {
             name: "NORD Rare Disease Summit",
             type: "Specialty",
             therapeuticArea: "rare-disease",
+            scheduledWeek: 20,
             duration: 3,
             kolAttendance: "Medium",
-            activities: ["booth", "networking", "symposium"]
+            activities: ["booth", "networking", "symposium"],
+            activityAPCosts: { booth: 1, symposium: 1, networking: 2 }
+        },
+        world: {
+            name: "WORLDSymposium",
+            type: "Specialty",
+            therapeuticArea: "rare-disease",
+            scheduledWeek: 36,
+            duration: 4,
+            kolAttendance: "High",
+            activities: ["booth", "poster", "symposium", "networking"],
+            activityAPCosts: { booth: 1, poster: 1, symposium: 1, networking: 2 }
+        },
+        // Cross-TA congresses everyone can attend
+        diaGlobal: {
+            name: "DIA Global Annual Meeting",
+            type: "Cross-TA",
+            therapeuticArea: "all",
+            scheduledWeek: 30,
+            duration: 3,
+            kolAttendance: "Medium",
+            activities: ["symposium", "networking", "competitive"],
+            activityAPCosts: { symposium: 1, networking: 2, competitive: 1 }
+        },
+        ispor: {
+            name: "ISPOR Annual Conference",
+            type: "Cross-TA",
+            therapeuticArea: "all",
+            scheduledWeek: 42,
+            duration: 3,
+            kolAttendance: "Medium",
+            activities: ["symposium", "networking", "competitive"],
+            activityAPCosts: { symposium: 1, networking: 2, competitive: 1 }
         }
     },
 

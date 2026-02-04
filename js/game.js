@@ -890,7 +890,18 @@ class MSLGame {
         const saved = localStorage.getItem('mslSimulatorSave');
         if (saved) {
             try {
-                this.state = JSON.parse(saved);
+                // First initialize default state, then merge saved data on top
+                this.resetState();
+                const savedState = JSON.parse(saved);
+                this.state = { ...this.state, ...savedState };
+
+                // Deep merge nested objects that resetState initializes
+                if (!savedState.actionPoints) {
+                    this.state.actionPoints = { current: 5, max: 5 };
+                }
+                if (!savedState.tripPlanner) {
+                    this.state.tripPlanner = { active: false, selectedKOLs: [], maxKOLs: 3, apCost: 0 };
+                }
 
                 // Validate saved game has required data
                 if (!this.state.territory || !GameData.territories[this.state.territory]) {
@@ -1483,12 +1494,14 @@ class MSLGame {
 
         // Update compliance color
         const complianceStat = document.querySelector('.compliance-stat');
-        if (this.state.metrics.regulatoryCompliance >= 95) {
-            complianceStat.style.borderColor = '#10b981';
-        } else if (this.state.metrics.regulatoryCompliance >= 80) {
-            complianceStat.style.borderColor = '#f59e0b';
-        } else {
-            complianceStat.style.borderColor = '#ef4444';
+        if (complianceStat) {
+            if (this.state.metrics.regulatoryCompliance >= 95) {
+                complianceStat.style.borderColor = '#10b981';
+            } else if (this.state.metrics.regulatoryCompliance >= 80) {
+                complianceStat.style.borderColor = '#f59e0b';
+            } else {
+                complianceStat.style.borderColor = '#ef4444';
+            }
         }
 
         // Update time budget
@@ -1722,13 +1735,35 @@ class MSLGame {
         grid.innerHTML = '';
 
         const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        const totalWeek = this.getTotalWeekNumber();
+        const ta = this.state.player.therapeuticArea;
 
-        days.forEach(day => {
+        // Check if a congress is happening this week
+        const thisWeekCongress = Object.entries(GameData.congresses).find(([key, c]) =>
+            (c.therapeuticArea === ta || c.therapeuticArea === 'all') && c.scheduledWeek === totalWeek
+        );
+
+        days.forEach((day, dayIndex) => {
+            const dayNumber = dayIndex + 1;
+            const isToday = dayNumber === (this.state.currentDay || 1);
+            const isPast = dayNumber < (this.state.currentDay || 1);
+
             const dayElement = document.createElement('div');
-            dayElement.className = 'calendar-day';
-            dayElement.innerHTML = `<div class="day-header">${day}</div>`;
+            dayElement.className = `calendar-day ${isToday ? 'today' : ''} ${isPast ? 'past' : ''}`;
+            dayElement.innerHTML = `<div class="day-header">${day}${isToday ? ' (Today)' : ''}</div>`;
 
-            // Add any scheduled events
+            // Add scheduled visits
+            const scheduledVisits = (this.state.scheduledVisits || []).filter(
+                v => v.day === dayNumber && v.week === this.state.currentWeek
+            );
+            scheduledVisits.forEach(visit => {
+                const eventEl = document.createElement('div');
+                eventEl.className = `calendar-event visit ${visit.visitType}`;
+                eventEl.textContent = `${visit.visitType === 'virtual' ? '💻' : '👤'} ${visit.kolName}`;
+                dayElement.appendChild(eventEl);
+            });
+
+            // Add any manual events
             const events = this.state.events.filter(e => e.day === day && e.week === this.state.currentWeek);
             events.forEach(event => {
                 const eventElement = document.createElement('div');
@@ -1737,32 +1772,72 @@ class MSLGame {
                 dayElement.appendChild(eventElement);
             });
 
+            // Congress this week shows on all days
+            if (thisWeekCongress) {
+                const eventEl = document.createElement('div');
+                eventEl.className = 'calendar-event congress';
+                eventEl.textContent = `🎓 ${thisWeekCongress[1].name}`;
+                if (isToday) {
+                    eventEl.style.cursor = 'pointer';
+                    eventEl.addEventListener('click', () => this.showCongressScreen());
+                }
+                dayElement.appendChild(eventEl);
+            }
+
             grid.appendChild(dayElement);
         });
 
         // Update upcoming events
         const eventsList = document.getElementById('events-list');
-        eventsList.innerHTML = this.getUpcomingEvents();
+        eventsList.innerHTML = this.getUpcomingEventsHTML();
     }
 
-    getUpcomingEvents() {
-        // Check for congresses this quarter
+    getUpcomingEventsHTML() {
         const ta = this.state.player.therapeuticArea;
-        const congresses = Object.values(GameData.congresses).filter(c =>
-            c.therapeuticArea === ta || c.type === 'Major International'
-        );
+        const currentWeek = this.getTotalWeekNumber();
 
         let html = '';
-        if (this.state.currentQuarter === 2 && congresses.length > 0) {
-            html += `<div class="event-item">${congresses[0].name} - Coming soon!</div>`;
+
+        // Upcoming congresses
+        const upcoming = Object.entries(GameData.congresses)
+            .filter(([key, c]) => c.therapeuticArea === ta || c.therapeuticArea === 'all')
+            .filter(([key, c]) => c.scheduledWeek >= currentWeek)
+            .sort(([, a], [, b]) => a.scheduledWeek - b.scheduledWeek)
+            .slice(0, 4);
+
+        upcoming.forEach(([key, congress]) => {
+            const weeksAway = congress.scheduledWeek - currentWeek;
+            const isNow = weeksAway === 0;
+            html += `<div class="event-item ${isNow ? 'event-now' : ''}">
+                <span class="event-icon">🎓</span>
+                <span class="event-name">${congress.name}</span>
+                <span class="event-timing">${isNow ? 'This week!' : `Week ${congress.scheduledWeek} (${weeksAway}w away)`}</span>
+            </div>`;
+        });
+
+        // Quarterly review
+        const weeksToReview = 13 - this.state.currentWeek;
+        if (weeksToReview <= 3 && weeksToReview > 0) {
+            html += `<div class="event-item event-review">
+                <span class="event-icon">📋</span>
+                <span class="event-name">Quarterly Performance Review</span>
+                <span class="event-timing">${weeksToReview} week${weeksToReview > 1 ? 's' : ''} away</span>
+            </div>`;
         }
 
-        if (this.state.currentWeek === 12) {
-            html += `<div class="event-item">Quarterly Performance Review - End of quarter</div>`;
-        }
+        // Scheduled visits
+        const futureVisits = (this.state.scheduledVisits || []).filter(v => v.week === this.state.currentWeek && v.day > (this.state.currentDay || 1));
+        futureVisits.forEach(visit => {
+            const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+            html += `<div class="event-item">
+                <span class="event-icon">${visit.visitType === 'virtual' ? '💻' : '👤'}</span>
+                <span class="event-name">${visit.kolName}</span>
+                <span class="event-timing">${dayNames[visit.day - 1]}</span>
+            </div>`;
+        });
 
         if (html === '') {
-            html = '<p>No upcoming events scheduled</p>';
+            html = '<div class="event-item"><span class="event-icon">📅</span><span class="event-name">No upcoming events</span></div>';
         }
 
         return html;
@@ -2119,14 +2194,14 @@ class MSLGame {
             };
         }
 
-        // Priority 3: Low time remaining
-        if (this.state.weeklyTimeRemaining < 4) {
+        // Priority 3: Low AP remaining
+        if (this.state.actionPoints.current <= 1) {
             return {
                 icon: '⏰',
-                title: 'Low Time Budget',
-                message: `Only ${this.state.weeklyTimeRemaining.toFixed(1)} hours remaining this week. Consider advancing to next week.`,
-                actionText: 'Advance Week',
-                action: 'advance-week',
+                title: 'Low Action Points',
+                message: `Only ${this.state.actionPoints.current} AP remaining today. Advance to the next day to reset your AP.`,
+                actionText: 'Advance Day',
+                action: 'advance-day',
                 type: 'warning'
             };
         }
@@ -2215,7 +2290,8 @@ class MSLGame {
                 this.switchPanel('performance');
                 break;
             case 'advance-week':
-                this.advanceWeek();
+            case 'advance-day':
+                this.advanceDay();
                 break;
             default:
                 this.showKOLSelection();
@@ -2263,12 +2339,12 @@ class MSLGame {
             {
                 icon: '⚡',
                 title: 'Action Points (AP)',
-                content: 'You have 5 Action Points per week. Every activity costs AP based on travel distance. Local visits cost 1 AP, same-state 2 AP, different state 3 AP.',
+                content: 'You have 5 Action Points per day. Every activity costs AP based on travel distance. Local visits cost 1 AP, same-state 2 AP, different state 3 AP.',
                 tips: [
-                    'Plan your week to maximize KOL interactions',
+                    'Plan your day to maximize KOL interactions',
                     'Cluster visits in the same state to save AP',
-                    'AP resets when you advance to the next week',
-                    'Running out of AP? Advance the week!'
+                    'AP resets each day when you advance',
+                    'Running out of AP? Advance to the next day!'
                 ],
                 highlight: 'action-points-display'
             },
@@ -2573,17 +2649,24 @@ class MSLGame {
             });
         }
 
-        // Calculate AP cost: max of all selected KOLs' travel costs
-        let maxAP = 0;
+        // Calculate AP cost: fixed rates based on number of KOLs
+        // 1 KOL = normal travel cost, 2 KOLs = 4 AP, 3 KOLs = 5 AP
         const selectedIds = [];
         checked.forEach(cb => {
-            const cost = parseInt(cb.dataset.apCost);
-            if (cost > maxAP) maxAP = cost;
             selectedIds.push(cb.dataset.kolId);
         });
 
+        let tripAPCost = 0;
+        if (selectedIds.length === 1) {
+            tripAPCost = parseInt(checked[0].dataset.apCost);
+        } else if (selectedIds.length === 2) {
+            tripAPCost = 4;
+        } else if (selectedIds.length === 3) {
+            tripAPCost = 5;
+        }
+
         this.state.tripPlanner.selectedKOLs = selectedIds;
-        this.state.tripPlanner.apCost = maxAP;
+        this.state.tripPlanner.apCost = tripAPCost;
         this.updateTripPlannerSummary();
     }
 
@@ -2594,13 +2677,14 @@ class MSLGame {
         const count = this.state.tripPlanner.selectedKOLs.length;
         const cost = this.state.tripPlanner.apCost;
 
+        const costNote = count === 2 ? '(2 providers = 4 AP)' : count === 3 ? '(3 providers = 5 AP)' : '';
         summary.innerHTML = `
             <div class="trip-summary-line">
                 <span>KOLs Selected:</span> <strong>${count} / 3</strong>
             </div>
             <div class="trip-summary-line">
                 <span>Total AP Cost:</span> <strong>⚡${cost} AP</strong>
-                ${count > 1 ? `<span class="trip-savings">(Saved ${count - 1} trip${count > 2 ? 's' : ''}!)</span>` : ''}
+                ${costNote ? `<span class="trip-cost-note">${costNote}</span>` : ''}
             </div>
             <div class="trip-summary-line">
                 <span>Your AP:</span> <strong>${this.state.actionPoints.current} / ${this.state.actionPoints.max}</strong>
@@ -2807,7 +2891,7 @@ class MSLGame {
         if (!this.state.scheduledVisits) this.state.scheduledVisits = [];
 
         // Check if already scheduled for that day (max 3 per day)
-        const dayVisits = this.state.scheduledVisits.filter(v => v.day === day);
+        const dayVisits = this.state.scheduledVisits.filter(v => v.day === day && v.week === this.state.currentWeek);
         if (dayVisits.length >= 3) {
             this.showNotification('Day Full', 'You can only schedule up to 3 visits per day.', 'warning');
             return;
@@ -3551,7 +3635,10 @@ class MSLGame {
     startDialogue() {
         const kol = this.state.currentKOL;
         const dialogueHistory = document.getElementById('dialogue-history');
-        dialogueHistory.innerHTML = '';
+        // Only clear if no prep reactions were already shown
+        if (!this.state.preparationResult || !this.state.preparationResult.reactions || this.state.preparationResult.reactions.length === 0) {
+            dialogueHistory.innerHTML = '';
+        }
 
         // KOL greeting based on relationship
         let greeting;
@@ -4324,10 +4411,6 @@ class MSLGame {
             this.state.metrics.scientificExchange = Math.min(100, this.state.metrics.scientificExchange + 5);
         }
 
-        if (option.complianceHit) {
-            this.state.metrics.regulatoryCompliance = Math.max(0, this.state.metrics.regulatoryCompliance - option.complianceHit);
-        }
-
         // Handle insight opportunity
         if (option.insightOpportunity) {
             this.gatherInsight(option.insightType || 'clinical');
@@ -4436,18 +4519,6 @@ class MSLGame {
             e.stopPropagation();
             this.preventDoubleClick('end-interaction-btn', () => this.endInteraction());
         });
-    }
-
-    updateRelationshipLevel(kol) {
-        if (kol.relationshipScore >= 80) {
-            kol.relationship = 'advocate';
-        } else if (kol.relationshipScore >= 50) {
-            kol.relationship = 'established';
-        } else if (kol.relationshipScore >= 20) {
-            kol.relationship = 'developing';
-        } else {
-            kol.relationship = 'new';
-        }
     }
 
     gatherInsight(type) {
@@ -4890,37 +4961,41 @@ class MSLGame {
 
     // Congress/Conference
     showCongressScreen() {
-        // Congress costs 3 AP
-        const congressAPCost = 3;
-        if (!this.canAffordActionPoints(congressAPCost)) {
-            this.showInsufficientAPMessage(congressAPCost);
-            return;
-        }
-
         const ta = this.state.player.therapeuticArea;
-        const availableCongresses = Object.entries(GameData.congresses).filter(([key, congress]) =>
-            congress.therapeuticArea === ta || congress.type === 'Major International'
-        );
+        const totalWeek = this.getTotalWeekNumber();
 
-        if (availableCongresses.length === 0) {
-            this.showNotification('No Congresses', 'No relevant congresses available this quarter.', 'info');
+        // Find congress happening this week
+        const activeCongress = Object.entries(GameData.congresses).find(([key, congress]) => {
+            const isRelevant = congress.therapeuticArea === ta || congress.therapeuticArea === 'all';
+            return isRelevant && congress.scheduledWeek === totalWeek;
+        });
+
+        if (!activeCongress) {
+            // Show upcoming congresses instead
+            const upcoming = this.getUpcomingCongresses();
+            if (upcoming.length > 0) {
+                const next = upcoming[0];
+                const weeksAway = next.weeksAway;
+                this.showNotification('No Congress This Week',
+                    `Next congress: ${next.name} in ${weeksAway} week${weeksAway > 1 ? 's' : ''} (Week ${next.scheduledWeek}).`, 'info');
+            } else {
+                this.showNotification('No Congresses', 'No relevant congresses scheduled.', 'info');
+            }
             return;
         }
 
         // Check if already attended congress this week
         if (this.state.congressAttendedThisWeek) {
-            this.showNotification('Already Attended', 'You can only attend one congress per week.', 'warning');
+            this.showNotification('Already Attending', 'You are already attending this congress.', 'warning');
             return;
         }
 
-        // Spend AP to attend congress
-        this.spendActionPoints(congressAPCost, 'Congress attendance');
-
-        // Track congress attendance
+        // 0 AP to attend - activities cost AP individually
         this.state.congressAttendedThisWeek = true;
         this.state.congressActivitiesThisSession = [];
+        this.state.currentCongress = activeCongress[0];
 
-        const [key, congress] = availableCongresses[0];
+        const [key, congress] = activeCongress;
 
         document.getElementById('congress-name').textContent = congress.name;
         document.getElementById('congress-dates').textContent = `Q${this.state.currentQuarter} ${this.state.currentYear}`;
@@ -4946,7 +5021,24 @@ class MSLGame {
             item.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                this.preventDoubleClick(`congress-kol-${kol.id}`, () => this.startInteraction(kol.id));
+                // Talking to specific KOLs at congress costs 2 AP
+                this.preventDoubleClick(`congress-kol-${kol.id}`, () => {
+                    if (!this.canAffordActionPoints(2)) {
+                        this.showInsufficientAPMessage(2);
+                        return;
+                    }
+                    this.state.visitMode = 'in-person';
+                    this.state.pendingAPCost = 2;
+                    this.state.pendingAPReason = `Congress meeting with ${kol.name}`;
+                    this.state.currentMeetingMode = 'in-person';
+                    this.state.currentKOL = kol;
+                    this.state.currentMeetingTimeCost = 1; // Short meeting at congress
+                    this.state.dialogueHistory = [];
+                    this.state.meetingObjectives = [];
+                    this.state.meetingMaterials = [];
+                    this.state.objectiveProgress = {};
+                    this.showPreCallPlanning(kol);
+                });
             });
             kolList.appendChild(item);
         });
@@ -4956,19 +5048,53 @@ class MSLGame {
     }
 
     updateCongressActivityButtons() {
-        // Disable buttons for activities already done
-        const activities = ['booth', 'poster', 'symposium', 'networking', 'competitive'];
-        activities.forEach(activity => {
-            const btn = document.querySelector(`[onclick*="startCongressActivity('${activity}')"]`);
-            if (btn) {
-                const done = this.state.congressActivitiesThisSession?.includes(activity);
-                btn.disabled = done;
-                if (done) {
-                    btn.style.opacity = '0.5';
-                    btn.title = 'Already completed this activity';
-                }
+        // Update buttons with AP costs and disable completed ones
+        const congressKey = this.state.currentCongress;
+        const congressData = congressKey ? GameData.congresses[congressKey] : null;
+
+        document.querySelectorAll('.activity-btn').forEach(btn => {
+            const activity = btn.dataset.activity;
+            const done = this.state.congressActivitiesThisSession?.includes(activity);
+            const apCost = (congressData && congressData.activityAPCosts && congressData.activityAPCosts[activity]) || 1;
+
+            // Add or update AP cost badge
+            let costBadge = btn.querySelector('.activity-ap-cost');
+            if (!costBadge) {
+                costBadge = document.createElement('span');
+                costBadge.className = 'activity-ap-cost';
+                btn.appendChild(costBadge);
+            }
+            costBadge.textContent = `⚡${apCost} AP`;
+
+            btn.disabled = done;
+            btn.style.opacity = done ? '0.5' : '1';
+            if (done) {
+                btn.title = 'Already completed this activity';
+                costBadge.textContent = '✓ Done';
             }
         });
+    }
+
+    getTotalWeekNumber() {
+        // Returns absolute week number (1-52) across the year
+        return ((this.state.currentQuarter - 1) * 13) + this.state.currentWeek;
+    }
+
+    getUpcomingCongresses() {
+        const ta = this.state.player.therapeuticArea;
+        const currentWeek = this.getTotalWeekNumber();
+        return Object.entries(GameData.congresses)
+            .filter(([key, c]) => c.therapeuticArea === ta || c.therapeuticArea === 'all')
+            .filter(([key, c]) => c.scheduledWeek > currentWeek)
+            .map(([key, c]) => ({
+                key,
+                name: c.name,
+                scheduledWeek: c.scheduledWeek,
+                weeksAway: c.scheduledWeek - currentWeek,
+                type: c.type,
+                kolAttendance: c.kolAttendance
+            }))
+            .sort((a, b) => a.weeksAway - b.weeksAway);
     }
 
     startCongressActivity(activity) {
@@ -4981,6 +5107,20 @@ class MSLGame {
             this.showNotification('Already Done', 'You\'ve already completed this activity at this congress.', 'warning');
             return;
         }
+
+        // Get AP cost for this activity from congress data
+        const congressKey = this.state.currentCongress;
+        const congressData = congressKey ? GameData.congresses[congressKey] : null;
+        const apCost = (congressData && congressData.activityAPCosts && congressData.activityAPCosts[activity]) || 1;
+
+        if (!this.canAffordActionPoints(apCost)) {
+            this.showInsufficientAPMessage(apCost);
+            return;
+        }
+
+        // Charge AP for this activity
+        const activityNames = { booth: 'Medical Booth', poster: 'Poster Support', symposium: 'Symposium', networking: 'KOL Networking', competitive: 'Competitive Intel' };
+        this.spendActionPoints(apCost, `Congress: ${activityNames[activity] || activity}`);
 
         // Mark activity as done
         this.state.congressActivitiesThisSession.push(activity);
@@ -5115,9 +5255,9 @@ class MSLGame {
         let chance = 30; // Base chance
 
         // Relationship affects acceptance
-        if (kol.relationship === 'trusted') chance += 50;
-        else if (kol.relationship === 'engaged') chance += 35;
-        else if (kol.relationship === 'familiar') chance += 20;
+        if (kol.relationship === 'advocate') chance += 50;
+        else if (kol.relationship === 'established') chance += 35;
+        else if (kol.relationship === 'developing') chance += 20;
         else if (kol.relationship === 'new') chance -= 10;
 
         // Relationship score bonus
@@ -5476,6 +5616,12 @@ class MSLGame {
             this.state.congressActivitiesThisSession = [];
             this.state.advisoryBoardThisWeek = false;
 
+            // Clean up stale scheduled visits from previous weeks
+            const currentWeek = this.state.currentWeek;
+            this.state.scheduledVisits = (this.state.scheduledVisits || []).filter(
+                v => v.week >= currentWeek
+            );
+
             // Check for overdue CRM entries
             this.state.pendingCRM.forEach(entry => {
                 if (this.state.currentWeek - entry.week > 0) {
@@ -5495,16 +5641,16 @@ class MSLGame {
             // Relationship decay (weekly)
             this.applyRelationshipDecay();
 
+            // 1-year game cap check (52 weeks = 260 days) - check BEFORE quarterly
+            if (this.state.totalDaysPlayed >= 260) {
+                this.triggerYearEndReview();
+                return;
+            }
+
             // Quarter end check (every 13 weeks)
             if (this.state.currentWeek > 13) {
                 this.state.currentWeek = 1;
                 this.triggerQuarterlyReview();
-            }
-
-            // 1-year game cap check (52 weeks)
-            if (this.state.totalDaysPlayed >= 260) {
-                this.triggerYearEndReview();
-                return;
             }
         }
 
@@ -5520,18 +5666,13 @@ class MSLGame {
         );
 
         if (todaysVisits.length > 0) {
-            // Remove today's visits from schedule
-            this.state.scheduledVisits = (this.state.scheduledVisits || []).filter(
-                v => !(v.day === this.state.currentDay && v.week === this.state.currentWeek)
-            );
-
             const visitNames = todaysVisits.map(v => v.kolName).join(', ');
             this.showNotification('Day Advanced',
                 `${dayName}, Week ${this.state.currentWeek}. You have ${todaysVisits.length} scheduled visit(s) today: ${visitNames}`, 'info');
 
-            // Start the first scheduled visit after a short delay
+            // Queue visits - they'll be removed from schedule only when actually started
             setTimeout(() => {
-                this.state.scheduledVisitQueue = todaysVisits.map(v => ({ kolId: v.kolId, visitType: v.visitType }));
+                this.state.scheduledVisitQueue = todaysVisits.map(v => ({ kolId: v.kolId, visitType: v.visitType, day: v.day, week: v.week }));
                 this.startNextScheduledVisit();
             }, 1000);
         } else {
@@ -5547,6 +5688,14 @@ class MSLGame {
 
         const next = this.state.scheduledVisitQueue.shift();
         this.state.visitMode = next.visitType;
+
+        // Remove this visit from scheduled visits now that we're attempting it
+        if (next.day && next.week) {
+            this.state.scheduledVisits = (this.state.scheduledVisits || []).filter(
+                v => !(v.kolId === next.kolId && v.day === next.day && v.week === next.week)
+            );
+        }
+
         this.startInteraction(next.kolId);
     }
 
@@ -5600,19 +5749,25 @@ class MSLGame {
         else if (score >= 20) newLevel = 'developing';
         else newLevel = 'new';
 
-        if (newLevel !== kol.relationship && kol.relationship !== 'new') {
+        if (newLevel !== kol.relationship) {
             const oldLevel = kol.relationship;
+            // Level hierarchy: new(0) < developing(1) < established(2) < advocate(3)
+            const levelOrder = { 'new': 0, 'developing': 1, 'established': 2, 'advocate': 3 };
+            const oldRank = levelOrder[oldLevel] || 0;
+            const newRank = levelOrder[newLevel] || 0;
+
             kol.relationship = newLevel;
-            // Only notify on downgrade
-            if (['advocate', 'established', 'developing'].indexOf(oldLevel) <
-                ['advocate', 'established', 'developing'].indexOf(newLevel)) {
-                // This is actually an upgrade, don't notify here
-            } else if (oldLevel !== newLevel) {
+
+            if (newRank > oldRank) {
+                // Upgrade
+                this.showNotification('Relationship Upgraded',
+                    `Your relationship with ${kol.name} has grown to "${this.capitalizeFirst(newLevel)}"!`, 'success');
+            } else if (newRank < oldRank && oldLevel !== 'new') {
+                // Downgrade
                 this.showNotification('Relationship Declined',
                     `Your relationship with ${kol.name} has dropped to "${this.capitalizeFirst(newLevel)}" due to lack of contact.`, 'warning');
             }
         }
-        kol.relationship = newLevel;
     }
 
     // 1-Year Game End Review
@@ -5759,6 +5914,17 @@ class MSLGame {
         // Show review screen
         this.showReviewScreen(metrics, outcome, feedback);
 
+        // Record the review for the CURRENT quarter/year before advancing
+        const reviewedQuarter = this.state.currentQuarter;
+        const reviewedYear = this.state.currentYear;
+
+        this.state.quarterlyReviews.push({
+            quarter: reviewedQuarter,
+            year: reviewedYear,
+            metrics: { ...metrics },
+            outcome: outcome
+        });
+
         // Advance quarter
         this.state.currentQuarter++;
         if (this.state.currentQuarter > 4) {
@@ -5779,13 +5945,6 @@ class MSLGame {
                 this.awardXP(Math.floor(GameData.xpRewards.quarterlyReviewBonus * 0.25), 'Quarter survived');
             }
         }
-
-        this.state.quarterlyReviews.push({
-            quarter: this.state.currentQuarter,
-            year: this.state.currentYear,
-            metrics: { ...metrics },
-            outcome: outcome
-        });
     }
 
     showReviewScreen(metrics, outcome, feedback) {
@@ -5859,30 +6018,44 @@ class MSLGame {
     }
 
     canPromote() {
-        const currentTitleIndex = GameData.careerLevels.findIndex(l => l.title === this.state.player.title);
-        if (currentTitleIndex >= GameData.careerLevels.length - 1) return false;
+        // Check if the player's current level has a next promotion tier
+        const currentLevel = this.state.player.level || 1;
+        const currentTitle = this.state.player.title;
 
-        const totalQuarters = this.state.quarterlyReviews.length + 1;
-        const nextLevel = GameData.careerLevels[currentTitleIndex + 1];
+        // Find the next promotion level (a level with a different title)
+        const nextPromotion = GameData.careerLevels.find(l =>
+            l.level > currentLevel && l.isPromotion && l.title !== currentTitle
+        );
 
-        return totalQuarters >= nextLevel.minQuarters;
+        if (!nextPromotion) return false;
+
+        // Player must have enough XP to be at or near the promotion level
+        const totalXP = this.state.totalXpEarned || 0;
+        // Allow quarterly promotion if within 80% of the XP requirement
+        return totalXP >= nextPromotion.xpRequired * 0.8;
     }
 
     promotePlayer() {
-        const currentTitleIndex = GameData.careerLevels.findIndex(l => l.title === this.state.player.title);
-        if (currentTitleIndex < GameData.careerLevels.length - 1) {
-            this.state.player.title = GameData.careerLevels[currentTitleIndex + 1].title;
-            this.state.skillPoints += 5; // Bonus skill points for promotion
+        const currentLevel = this.state.player.level || 1;
+        const currentTitle = this.state.player.title;
+
+        // Find the next promotion level
+        const nextPromotion = GameData.careerLevels.find(l =>
+            l.level > currentLevel && l.isPromotion && l.title !== currentTitle
+        );
+
+        if (nextPromotion) {
+            this.state.player.title = nextPromotion.title;
+            this.state.player.level = nextPromotion.level;
+            this.state.skillPoints += 5;
         }
     }
 
     getPromotionMessage() {
         const title = this.state.player.title;
-        if (title === 'Associate MSL') return GameData.progressionMessages.promotion.msl;
-        if (title === 'MSL') return GameData.progressionMessages.promotion.senior;
-        if (title === 'Senior MSL') return GameData.progressionMessages.promotion.principal;
-        if (title === 'Principal MSL') return GameData.progressionMessages.promotion.director;
-        return 'Congratulations on your excellent performance!';
+        if (title === 'MSL II') return 'Your strong performance has earned you a promotion to MSL II! You now have expanded responsibilities and access to higher-tier KOLs.';
+        if (title === 'Senior MSL') return 'Outstanding work! You have been promoted to Senior MSL. You are now a recognized leader in your therapeutic area.';
+        return 'Congratulations on your excellent performance and well-deserved promotion!';
     }
 
     getWarningMessage() {
@@ -6163,12 +6336,17 @@ class MSLGame {
         const totalInteractions = this.state.interactions.length;
 
         // Create victory screen
-        const victoryScreen = document.getElementById('game-over');
+        const victoryScreen = document.getElementById('gameover-screen');
         if (victoryScreen) {
-            document.getElementById('game-over-icon').textContent = '🏆';
-            document.getElementById('game-over-title').textContent = 'Congratulations!';
-            document.getElementById('game-over-title').className = 'game-over-title victory';
-            document.getElementById('game-over-reason').innerHTML = `
+            const iconEl = document.getElementById('gameover-icon');
+            const titleEl = document.getElementById('gameover-title');
+            const msgEl = document.getElementById('gameover-message');
+            if (iconEl) iconEl.textContent = '🏆';
+            if (titleEl) {
+                titleEl.textContent = 'Congratulations!';
+                titleEl.className = 'gameover-title victory';
+            }
+            if (msgEl) msgEl.innerHTML = `
                 <p>You have been promoted to <strong>Senior MSL</strong>!</p>
                 <p>You've demonstrated exceptional scientific expertise, built strong KOL relationships,
                 and maintained impeccable compliance standards.</p>
@@ -6204,7 +6382,7 @@ class MSLGame {
                 tryAgainBtn.textContent = 'Play Again';
             }
 
-            this.showScreen('game-over');
+            this.showScreen('gameover-screen');
         }
 
         this.saveGame();
