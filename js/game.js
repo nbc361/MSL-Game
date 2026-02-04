@@ -2633,16 +2633,15 @@ class MSLGame {
             return;
         }
 
-        // Charge AP once for the whole trip
-        this.spendActionPoints(apCost, `Multi-visit trip (${selectedKOLs.length} KOLs)`);
-
+        // DON'T charge AP yet - defer until first meeting is confirmed
         // Close trip planner
         this.closeModal('trip-planner-modal');
 
         // Store the trip queue and start first interaction
         this.state.tripPlanner.active = true;
         this.state.tripPlanner.queue = [...selectedKOLs];
-        this.state.pendingAPCost = 0; // Already charged
+        this.state.tripPlanner.apCharged = false;
+        this.state.tripPlanner.totalAPCost = apCost;
 
         // Start first KOL in trip
         this.startNextTripVisit();
@@ -2675,8 +2674,15 @@ class MSLGame {
         this.state.meetingObjectives = [];
         this.state.meetingMaterials = [];
         this.state.objectiveProgress = {};
-        this.state.pendingAPCost = 0;
-        this.state.pendingAPReason = '';
+
+        // If trip AP hasn't been charged yet, set it as pending for this first meeting confirmation
+        if (!this.state.tripPlanner.apCharged) {
+            this.state.pendingAPCost = this.state.tripPlanner.totalAPCost || 0;
+            this.state.pendingAPReason = `Multi-visit trip (${this.state.tripPlanner.selectedKOLs.length} KOLs)`;
+        } else {
+            this.state.pendingAPCost = 0;
+            this.state.pendingAPReason = '';
+        }
 
         this.showPreCallPlanning(kol);
     }
@@ -3004,9 +3010,13 @@ class MSLGame {
         const kol = this.state.currentKOL;
         const timeCost = this.state.currentMeetingTimeCost;
 
-        // NOW charge the AP (deferred from startInteraction)
+        // NOW charge the AP (deferred from startInteraction / trip planner)
         if (this.state.pendingAPCost > 0) {
             this.spendActionPoints(this.state.pendingAPCost, this.state.pendingAPReason);
+            // Mark trip AP as charged so subsequent trip visits don't re-charge
+            if (this.state.tripPlanner.active) {
+                this.state.tripPlanner.apCharged = true;
+            }
         }
         this.state.pendingAPCost = 0;
         this.state.pendingAPReason = '';
@@ -3125,6 +3135,17 @@ class MSLGame {
         this.state.pendingAPCost = 0;
         this.state.pendingAPReason = '';
         this.state.currentKOL = null;
+
+        // If cancelling during a trip, cancel the entire remaining trip
+        if (this.state.tripPlanner.active) {
+            const remaining = (this.state.tripPlanner.queue || []).length;
+            this.state.tripPlanner.active = false;
+            this.state.tripPlanner.queue = [];
+            this.state.tripPlanner.apCharged = false;
+            if (remaining > 0) {
+                this.showNotification('Trip Cancelled', `Cancelled trip. ${remaining} remaining visit${remaining > 1 ? 's' : ''} skipped. No AP was charged.`, 'info');
+            }
+        }
     }
 
     exitInteractionWithoutSaving() {
