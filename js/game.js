@@ -953,8 +953,8 @@ class MSLGame {
             totalXpEarned: 0,
             // Action Points System - daily budget
             actionPoints: {
-                current: 3,
-                max: 3
+                current: 5,
+                max: 5
             },
             pendingAPCost: 0,
             pendingAPReason: '',
@@ -972,6 +972,11 @@ class MSLGame {
                 maxKOLs: 3,
                 apCost: 0
             },
+            // Scheduled visits
+            scheduledVisits: [],
+            scheduledVisitQueue: [],
+            // Preparation tracking
+            preparationResult: null,
             metrics: {
                 kolEngagement: 0,
                 scientificExchange: 0,
@@ -1672,7 +1677,7 @@ class MSLGame {
                 kolDot.addEventListener('click', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    this.preventDoubleClick(`map-kol-${kol.id}`, () => this.startInteraction(kol.id));
+                    this.preventDoubleClick(`map-kol-${kol.id}`, () => this.showVisitPopup(kol.id));
                 });
 
                 kolContainer.appendChild(kolDot);
@@ -1849,7 +1854,7 @@ class MSLGame {
             card.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                this.preventDoubleClick(`kol-card-${kol.id}`, () => this.startInteraction(kol.id));
+                this.preventDoubleClick(`kol-card-${kol.id}`, () => this.showVisitPopup(kol.id));
             });
             list.appendChild(card);
         });
@@ -2699,6 +2704,133 @@ class MSLGame {
         this.switchPanel('kol-database');
     }
 
+    // Show visit-type + day-scheduling popup when clicking a KOL
+    showVisitPopup(kolId) {
+        const kol = this.state.kols.find(k => k.id === kolId);
+        if (!kol) return;
+
+        // Remove any existing popup
+        const existingPopup = document.getElementById('visit-popup');
+        if (existingPopup) existingPopup.remove();
+
+        const travelInfo = this.getTravelCostLabel(kol);
+        const virtualPref = kol.virtualPreference || 'no-preference';
+        const virtualBlocked = virtualPref === 'in-person-only';
+        const virtualWarn = virtualPref === 'prefers-in-person';
+        const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        const currentDay = this.state.currentDay || 1;
+
+        let dayOptionsHtml = '';
+        for (let d = currentDay; d <= 5; d++) {
+            const isToday = d === currentDay;
+            dayOptionsHtml += `<label class="visit-day-option ${isToday ? 'today' : ''}">
+                <input type="radio" name="visit-day" value="${d}" ${isToday ? 'checked' : ''}>
+                <span>${dayNames[d - 1]}${isToday ? ' (Today)' : ''}</span>
+            </label>`;
+        }
+
+        const popup = document.createElement('div');
+        popup.id = 'visit-popup';
+        popup.className = 'visit-popup-overlay';
+        popup.innerHTML = `
+            <div class="visit-popup-content">
+                <div class="visit-popup-header">
+                    <span class="visit-popup-avatar">${kol.avatar}</span>
+                    <div>
+                        <h4>${kol.name}</h4>
+                        <p>${kol.institution}</p>
+                        <p class="visit-popup-rel">${this.capitalizeFirst(kol.relationship)} (${kol.relationshipScore}/100)</p>
+                    </div>
+                </div>
+                <div class="visit-popup-section">
+                    <h5>Visit Type</h5>
+                    <div class="visit-type-options">
+                        <label class="visit-type-option">
+                            <input type="radio" name="visit-type" value="in-person" checked>
+                            <span class="visit-type-label">
+                                <span class="visit-type-icon">👤</span>
+                                <span>In-Person</span>
+                                <span class="visit-type-cost">⚡${travelInfo.cost} AP</span>
+                            </span>
+                        </label>
+                        <label class="visit-type-option ${virtualBlocked ? 'disabled' : ''}">
+                            <input type="radio" name="visit-type" value="virtual" ${virtualBlocked ? 'disabled' : ''}>
+                            <span class="visit-type-label">
+                                <span class="visit-type-icon">💻</span>
+                                <span>Virtual Call</span>
+                                <span class="visit-type-cost">⚡1 AP</span>
+                            </span>
+                            ${virtualBlocked ? '<span class="visit-type-warn">In-person only</span>' : ''}
+                            ${virtualWarn ? '<span class="visit-type-warn">May decline</span>' : ''}
+                        </label>
+                    </div>
+                </div>
+                <div class="visit-popup-section">
+                    <h5>Schedule Day</h5>
+                    <div class="visit-day-options">
+                        ${dayOptionsHtml}
+                    </div>
+                </div>
+                <div class="visit-popup-actions">
+                    <button class="action-btn primary" id="confirm-visit-btn">Confirm Visit</button>
+                    <button class="action-btn" id="cancel-visit-btn">Cancel</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(popup);
+
+        // Bind events
+        document.getElementById('confirm-visit-btn').addEventListener('click', () => {
+            const visitType = document.querySelector('input[name="visit-type"]:checked').value;
+            const visitDay = parseInt(document.querySelector('input[name="visit-day"]:checked').value);
+            popup.remove();
+
+            // If scheduling for a future day, store the scheduled visit
+            if (visitDay > currentDay) {
+                this.scheduleVisit(kolId, visitType, visitDay);
+            } else {
+                // Today - start immediately
+                this.state.visitMode = visitType;
+                this.startInteraction(kolId);
+            }
+        });
+
+        document.getElementById('cancel-visit-btn').addEventListener('click', () => {
+            popup.remove();
+        });
+
+        // Click outside to close
+        popup.addEventListener('click', (e) => {
+            if (e.target === popup) popup.remove();
+        });
+    }
+
+    scheduleVisit(kolId, visitType, day) {
+        const kol = this.state.kols.find(k => k.id === kolId);
+        if (!kol) return;
+
+        if (!this.state.scheduledVisits) this.state.scheduledVisits = [];
+
+        // Check if already scheduled for that day (max 3 per day)
+        const dayVisits = this.state.scheduledVisits.filter(v => v.day === day);
+        if (dayVisits.length >= 3) {
+            this.showNotification('Day Full', 'You can only schedule up to 3 visits per day.', 'warning');
+            return;
+        }
+
+        this.state.scheduledVisits.push({
+            kolId, visitType, day,
+            week: this.state.currentWeek,
+            kolName: kol.name
+        });
+
+        const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+        this.showNotification('Visit Scheduled',
+            `${visitType === 'virtual' ? 'Virtual call' : 'In-person visit'} with ${kol.name} scheduled for ${dayNames[day - 1]}.`, 'success');
+        this.saveGame();
+    }
+
     startInteraction(kolId) {
         const kol = this.state.kols.find(k => k.id === kolId);
         if (!kol) return;
@@ -3043,11 +3175,211 @@ class MSLGame {
         // Store questions for later reference
         this.state.plannedQuestions = document.getElementById('precall-questions').value;
 
+        // Evaluate pre-call preparation quality
+        this.state.preparationResult = this.evaluatePreparation(kol, this.state.meetingObjectives, this.state.meetingMaterials);
+
         // Close modal
         this.closeModal('precall-modal');
 
         // Now start the actual interaction
         this.beginInteraction(kol);
+    }
+
+    // ==========================================
+    // PRE-CALL PREPARATION EVALUATION
+    // ==========================================
+    evaluatePreparation(kol, objectives, materials) {
+        const personality = kol.dominantPersonality || 'analytical';
+        const tier = kol.tier;
+        const kolType = kol.type || 'academic';
+        const relationship = kol.relationship || 'new';
+
+        // Define what each personality type values and dislikes
+        const personalityPrefs = {
+            analytical: {
+                preferredObjectives: ['scientific-exchange', 'discuss-research'],
+                dislikedObjectives: ['build-relationship'],  // Sees it as shallow
+                preferredMaterials: ['clinical-reprints', 'safety-data', 'prescribing-info'],
+                dislikedMaterials: ['dosing-cards'],  // Too simplistic
+                emptyObjectivePenalty: true  // Hates unstructured meetings
+            },
+            skeptic: {
+                preferredObjectives: ['address-concerns', 'scientific-exchange'],
+                dislikedObjectives: ['competitive-intel'],  // Sees it as sales-driven
+                preferredMaterials: ['clinical-reprints', 'safety-data', 'rwe-data'],
+                dislikedMaterials: ['dosing-cards', 'iis-info'],  // Distrusts company motives
+                emptyObjectivePenalty: true
+            },
+            pragmatic: {
+                preferredObjectives: ['scientific-exchange', 'address-concerns'],
+                dislikedObjectives: ['discuss-research'],  // Too theoretical
+                preferredMaterials: ['prescribing-info', 'dosing-cards', 'rwe-data'],
+                dislikedMaterials: [],
+                emptyObjectivePenalty: false  // Okay with informal
+            },
+            practical: {
+                preferredObjectives: ['address-concerns', 'gather-insights'],
+                dislikedObjectives: ['competitive-intel'],  // Not patient-focused
+                preferredMaterials: ['rwe-data', 'prescribing-info', 'dosing-cards'],
+                dislikedMaterials: [],
+                emptyObjectivePenalty: false
+            },
+            enthusiastic: {
+                preferredObjectives: ['discuss-research', 'build-relationship', 'gather-insights'],
+                dislikedObjectives: [],  // Open to everything
+                preferredMaterials: ['clinical-reprints', 'iis-info', 'rwe-data'],
+                dislikedMaterials: [],
+                emptyObjectivePenalty: false
+            }
+        };
+
+        // Tier-based preferences
+        const tierPrefs = {
+            1: {
+                expectedMaterials: 2,       // Tier 1 expects you to come prepared
+                preferredObjectives: ['scientific-exchange', 'discuss-research'],
+                dislikedMaterials: ['dosing-cards'],  // Beneath them
+                noPrepPenalty: -15   // Very annoyed by lack of preparation
+            },
+            2: {
+                expectedMaterials: 1,
+                preferredObjectives: ['scientific-exchange', 'address-concerns'],
+                dislikedMaterials: [],
+                noPrepPenalty: -8
+            },
+            3: {
+                expectedMaterials: 0,
+                preferredObjectives: ['address-concerns', 'gather-insights'],
+                dislikedMaterials: [],
+                noPrepPenalty: -3
+            }
+        };
+
+        const prefs = personalityPrefs[personality] || personalityPrefs.analytical;
+        const tPrefs = tierPrefs[tier] || tierPrefs[2];
+
+        let score = 0;           // -100 to +100 scale
+        let reactions = [];      // KOL reactions to show
+        let modifier = 1.0;      // Relationship gain multiplier
+
+        // === OBJECTIVE EVALUATION ===
+
+        // No objectives set at all
+        if (objectives.length === 0) {
+            if (prefs.emptyObjectivePenalty) {
+                score -= 20;
+                reactions.push({ type: 'negative', text: `${kol.name} seems disappointed you don't have a clear agenda for this meeting.` });
+            }
+            score += tPrefs.noPrepPenalty;
+            if (tier === 1) {
+                reactions.push({ type: 'negative', text: `As a Tier 1 KOL, ${kol.name} expected a more structured meeting.` });
+            }
+        } else {
+            // Check each selected objective
+            objectives.forEach(obj => {
+                if (prefs.preferredObjectives.includes(obj)) {
+                    score += 10;
+                } else if (prefs.dislikedObjectives.includes(obj)) {
+                    score -= 15;
+                    const objNames = {
+                        'scientific-exchange': 'Scientific Exchange', 'gather-insights': 'Gather Insights',
+                        'build-relationship': 'Build Relationship', 'discuss-research': 'Discuss Research',
+                        'address-concerns': 'Address Concerns', 'competitive-intel': 'Competitive Landscape'
+                    };
+                    reactions.push({ type: 'negative', text: `${kol.name} doesn't appreciate the "${objNames[obj]}" focus. It feels ${obj === 'competitive-intel' ? 'sales-driven' : obj === 'build-relationship' ? 'forced and insincere' : 'off-target'} to them.` });
+                }
+            });
+
+            // Tier 1 bonus for having structured objectives
+            if (tier === 1 && objectives.length >= 2) {
+                score += 5;
+            }
+        }
+
+        // === MATERIAL EVALUATION ===
+
+        // No materials for Tier 1 = problem
+        if (materials.length === 0 && tPrefs.expectedMaterials > 0) {
+            score -= 10;
+            reactions.push({ type: 'negative', text: `${kol.name} notices you came empty-handed. They expected supporting data.` });
+        }
+
+        if (materials.length > 0) {
+            materials.forEach(mat => {
+                if (prefs.preferredMaterials.includes(mat)) {
+                    score += 5;
+                } else if (prefs.dislikedMaterials.includes(mat) || tPrefs.dislikedMaterials.includes(mat)) {
+                    score -= 10;
+                    const matNames = {
+                        'prescribing-info': 'Prescribing Information', 'clinical-reprints': 'Clinical Trial Reprints',
+                        'safety-data': 'Safety Data Summary', 'rwe-data': 'Real-World Evidence',
+                        'dosing-cards': 'Dosing Cards', 'iis-info': 'IIS Program Information'
+                    };
+                    reactions.push({ type: 'negative', text: `${kol.name} glances at the ${matNames[mat]} and pushes it aside - not what they wanted to see.` });
+                }
+            });
+
+            // Bonus for bringing multiple relevant materials
+            const relevantCount = materials.filter(m => prefs.preferredMaterials.includes(m)).length;
+            if (relevantCount >= 2) {
+                score += 8;
+                reactions.push({ type: 'positive', text: `${kol.name} is impressed by the relevant materials you brought. This shows preparation.` });
+            }
+        }
+
+        // === RELATIONSHIP CONTEXT ===
+
+        // First meeting: setting "build-relationship" is fine for everyone
+        if (relationship === 'new' && objectives.includes('build-relationship')) {
+            score += 5; // Introductory meetings are about rapport
+        }
+
+        // Established+ KOLs don't want basic intros
+        if ((relationship === 'established' || relationship === 'advocate') && objectives.includes('build-relationship') && objectives.length === 1) {
+            score -= 10;
+            reactions.push({ type: 'negative', text: `${kol.name} already knows you well. They expected something more substantive than just "building relationship."` });
+        }
+
+        // === TYPE CONTEXT ===
+        if (kolType === 'academic' && !materials.includes('clinical-reprints') && !materials.includes('safety-data')) {
+            score -= 5;
+        }
+        if (kolType === 'community' && objectives.includes('discuss-research') && !objectives.includes('address-concerns')) {
+            score -= 5;
+            reactions.push({ type: 'warning', text: `${kol.name} seems more interested in practical application than pure research discussion.` });
+        }
+
+        // === CALCULATE FINAL MODIFIER ===
+        score = Math.max(-50, Math.min(50, score));
+
+        if (score >= 25) {
+            modifier = 1.3;   // Excellent prep: +30% relationship gains
+            if (reactions.filter(r => r.type === 'positive').length === 0) {
+                reactions.push({ type: 'positive', text: `${kol.name} appreciates your thorough preparation. The meeting starts on a great note.` });
+            }
+        } else if (score >= 10) {
+            modifier = 1.1;   // Good prep: +10%
+            reactions.push({ type: 'positive', text: `${kol.name} nods approvingly as you lay out your agenda.` });
+        } else if (score >= -5) {
+            modifier = 1.0;   // Neutral
+        } else if (score >= -20) {
+            modifier = 0.7;   // Poor prep: -30% relationship gains
+            if (reactions.filter(r => r.type === 'negative').length === 0) {
+                reactions.push({ type: 'negative', text: `${kol.name} seems underwhelmed by your preparation for this meeting.` });
+            }
+        } else {
+            modifier = 0.4;   // Terrible prep: -60% relationship gains, plus flat penalty
+            reactions.push({ type: 'negative', text: `${kol.name} is visibly irritated. This meeting is off to a bad start.` });
+        }
+
+        let rating;
+        if (score >= 25) rating = 'excellent';
+        else if (score >= 10) rating = 'good';
+        else if (score >= -5) rating = 'neutral';
+        else if (score >= -20) rating = 'poor';
+        else rating = 'terrible';
+
+        return { score, modifier, reactions, rating };
     }
 
     beginInteraction(kol) {
@@ -3081,7 +3413,67 @@ class MSLGame {
         }
 
         this.showScreen('interaction-screen');
-        this.startDialogue();
+
+        // Show preparation quality reactions before dialogue starts
+        const prepResult = this.state.preparationResult;
+        if (prepResult && prepResult.reactions.length > 0) {
+            this.showPreparationReactions(kol, prepResult, () => {
+                this.startDialogue();
+            });
+        } else {
+            this.startDialogue();
+        }
+    }
+
+    showPreparationReactions(kol, prepResult, callback) {
+        const dialogueHistory = document.getElementById('dialogue-history');
+
+        // Show a prep quality banner
+        const ratingLabels = {
+            excellent: '🎯 Excellent Preparation',
+            good: '✓ Good Preparation',
+            neutral: '— Adequate Preparation',
+            poor: '⚠️ Poor Preparation',
+            terrible: '❌ Terrible Preparation'
+        };
+        const ratingClasses = {
+            excellent: 'prep-excellent',
+            good: 'prep-good',
+            neutral: 'prep-neutral',
+            poor: 'prep-poor',
+            terrible: 'prep-terrible'
+        };
+
+        const bannerHtml = `<div class="prep-quality-banner ${ratingClasses[prepResult.rating] || 'prep-neutral'}">
+            <span class="prep-label">${ratingLabels[prepResult.rating] || 'Preparation'}</span>
+            <span class="prep-modifier">${prepResult.modifier > 1 ? '+' : ''}${Math.round((prepResult.modifier - 1) * 100)}% relationship effect</span>
+        </div>`;
+        this.addDialogueMessage('System', bannerHtml, 'system');
+
+        // Show each reaction with a small delay
+        let delay = 800;
+        prepResult.reactions.forEach((reaction, i) => {
+            setTimeout(() => {
+                const icon = reaction.type === 'positive' ? '✅' : reaction.type === 'warning' ? '⚠️' : '😤';
+                this.addDialogueMessage('System', `${icon} ${reaction.text}`, 'system');
+            }, delay + (i * 1000));
+        });
+
+        // Apply flat relationship penalty for terrible preparation
+        if (prepResult.rating === 'terrible') {
+            setTimeout(() => {
+                kol.relationshipScore = Math.max(0, kol.relationshipScore - 5);
+                this.updateRelationshipLevel(kol);
+                const fillPercent = Math.min(100, (kol.relationshipScore / 100) * 100);
+                document.getElementById('relationship-fill').style.width = `${fillPercent}%`;
+                document.getElementById('relationship-label').textContent = this.capitalizeFirst(kol.relationship);
+                this.addDialogueMessage('System', `📉 Relationship with ${kol.name} decreased (-5) due to poor preparation.`, 'system');
+            }, delay + (prepResult.reactions.length * 1000));
+        }
+
+        // Start dialogue after all reactions shown
+        const totalDelay = delay + (prepResult.reactions.length * 1000) + (prepResult.rating === 'terrible' ? 1500 : 500);
+        setTimeout(callback, totalDelay);
     }
 
     showMeetingObjectives() {
@@ -3909,15 +4301,25 @@ class MSLGame {
             this.showNotification('Compliance Note', 'This response walks a fine line. Be careful with similar situations.', 'warning');
         }
 
-        // Apply relationship changes (reduced for virtual calls, boosted by skills)
+        // Apply relationship changes (modified by preparation, virtual mode, and skills)
         let relChange = option.relationshipChange || 0;
         if (relChange > 0) {
+            // Apply preparation quality modifier
+            const prepMod = (this.state.preparationResult && this.state.preparationResult.modifier) || 1.0;
+            relChange = Math.ceil(relChange * prepMod);
+
             // Virtual calls give 50% relationship gain
             if (this.state.currentMeetingMode === 'virtual') {
                 relChange = Math.ceil(relChange * 0.5);
             }
             // Apply skill bonuses
             relChange = Math.ceil(relChange * this.getSkillRelationshipBonus());
+        } else if (relChange < 0) {
+            // Bad dialogue choices are worse with bad preparation
+            const prepMod = (this.state.preparationResult && this.state.preparationResult.modifier) || 1.0;
+            if (prepMod < 1.0) {
+                relChange = Math.floor(relChange * (2.0 - prepMod)); // Amplify penalties
+            }
         }
         kol.relationshipScore += relChange;
         kol.relationshipScore = Math.max(0, Math.min(100, kol.relationshipScore));
@@ -4167,6 +4569,18 @@ class MSLGame {
 
         this.awardXP(xpEarned, xpReason);
 
+        // Apply end-of-meeting preparation penalty/bonus
+        const prepResult = this.state.preparationResult;
+        if (prepResult) {
+            if (prepResult.rating === 'poor') {
+                kol.relationshipScore = Math.max(0, kol.relationshipScore - 3);
+                this.updateRelationshipLevel(kol);
+            } else if (prepResult.rating === 'excellent' && meetingScore && meetingScore.percentage >= 60) {
+                kol.relationshipScore = Math.min(100, kol.relationshipScore + 3);
+                this.updateRelationshipLevel(kol);
+            }
+        }
+
         // Show meeting summary if objectives were set, then CRM
         if (meetingScore) {
             this.showMeetingSummary(kol, meetingScore);
@@ -4242,6 +4656,21 @@ class MSLGame {
         });
 
         summaryHtml += '</div>';
+
+        // Preparation quality section
+        const prepResult = this.state.preparationResult;
+        if (prepResult) {
+            const prepLabels = { excellent: 'Excellent', good: 'Good', neutral: 'Adequate', poor: 'Poor', terrible: 'Terrible' };
+            const prepIcons = { excellent: '🎯', good: '✓', neutral: '—', poor: '⚠️', terrible: '❌' };
+            summaryHtml += '<div class="summary-section">';
+            summaryHtml += '<h5>Pre-Call Preparation</h5>';
+            summaryHtml += `<div class="objective-result">
+                <span class="icon">${prepIcons[prepResult.rating] || '—'}</span>
+                <span class="label">Preparation Quality</span>
+                <span class="status ${prepResult.rating === 'poor' || prepResult.rating === 'terrible' ? 'missed' : 'achieved'}">${prepLabels[prepResult.rating] || 'Unknown'} (${prepResult.modifier > 1 ? '+' : ''}${Math.round((prepResult.modifier - 1) * 100)}% relationship effect)</span>
+            </div>`;
+            summaryHtml += '</div>';
+        }
 
         // Bonus metrics
         if (score.percentage >= 60) {
@@ -4409,6 +4838,12 @@ class MSLGame {
             return;
         }
 
+        // Check if there are more scheduled visits for today
+        if (this.state.scheduledVisitQueue && this.state.scheduledVisitQueue.length > 0) {
+            setTimeout(() => this.startNextScheduledVisit(), 500);
+            return;
+        }
+
         this.showScreen('dashboard-screen');
         this.updateDashboard();
     }
@@ -4420,6 +4855,13 @@ class MSLGame {
         if (this.state.tripPlanner.active && this.state.tripPlanner.queue && this.state.tripPlanner.queue.length > 0) {
             this.showNotification('Draft Saved', 'CRM draft saved. Moving to next visit.', 'info');
             setTimeout(() => this.startNextTripVisit(), 500);
+            return;
+        }
+
+        // Check if there are more scheduled visits for today
+        if (this.state.scheduledVisitQueue && this.state.scheduledVisitQueue.length > 0) {
+            this.showNotification('Draft Saved', 'CRM draft saved. Moving to next scheduled visit.', 'info');
+            setTimeout(() => this.startNextScheduledVisit(), 500);
             return;
         }
 
@@ -5077,8 +5519,41 @@ class MSLGame {
         this.saveGame();
 
         const dayName = dayNames[(this.state.currentDay - 1) % 5];
-        this.showNotification('Day Advanced',
-            `${dayName}, Week ${this.state.currentWeek}, Q${this.state.currentQuarter} ${this.state.currentYear}. You have ${this.state.actionPoints.current} AP today.`, 'info');
+
+        // Check for scheduled visits today
+        const todaysVisits = (this.state.scheduledVisits || []).filter(
+            v => v.day === this.state.currentDay && v.week === this.state.currentWeek
+        );
+
+        if (todaysVisits.length > 0) {
+            // Remove today's visits from schedule
+            this.state.scheduledVisits = (this.state.scheduledVisits || []).filter(
+                v => !(v.day === this.state.currentDay && v.week === this.state.currentWeek)
+            );
+
+            const visitNames = todaysVisits.map(v => v.kolName).join(', ');
+            this.showNotification('Day Advanced',
+                `${dayName}, Week ${this.state.currentWeek}. You have ${todaysVisits.length} scheduled visit(s) today: ${visitNames}`, 'info');
+
+            // Start the first scheduled visit after a short delay
+            setTimeout(() => {
+                this.state.scheduledVisitQueue = todaysVisits.map(v => ({ kolId: v.kolId, visitType: v.visitType }));
+                this.startNextScheduledVisit();
+            }, 1000);
+        } else {
+            this.showNotification('Day Advanced',
+                `${dayName}, Week ${this.state.currentWeek}, Q${this.state.currentQuarter} ${this.state.currentYear}. You have ${this.state.actionPoints.current} AP today.`, 'info');
+        }
+    }
+
+    startNextScheduledVisit() {
+        if (!this.state.scheduledVisitQueue || this.state.scheduledVisitQueue.length === 0) {
+            return;
+        }
+
+        const next = this.state.scheduledVisitQueue.shift();
+        this.state.visitMode = next.visitType;
+        this.startInteraction(next.kolId);
     }
 
     // Legacy support - redirect to advanceDay
