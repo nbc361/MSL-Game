@@ -2897,15 +2897,40 @@ class MSLGame {
             return;
         }
 
+        // Calculate AP cost up front (same logic as startInteraction)
+        const isVirtual = visitType === 'virtual';
+        let apCost;
+        if (isVirtual) {
+            apCost = this.getSkillLevel('strategic', 'Territory Planning') >= 4 ? 0 : 1;
+        } else {
+            apCost = this.calculateTravelCost(kol);
+            if (apCost === 2 && this.getSkillLevel('strategic', 'Territory Planning') >= 2) {
+                apCost = 1;
+            }
+        }
+
+        // Check if we can afford the AP now
+        if (apCost > 0 && !this.canAffordActionPoints(apCost)) {
+            this.showInsufficientAPMessage(apCost);
+            return;
+        }
+
+        // Charge AP immediately for scheduling
+        if (apCost > 0) {
+            const meetingType = isVirtual ? 'Virtual call' : 'Meeting';
+            this.spendActionPoints(apCost, `Scheduled ${meetingType} with ${kol.name}`);
+        }
+
         this.state.scheduledVisits.push({
             kolId, visitType, day,
             week: this.state.currentWeek,
-            kolName: kol.name
+            kolName: kol.name,
+            apPrepaid: true
         });
 
         const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
         this.showNotification('Visit Scheduled',
-            `${visitType === 'virtual' ? 'Virtual call' : 'In-person visit'} with ${kol.name} scheduled for ${dayNames[day - 1]}.`, 'success');
+            `${visitType === 'virtual' ? 'Virtual call' : 'In-person visit'} with ${kol.name} scheduled for ${dayNames[day - 1]}. (${apCost} AP)`, 'success');
         this.saveGame();
     }
 
@@ -2939,9 +2964,15 @@ class MSLGame {
             }
         }
 
+        // Skip AP cost if already charged at scheduling time
+        const apPrepaid = this.state.scheduledVisitAPPrepaid || false;
+        this.state.scheduledVisitAPPrepaid = false;
+
         // Virtual calls always cost 1 AP (or 0 with Territory Planning Lv4)
         let apCost;
-        if (isVirtual) {
+        if (apPrepaid) {
+            apCost = 0; // Already charged when the visit was scheduled
+        } else if (isVirtual) {
             apCost = this.getSkillLevel('strategic', 'Territory Planning') >= 4 ? 0 : 1;
         } else {
             apCost = this.calculateTravelCost(kol);
@@ -5672,7 +5703,7 @@ class MSLGame {
 
             // Queue visits - they'll be removed from schedule only when actually started
             setTimeout(() => {
-                this.state.scheduledVisitQueue = todaysVisits.map(v => ({ kolId: v.kolId, visitType: v.visitType, day: v.day, week: v.week }));
+                this.state.scheduledVisitQueue = todaysVisits.map(v => ({ kolId: v.kolId, visitType: v.visitType, day: v.day, week: v.week, apPrepaid: v.apPrepaid }));
                 this.startNextScheduledVisit();
             }, 1000);
         } else {
@@ -5696,6 +5727,8 @@ class MSLGame {
             );
         }
 
+        // AP was already charged at scheduling time, so skip AP cost on execution
+        this.state.scheduledVisitAPPrepaid = !!(next.apPrepaid);
         this.startInteraction(next.kolId);
     }
 
